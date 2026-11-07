@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#30332B">
+  <title>Saldo Negro</title>
+  <link rel="stylesheet" href="css/font.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="viewport">
+    <!-- Escenario de 640x360 px de pixel art: escritorio, monitor, teclado, ratón y manos -->
+    <div id="stage">
+      <canvas id="desk" width="640" height="360"></canvas>
+
+      <!-- Pantalla física del monitor: toda la interfaz jugable vive aquí dentro -->
+      <div id="monitor">
+        <div id="screen" class="off">
+
+          <!-- Sistema operativo: arranque y menú principal -->
+          <section id="os" class="layer hidden">
+            <div id="boot" class="hidden"></div>
+            <div id="menu" class="hidden">
+              <div class="logo"><span class="l1">SALDO</span><span class="l2">NEGRO</span></div>
+              <p class="tagline">UN JUEGO SOBRE DINERO FÁCIL</p>
+              <div class="menu-buttons">
+                <button id="btn-continue" class="btn btn-green hidden">CONTINUAR</button>
+                <button id="btn-new" class="btn btn-yellow">NUEVA PARTIDA</button>
+                <button id="btn-intro" class="btn btn-cyan hidden">VER INTRO</button>
+                <button id="btn-menu-settings" class="btn btn-cream">AJUSTES</button>
+              </div>
+              <p class="menu-foot">V1.1 · KROSTGAMES</p>
+            </div>
+          </section>
+
+          <!-- Tienda online de la intro -->
+          <section id="webshop" class="layer hidden"></section>
+
+          <!-- FUTURO.exe: la aplicación de trading -->
+          <section id="app" class="layer hidden">
+            <header id="titlebar">
+              <span class="app-icon"></span><span class="app-name">FUTURO.EXE</span>
+              <span id="clock"></span>
+              <button id="btn-sound" class="tb-btn" aria-label="Sonido">♪</button>
+              <button id="btn-settings" class="tb-btn" aria-label="Ajustes">MENÚ<kbd>ESC</kbd></button>
+            </header>
+            <div id="hud">
+              <div id="hud-capital" class="hud-box" title="TU DINERO">
+                <span class="coin"></span><span id="capital" class="big">$100.00</span>
+              </div>
+              <div id="hud-goal" class="hud-box">
+                <div class="goal-top"><span id="goal-title" class="lbl">DEUDA</span><span id="goal-text"></span></div>
+                <div class="bar"><i id="goal-fill"></i></div>
+                <button id="btn-pay" class="btn btn-yellow hidden">¡PAGAR DEUDA!</button>
+              </div>
+              <div id="hud-days" class="hud-box" title="DÍAS PARA PAGAR LA DEUDA"></div>
+            </div>
+            <div id="body">
+              <aside id="sidebar">
+                <div id="markets"></div>
+                <div id="nav">
+                  <button id="nav-upgrades" class="nav-btn">MEJORAS<kbd>M</kbd></button>
+                  <button id="nav-news" class="nav-btn">NOTICIAS<b id="news-badge" class="badge hidden"></b><kbd>N</kbd></button>
+                  <button id="nav-shop" class="nav-btn">TIENDA<kbd>T</kbd></button>
+                </div>
+              </aside>
+              <main id="center">
+                <div id="mkt-head"></div>
+                <div id="chart-wrap">
+                  <canvas id="chart" width="222" height="134"></canvas>
+                  <button id="btn-fast" class="hidden">▶▶<kbd>F</kbd></button>
+                </div>
+                <div id="events"></div>
+              </main>
+              <section id="trade">
+                <div id="trade-form">
+                  <div id="bet-box">
+                    <div class="row-lbl"><span>APUESTA</span><kbd>← →</kbd></div>
+                    <div id="amount">$50.00</div>
+                    <div id="slider"><i id="slider-fill"></i><b id="slider-knob"></b></div>
+                    <div class="quick">
+                      <button data-frac="0.25">25%</button><button data-frac="0.5">50%</button><button data-frac="1">TODO</button>
+                    </div>
+                  </div>
+                  <div id="lev-box">
+                    <div class="row-lbl"><span>MULTIPLICA</span><kbd>1-4</kbd></div>
+                    <div class="seg" id="leverages"></div>
+                    <div id="risk" title="RIESGO DE ESTA APUESTA"></div>
+                  </div>
+                  <div id="trade-buttons">
+                    <button id="btn-buy" class="btn btn-green big-btn"><span>▲ SUBE</span><kbd>↑</kbd></button>
+                    <button id="btn-sell" class="btn btn-coral big-btn"><span>▼ BAJA</span><kbd>↓</kbd></button>
+                  </div>
+                  <button id="btn-skip-turn" class="nav-btn ghost">ESPERAR ▶<kbd>P</kbd></button>
+                </div>
+                <div id="trade-live" class="hidden">
+                  <div class="live-top"><span id="live-dir" class="dir"></span><span id="live-bet"></span></div>
+                  <button id="btn-close" class="btn btn-yellow"><span id="close-lbl">COBRAR</span><b id="close-amt">+$0.00</b><kbd>ESPACIO</kbd></button>
+                  <div id="live-pnl" class="pnl up">+$0.00</div>
+                  <div id="live-steps"></div>
+                  <div id="live-note"></div>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <canvas id="screen-canvas" width="420" height="236" class="hidden"></canvas>
+          <div id="layer-windows" class="layer"></div>
+          <div id="layer-dialog" class="layer"></div>
+          <canvas id="fx" width="420" height="236"></canvas>
+          <div id="layer-float"></div>
+          <div id="layer-top" class="layer"></div>
+          <div id="fake-cursor" class="hidden"></div>
+          <div id="crt"></div>
+        </div>
+      </div>
+
+      <!-- Planos de cinemática a pantalla completa (caras, negro) -->
+      <canvas id="cine" width="640" height="360" class="hidden"></canvas>
+      <div id="fade"></div>
+    </div>
+    <!-- Subtítulos y SALTAR: fuera de la cámara para que el zoom de las cinemáticas no los recorte -->
+    <div id="subs" class="px-font hidden"></div>
+    <button id="btn-skip" class="px-font hidden">SALTAR ▶▶</button>
+    <div id="rotate" class="px-font"><span>GIRA EL MÓVIL<br>PARA JUGAR</span></div>
+    <div id="loading">CARGANDO...</div>
+  </div>
+
+  <!-- Núcleo -->
+  <script src="js/core/sn.js"></script>
+  <script src="js/core/events.js"></script>
+  <!-- Datos (equivalentes a ScriptableObjects) -->
+  <script src="js/data/markets.js"></script>
+  <script src="js/data/events.js"></script>
+  <script src="js/data/simulation.js"></script>
+  <script src="js/data/story.js"></script>
+  <script src="js/core/state.js"></script>
+  <!-- Sistemas -->
+  <script src="js/systems/economy.js"></script>
+  <script src="js/systems/time.js"></script>
+  <script src="js/systems/debt.js"></script>
+  <script src="js/systems/market-sim.js"></script>
+  <script src="js/systems/trading.js"></script>
+  <script src="js/systems/unlocks.js"></script>
+  <script src="js/systems/upgrades.js"></script>
+  <script src="js/systems/save.js"></script>
+  <script src="js/systems/audio.js"></script>
+  <script src="js/systems/drama.js"></script>
+  <!-- Render -->
+  <script src="js/render/pixel.js"></script>
+  <script src="js/render/sprites.js"></script>
+  <script src="js/render/desk.js"></script>
+  <script src="js/render/hands.js"></script>
+  <script src="js/render/chart.js"></script>
+  <script src="js/render/fx.js"></script>
+  <script src="js/render/news-art.js"></script>
+  <script src="js/render/characters.js"></script>
+  <!-- Interfaz del monitor -->
+  <script src="js/ui/dialog.js"></script>
+  <script src="js/ui/windows.js"></script>
+  <script src="js/ui/ui.js"></script>
+  <!-- Secuencias -->
+  <script src="js/systems/tutorial.js"></script>
+  <script src="js/systems/narrative.js"></script>
+  <script src="js/systems/bankruptcy.js"></script>
+  <script src="js/render/cinematic.js"></script>
+  <!-- Arranque -->
+  <script src="js/core/game.js"></script>
+</body>
+</html>

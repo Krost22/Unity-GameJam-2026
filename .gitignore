@@ -1,0 +1,7 @@
+# Archivos del sistema y de OneDrive
+desktop.ini
+Thumbs.db
+.DS_Store
+# Herramientas
+node_modules/
+*.log
