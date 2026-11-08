@@ -43,6 +43,23 @@ El teclado es un atajo y cada botón muestra su tecla:
 - **Fin de partida inmediato:** si no te alcanza para la apuesta mínima ($10), o si ya es matemáticamente imposible
   pagar a tiempo, se acaba en ese momento (el cobrador se adelanta). Nada de pasar turnos esperando lo inevitable.
 
+## Qué hay en la versión 1.2: estilo lo-fi neón
+
+La perspectiva no cambia: primera persona, mirando al monitor, y del protagonista solo se ven las manos.
+Cambia el acabado, inspirado en un cuarto lo-fi de noche: violetas, luz cálida de ventana y acentos de neón.
+
+| Cambio | Detalle |
+|---|---|
+| Habitación a doble píxel | El escritorio se dibuja a 320x180 y se ve al doble: píxel grande y legible, como en las referencias. La interfaz de FUTURO.exe sigue a resolución completa para que se lea bien |
+| Luz | Dos luces: cálida de la ventana (contraluz) y fría del monitor. Rampas de color que cambian de tono (sombras violeta, luces naranja) y contorno selectivo, más claro del lado de la luz |
+| La luz del monitor juega | Tiñe la mesa y las manos de verde si la operación va bien y de rojo si va mal, y destella en cada cierre y en la cámara lenta |
+| Escena viva | Persianas con la ciudad detrás (mañana, tarde, noche; se apaga con la historia), letrero de neón que parpadea, guirnalda de luces, motas de polvo, vapor de la taza y del ramen, calor sobre la caja de la consola, gato dormido que se despierta con los sustos y las grandes ganancias |
+| Manos | Camisa blanca remangada. El ratón sigue al cursor, los dedos pulsan las teclas y tamborilean durante una operación, se cierran en la cámara lenta, celebran y dan un respingo |
+| Interfaz | Tema oscuro neón: paneles azul noche con borde violeta, botones con bisel, iconos en Mejoras / Noticias / Tienda, gráfica oscura. El periódico sigue siendo de papel |
+| Textos | La fuente pixel ya tiene minúsculas: interfaz y diálogos en mayúsculas y minúsculas (más fáciles de leer); los sellos y avisos grandes siguen en mayúsculas |
+| Primeros planos | Las cinemáticas muestran la cara del protagonista con el nuevo estilo (pelo castaño despeinado, pecas, camisa y corbata floja) |
+| Compras en la habitación | Taza con mando, planta que revive, farolillo de papel, póster, alfombrilla XXL con neón, teclado RGB animado, auriculares colgados del monitor y toro de oro sobre la consola |
+
 ## Qué hay en la versión 1.1
 
 | Cambio | Detalle |
@@ -72,7 +89,8 @@ js/core/              sn.js (utilidades, RNG con semilla), events.js, state.js, 
 js/data/              los "ScriptableObjects": mercados, eventos, simulación/mejoras/objetivos/tienda, historia
 js/systems/           economy, debt, time, market-sim (+ PISTA), trading (+ COBRAR y giros), drama (cámara lenta),
                       unlocks, upgrades, save, audio, tutorial, narrative, bankruptcy
-js/render/            pixel.js, sprites.js, desk.js, hands.js, chart.js, fx.js, news-art.js, characters.js, cinematic.js
+js/render/            pixel.js, pixkit.js (kit de pixel art procedural), sprites.js, desk.js (habitación), hero.js (manos,
+                      gato y primeros planos), hands.js, chart.js, fx.js, news-art.js, characters.js, cinematic.js
 js/ui/                ui.js (UIManager), dialog.js, windows.js (mejoras, periódico, tienda, ajustes)
 tools/                build-font.js y pruebas
 ```
@@ -93,8 +111,11 @@ y su lista de eventos en `js/data/events.js` (cada evento con su foto `art`).
 Apuesta mínima, velas de la zona de peligro, error de la pista y la operación del tutorial están en `js/data/simulation.js`.
 
 **Arte:** todo el pixel art es propio y está dibujado por código (sin imágenes externas ni marcadores de posición).
-Los iconos son dibujos en texto en `js/render/sprites.js`; personajes, cerdito y consola en `js/render/characters.js`;
-la habitación en `js/render/desk.js`; las fotos del periódico en `js/render/news-art.js`.
+`js/render/pixkit.js` convierte formas (polígonos, elipses, cápsulas) en pixel art con sombreado según la luz y
+contorno selectivo; con él se dibujan las manos, el gato, la cara del protagonista (`js/render/hero.js`) y los objetos
+de la habitación (`js/render/desk.js`). La paleta está en `js/core/sn.js` (y en las variables de `css/style.css`).
+Los iconos son dibujos en texto en `js/render/sprites.js`; el encapuchado, el cerdito y la consola de la intro en
+`js/render/characters.js`; las fotos del periódico en `js/render/news-art.js`.
 
 **Fuente:** `node tools/build-font.js` regenera `css/font.css` a partir de los glifos dibujados en ese archivo.
 

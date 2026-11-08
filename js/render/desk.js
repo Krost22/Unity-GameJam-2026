@@ -25,6 +25,7 @@
     3: ['###', '..#', '.##', '..#', '###'], 4: ['#.#', '#.#', '###', '..#', '..#'], 5: ['###', '#..', '###', '..#', '###'],
     6: ['###', '#..', '###', '#.#', '###'], 7: ['###', '..#', '.#.', '.#.', '.#.'], 8: ['###', '#.#', '###', '#.#', '###'],
     9: ['###', '#.#', '###', '..#', '###'], $: ['.##', '##.', '.#.', '.##', '##.'], '!': ['#', '#', '#', '.', '#'], '/': ['..#', '..#', '.#.', '#..', '#..'],
+    P: ['##.', '#.#', '##.', '#..', '#..'],
   };
   function mini(g, text, x, y, c, s = 1) {
     let cx = x;
@@ -185,25 +186,37 @@
     sp.line(16, 0, 12, 10, P.creamDD).line(16, 0, 22, 10, P.creamDD);
     const pot = sp.mask().poly([[8, 10], [26, 10], [24, 20], [10, 20]]);
     sp.part(pot, [P.orangeDD, P.orangeD, P.orange, P.orangeL], { light: [1, -1] });
-    const ramp = healthy ? [P.leafDD, P.leafD, P.leaf, P.leafL] : ['#2E2A22', '#5A4A2A', '#8A7A3A', '#B8A050'];
-    const vines = healthy ? [[10, 20, 4, 60], [18, 20, 12, 92], [24, 20, 30, 70], [14, 20, 0, 40]] : [[12, 20, 8, 46], [20, 20, 22, 54]];
+    const vines = healthy ? [[10, 20, 4, 60], [18, 20, 12, 92], [24, 20, 30, 70], [14, 20, 0, 40]] : [[12, 20, 9, 44], [19, 20, 21, 50], [23, 20, 27, 34]];
     for (const [x0, y0, x1, y1] of vines) {
       sp.line(x0, y0, x1, y1, healthy ? P.leafDD : '#4A3A22');
-      const n = Math.floor((y1 - y0) / 8);
+      const n = Math.floor((y1 - y0) / (healthy ? 8 : 7));
       for (let i = 1; i <= n; i++) {
-        const k = i / n, lx = Math.round(x0 + (x1 - x0) * k) + (i % 2 ? 3 : -3), ly = Math.round(y0 + (y1 - y0) * k);
-        const leaf = sp.mask().ellipse(lx, ly, healthy ? 3.4 : 2.4, healthy ? 2.4 : 1.6);
-        sp.part(leaf, ramp, { light: [1, -1], hi: 1, lit: 1, sh: 1 });
+        const k = i / n, side = i % 2 ? 1 : -1;
+        const lx = Math.round(x0 + (x1 - x0) * k), ly = Math.round(y0 + (y1 - y0) * k);
+        if (healthy) {
+          // Hojas de potos: corazones verdes hacia fuera
+          const leaf = sp.mask().ellipse(lx + side * 3, ly, 3.4, 2.4).ellipse(lx + side * 5, ly + 1, 1.6, 1.4);
+          sp.part(leaf, [P.leafDD, P.leafD, P.leaf, P.leafL], { light: [1, -1], hi: 1, lit: 1, sh: 1 });
+        } else {
+          // Hojas secas que cuelgan
+          const leaf = sp.mask().capsule(lx + side, ly, lx + side * 3, ly + 4, 1.05);
+          sp.part(leaf, ['#3A2A18', '#6A4A22', '#A0782E', '#C8A048'], { light: [1, -1], hi: 1, lit: 1, sh: 1 });
+        }
       }
     }
     g.drawImage(sp.c, -4, 0);
+    if (!healthy) {
+      // Hojas caídas en el alféizar
+      R(g, 9, WIN.y + WIN.h + 1, 3, 1, '#A0782E'); R(g, 10, WIN.y + WIN.h, 2, 1, '#6A4A22');
+      R(g, 30, WIN.y + WIN.h + 1, 3, 1, '#C8A048'); R(g, 31, WIN.y + WIN.h, 1, 1, '#6A4A22');
+    }
   }
 
   // Pósit en la esquina del monitor (por delante de la ventana y de la cortina)
   function drawPostit(g) {
     R(g, 41, 4, 13, 13, P.yellowD); R(g, 40, 3, 13, 13, P.yellow); R(g, 40, 3, 13, 3, P.yellowL);
     mini(g, '250', 41, 7, P.coralD);
-    mini(g, '!!', 45, 12, P.coralD);
+    mini(g, '! !', 44, 11, P.coralD);
   }
 
   function drawLamp(g) {
@@ -263,11 +276,15 @@
     const sp = new PK.Sprite(40, 44);
     const box = sp.mask().rect(3, 6, 32, 34);
     sp.part(box, [P.creamDD, P.creamD, P.cream, P.creamL], { light: [1, -1], lit: 2, sh: 2 });
-    sp.rect(3, 6, 5, 34, P.coal).rect(9, 6, 26, 7, P.coralD);
+    sp.rect(3, 6, 5, 34, P.coal).rect(9, 6, 26, 8, P.coralD);
     sp.rect(4, 9, 3, 1, P.yellow).rect(4, 11, 2, 1, P.yellow);
-    const fire = sp.mask().ellipse(21, 25, 7, 7).poly([[18, 18], [20, 12], [23, 18]]);
+    mini(sp.g, 'P6', 17, 7, P.creamL);
+    const fire = sp.mask().ellipse(21, 26, 7, 6.5).poly([[16, 22], [18, 15], [21, 21]]).poly([[21, 20], [24, 13], [26, 22]]);
     sp.part(fire, [P.orangeD, P.orange, P.orangeL, P.yellowL], { light: [0, -1], outline: false });
-    sp.rect(12, 35, 18, 2, P.coal);
+    const core = sp.mask().ellipse(21, 28, 3.5, 3.5);
+    sp.part(core, [P.yellow, P.yellowL, P.creamL], { light: [0, -1], outline: false });
+    sp.rect(9, 34, 26, 4, P.coal);
+    for (let i = 0; i < 5; i++) sp.rect(11 + i * 5, 35, 3, 2, P.yellow);
     g.drawImage(sp.c, 280, 100);
     if (st.owned.trofeo) {
       const tp = new PK.Sprite(26, 14);
@@ -426,22 +443,25 @@
     const { x, y, w, h } = WIN;
     const sky = skyColors(st.phase);
     const band = Math.ceil(h / sky.length);
+    g.save();
+    g.beginPath(); g.rect(x, y, w, h); g.clip();
     sky.forEach((c, i) => R(g, x, y + i * band, w, band, c));
     if (st.phase === 'night') {
       for (let i = 0; i < 18; i++) {
         const sx = x + ((i * 37) % w), sy = y + ((i * 23) % 40);
         if (Math.sin(t * 2 + i) > -0.3) R(g, sx, sy, 1, 1, P.cream);
       }
-      Px.ellipse(g, x + 62, y + 14, 5, 5, P.creamL);
-      Px.ellipse(g, x + 64, y + 13, 4, 4, '#140E30');
+      Px.ellipse(g, x + 26, y + 12, 5, 5, P.creamL);
+      Px.ellipse(g, x + 28, y + 11, 4, 4, '#140E30');
     } else if (st.phase === 'morning') {
-      Px.ellipse(g, x + 20, y + 16, 6, 6, P.yellowL);
+      Px.ellipse(g, x + 12, y + 14, 6, 6, P.yellowL);
       const cx = x + ((t * 3) % (w + 30)) - 20;
       R(g, cx, y + 24, 16, 4, P.creamL); R(g, cx + 4, y + 21, 8, 3, P.creamL);
     } else {
-      Px.ellipse(g, x + 40, y + 52, 10, 10, P.yellowL);
-      Px.ellipse(g, x + 40, y + 52, 7, 7, P.yellow);
+      Px.ellipse(g, x + 24, y + 50, 10, 10, P.yellowL);
+      Px.ellipse(g, x + 24, y + 50, 7, 7, P.yellow);
     }
+    g.restore();
     // Ciudad con parallax: se mueve menos que la cámara
     const par = Math.round(-Desk.camShift * 0.12);
     const base = y + h;
@@ -481,6 +501,16 @@
         const y = sy - p * 16, x = sx + i * 3 + Math.round(Math.sin(t * 2 + i * 2 + p * 6) * 1.5);
         g.globalAlpha = 0.55 * (1 - p);
         R(g, Math.round(x), Math.round(y), 1, 2, P.creamL);
+      }
+    }
+    g.globalAlpha = 1;
+    // Ondas de calor sobre la caja de la consola ("también calienta la habitación")
+    for (let i = 0; i < 4; i++) {
+      const hx = 288 + i * 7;
+      for (let yy = 0; yy < 12; yy += 2) {
+        const off = Math.round(Math.sin(t * 3 + yy * 0.5 + i) * 1.2);
+        g.globalAlpha = 0.32 - yy * 0.022;
+        R(g, hx + off, 104 - yy - Math.floor((t * 8 + i * 5) % 5), 1, 2, P.orange);
       }
     }
     g.globalAlpha = 1;

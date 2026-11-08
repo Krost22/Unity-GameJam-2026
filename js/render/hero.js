@@ -181,63 +181,66 @@
 
   // ---------- Manos en primera persona ----------
   const HAND_LIGHT = [0, -1]; // la luz del monitor llega desde delante (arriba en pantalla)
-  // Mano derecha sobre el ratón (sprite 64x64; el centro del ratón en (24, 12))
+  // Mano derecha sobre el ratón (sprite 64x64; el centro del ratón en (24, 10)).
+  // La mano descansa sobre la mitad trasera: por delante de los dedos asoman los botones y la rueda.
   function buildMouseHand(pressed, phase) {
     const sp = new PK.Sprite(64, 64);
     const rim = RIM[phase] || RIM.evening;
     const p = pressed ? 1 : 0;
-    const mouse = sp.mask().ellipse(24, 12, 7, 9.5);
+    const mouse = sp.mask().ellipse(24, 10, 7.5, 10.5);
     sp.part(mouse, RAMP.mouse, { light: HAND_LIGHT, lit: 2 });
-    sp.line(24, 3, 24, 9, P.navyDD).rect(23, 5, 3, 3, P.navyLL).px(24, 6, P.cyan);
+    sp.line(24, 0, 24, 8, P.navyDD).rect(23, 2, 3, 4, P.navyLL).px(24, 3, P.cyan);
     // Antebrazo y puño de la camisa remangada (asoma por abajo)
-    const fore = sp.mask().taper(25, 28, 6, 30, 46, 7.5);
+    const fore = sp.mask().taper(25, 27, 6.2, 30, 46, 7.6);
     sp.part(fore, RAMP.skin, { light: HAND_LIGHT, lit: 2, sh: 3 });
     const cuff = sp.mask().taper(29, 38, 8.6, 33, 60, 10);
     sp.part(cuff, RAMP.shirt, { light: [-1, -1], lit: 3, sh: 3, cast: 1 });
     sp.line(22, 40, 37, 38, P.shirtD).line(23, 43, 38, 41, P.shirtM);
     sp.rim(cuff, rim, [-1, 0]);
     // Dorso de la mano sobre el ratón
-    const back = sp.mask().poly([[15, 13], [33, 13], [34, 21], [29, 28], [20, 28], [15, 22]]);
+    const back = sp.mask().poly([[15, 13], [34, 12], [35, 20], [30, 27], [20, 27], [15, 21]]);
     sp.part(back, RAMP.skin, { light: HAND_LIGHT, lit: 3, cast: 1 });
-    // Índice y corazón sobre los botones, anular y meñique recogidos, pulgar en el lateral
+    // Dedos cortos y juntos: índice y corazón sobre los botones, anular y meñique recogidos
     const fingers = sp.mask()
-      .capsule(19, 14, 20, 4 + p, 2.2).capsule(25, 14, 26, 4, 2.2)
-      .capsule(30, 15, 31, 9, 2).capsule(34, 17, 35, 12, 1.8);
-    sp.part(fingers, RAMP.skin, { light: HAND_LIGHT, lit: 2, cast: 1 });
-    const thumb = sp.mask().capsule(15, 20, 11, 13, 2.3);
-    sp.part(thumb, RAMP.skin, { light: HAND_LIGHT, lit: 2 });
-    sp.rim(fingers, P.skinL, [0, -1]);
-    // Nudillos
-    for (const x of [19, 25, 30]) sp.px(x, 15, P.skinM).px(x + 1, 15, P.skinM);
+      .capsule(19, 13, 19.5, 8 + p, 2.5).capsule(24.5, 13, 25, 7, 2.5)
+      .capsule(29.5, 13, 30, 9, 2.3).capsule(33.5, 14, 34, 11, 2);
+    sp.part(fingers, RAMP.skin, { light: HAND_LIGHT, lit: 1, cast: 1 });
+    // Pulgar recogido en el lateral izquierdo del ratón
+    const thumb = sp.mask().capsule(16, 21, 14, 15, 2.4);
+    sp.part(thumb, RAMP.skin, { light: HAND_LIGHT, lit: 1 });
+    // Uñas y nudillos (la luz del monitor los marca)
+    for (const [x, y] of [[19, 7 + p], [25, 6], [30, 8], [34, 10]]) sp.px(x, y, P.skinL);
+    for (const x of [18, 24, 29, 33]) sp.px(x, 13, P.skinL).px(x + 1, 14, P.skinM);
     return sp.c;
   }
 
-  // Mano izquierda sobre el teclado (sprite 64x64; nudillos en y=14). mask: bit i = dedo i pulsado
+  // Mano izquierda sobre el teclado (sprite 64x64; nudillos en y=13). mask: bit i = dedo i pulsado.
+  // Dedos cortos y curvados hacia las teclas; al pulsar bajan; con tensión se cierran en puño.
   function buildKeyHand(mask, clench, phase) {
     const sp = new PK.Sprite(64, 64);
     const rim = RIM[phase] || RIM.evening;
-    const fore = sp.mask().taper(21, 28, 6.2, 17, 46, 7.6);
+    const fore = sp.mask().taper(21, 27, 6.4, 17, 46, 7.8);
     sp.part(fore, RAMP.skin, { light: HAND_LIGHT, lit: 2, sh: 3 });
     const cuff = sp.mask().taper(17, 38, 8.8, 13, 60, 10);
     sp.part(cuff, RAMP.shirt, { light: [1, -1], lit: 3, sh: 3, cast: 1 });
     sp.line(8, 39, 25, 41, P.shirtD).line(7, 42, 24, 44, P.shirtM);
     sp.rim(cuff, rim, [-1, 0]);
-    const back = sp.mask().poly([[10, 13], [32, 13], [32, 21], [26, 29], [16, 29], [10, 21]]);
+    const back = sp.mask().poly([[9, 13], [33, 12], [33, 20], [27, 28], [16, 28], [9, 20]]);
     sp.part(back, RAMP.skin, { light: HAND_LIGHT, lit: 3, cast: 1 });
-    // Dedos de meñique (izquierda) a índice (derecha): cortos, caen sobre las teclas
-    const tips = [[12, 10], [17, 7], [23, 6], [29, 7]];
+    // De meñique (izquierda) a índice (derecha)
+    const base = [[12, 9], [18, 7], [24, 6], [30, 7]];
     const fingers = sp.mask();
-    tips.forEach(([x, y], i) => {
+    base.forEach(([x, y], i) => {
       const down = (mask >> i) & 1;
-      const ty = clench ? y + 5 : y + down;
-      fingers.capsule(x + (i - 1.5) * 0.5, 14, x, ty, i === 0 ? 1.9 : 2.2);
+      const ty = clench ? 12 : y + down;
+      fingers.capsule(x, 13, x + 0.5, ty, i === 0 ? 2.1 : 2.5);
     });
-    sp.part(fingers, RAMP.skin, { light: HAND_LIGHT, lit: 2, cast: 1 });
-    sp.rim(fingers, P.skinL, [0, -1]);
-    for (let i = 0; i < 4; i++) sp.px(12 + i * 6, 14, P.skinM).px(13 + i * 6, 14, P.skinM);
-    // Pulgar hacia la barra espaciadora
-    const thumb = sp.mask().capsule(30, 21, 37, 25, 2.4);
-    sp.part(thumb, RAMP.skin, { light: HAND_LIGHT, lit: 2 });
+    sp.part(fingers, RAMP.skin, { light: HAND_LIGHT, lit: 1, cast: 1 });
+    base.forEach(([x, y], i) => sp.px(x, clench ? 11 : y - 1 + ((mask >> i) & 1), P.skinL));
+    for (let i = 0; i < 4; i++) sp.px(11 + i * 6, 13, P.skinL).px(12 + i * 6, 14, P.skinM);
+    // Pulgar recogido hacia la barra espaciadora
+    const thumb = sp.mask().capsule(31, 20, 35, 25, 2.5);
+    sp.part(thumb, RAMP.skin, { light: HAND_LIGHT, lit: 1 });
     return sp.c;
   }
 
@@ -364,7 +367,7 @@
       // Celebrar: la mano del teclado salta; perder: respingo
       const lift = md.expr === 'star' || md.expr === 'happy' ? -2 : 0;
       g.drawImage(keyHand, kx - 21 + sx, ky - 14 + by + lift);
-      g.drawImage(mouseHand, Math.round(mx + this.mouse.x) - 24 + sx, Math.round(my + this.mouse.y) - 12 + by);
+      g.drawImage(mouseHand, Math.round(mx + this.mouse.x) - 24 + sx, Math.round(my + this.mouse.y) - 10 + by);
     },
 
     drawCat(g, x, y, phase) {
