@@ -9,7 +9,7 @@ una app de trading que promete dinero fácil... y que se cobra algo más valioso
 Abre `index.html` con doble clic. Funciona sin internet, sin servidor y sin instalar nada (HTML, CSS y JS puros).
 La partida se guarda sola en el navegador.
 
-**Cómo se juega (en una frase):** mira la PISTA de la gráfica, pulsa **SUBE** o **BAJA**, y **COBRA** antes de que
+**Cómo se juega (en una frase):** mira la PISTA de la gráfica, pulsa **SUBIRÁ** o **BAJARÁ**, y **COBRA** antes de que
 las últimas velas te den un susto. Junta $250 antes del día 7.
 
 **Controles:** todo se puede hacer con el ratón (también los diálogos: clic en cualquier parte).
@@ -17,8 +17,8 @@ El teclado es un atajo y cada botón muestra su tecla:
 
 | Tecla | Acción |
 |---|---|
-| `↑` / `B` | SUBE |
-| `↓` / `V` | BAJA |
+| `↑` / `B` | SUBIRÁ (ganas si el precio sube) |
+| `↓` / `V` | BAJARÁ (ganas si el precio baja) |
 | `Espacio` | COBRAR (durante una operación) · avanzar diálogos |
 | `F` | acelerar las velas |
 | `← →` | apuesta (en pasos de 5%) |
@@ -26,6 +26,8 @@ El teclado es un atajo y cada botón muestra su tecla:
 | `P` | ESPERAR (pasar el turno sin apostar) |
 | `Tab` | cambiar de mercado |
 | `M` `N` `T` | mejoras, noticias, tienda |
+| `D` | minimizar FUTURO.exe y ver el escritorio |
+| cualquier tecla | escribir en Mensajín (`Enter` envía) |
 | `Esc` | menú / cerrar ventana |
 
 ## Reglas
@@ -33,7 +35,7 @@ El teclado es un atajo y cada botón muestra su tecla:
 - **La PISTA:** a la derecha de la última vela hay un cono que apunta hacia donde irá el precio. Se calcula con el
   estado real del mercado (tendencia, siguiente fase y noticias conocidas), con un pequeño error de lectura que la
   mejora ANÁLISIS reduce. Más flechas, más fiable: ▲ acierta ~70%, ▲▲ ~80%, ▲▲▲ ~93%. Con `?` es una moneda al aire.
-- **SUBE / BAJA:** ganas si el precio va hacia donde apostaste. APUESTA (25% / 50% / TODO o la barra) y MULTIPLICADOR
+- **SUBIRÁ / BAJARÁ:** ganas si el precio va hacia donde apostaste. APUESTA (25% / 50% / TODO o la barra) y MULTIPLICADOR
   deciden cuánto. La barrita de colores bajo el multiplicador es el riesgo de la apuesta de un vistazo.
 - **COBRAR:** una operación dura unas 12 velas, pero puedes cobrar cuando quieras al precio que ves. Las velas que
   faltan se siguen mostrando en gris: lo que te ahorraste... o lo que te perdiste.
@@ -42,6 +44,17 @@ El teclado es un atajo y cada botón muestra su tecla:
 - **Cada apuesta o ESPERAR gasta un turno.** 3 turnos = 1 día. La deuda vence al final del día 7.
 - **Fin de partida inmediato:** si no te alcanza para la apuesta mínima ($10), o si ya es matemáticamente imposible
   pagar a tiempo, se acaba en ese momento (el cobrador se adelanta). Nada de pasar turnos esperando lo inevitable.
+
+## Qué hay en la versión 1.3: el escritorio del PC
+
+| Cambio | Detalle |
+|---|---|
+| Escritorio | FUTURO.exe se minimiza (botón `_` o `D`) y aparece el ordenador del protagonista: fondo de la Pleyzeta, iconos, barra de tareas con el día. Programas: Mensajín, Notas (la lista de tareas, que se tacha al pagar) y Papelera. FUTURO.exe no tiene botón de cerrar... |
+| Mensajín | Parodia de la mensajería de los 2000. Kevo, tu amigo, también se endeudó por la Pleyzeta 6 y también recibió FUTURO.exe; su historia avanza día a día (con zumbidos). Para contestar se pulsa cualquier tecla, o se hace clic en la caja: el juego escribe por ti lo que dice el protagonista. Cuando escribe estando en FUTURO.exe sale un aviso que lleva al chat |
+| Dinero entero | Sin centavos ni decimales: dinero, ganancias, precios y la gráfica en números enteros |
+| Números legibles | Fuente de números propia (SaldoNum): cifras gruesas de 2 px, todas del mismo ancho para que las cantidades no bailen, sin la negrita falsa que emborronaba el 0, el 6, el 8 y el 9 |
+| Botones claros | SUBE / BAJA pasan a **SUBIRÁ / BAJARÁ** con una línea debajo ("ganas si sube"): es una predicción, no una orden |
+| Manos | Rehechas: una sola silueta (no piezas sueltas), dedos en abanico y de distinto largo, brazo en diagonal con la manga remangada. La derecha agarra el ratón (se ven los botones y la rueda) |
 
 ## Qué hay en la versión 1.2: estilo lo-fi neón
 
@@ -86,12 +99,14 @@ index.html            escenario 640x360 y la interfaz del monitor
 css/style.css         estilos (paleta oficial en variables CSS)
 css/font.css          fuente pixel propia, generada (no editar a mano)
 js/core/              sn.js (utilidades, RNG con semilla), events.js, state.js, game.js (GameManager, bucle, tiempo y cámara)
-js/data/              los "ScriptableObjects": mercados, eventos, simulación/mejoras/objetivos/tienda, historia
+js/data/              los "ScriptableObjects": mercados, eventos, simulación/mejoras/objetivos/tienda, historia,
+                      chat.js (las conversaciones con Kevo)
 js/systems/           economy, debt, time, market-sim (+ PISTA), trading (+ COBRAR y giros), drama (cámara lenta),
                       unlocks, upgrades, save, audio, tutorial, narrative, bankruptcy
 js/render/            pixel.js, pixkit.js (kit de pixel art procedural), sprites.js, desk.js (habitación), hero.js (manos,
                       gato y primeros planos), hands.js, chart.js, fx.js, news-art.js, characters.js, cinematic.js
-js/ui/                ui.js (UIManager), dialog.js, windows.js (mejoras, periódico, tienda, ajustes)
+js/ui/                ui.js (UIManager), dialog.js, windows.js (mejoras, periódico, tienda, ajustes),
+                      desktop.js (escritorio del PC y Mensajín)
 tools/                build-font.js y pruebas
 ```
 
@@ -117,7 +132,11 @@ de la habitación (`js/render/desk.js`). La paleta está en `js/core/sn.js` (y e
 Los iconos son dibujos en texto en `js/render/sprites.js`; el encapuchado, el cerdito y la consola de la intro en
 `js/render/characters.js`; las fotos del periódico en `js/render/news-art.js`.
 
-**Fuente:** `node tools/build-font.js` regenera `css/font.css` a partir de los glifos dibujados en ese archivo.
+**Fuente:** `node tools/build-font.js` regenera `css/font.css` a partir de los glifos dibujados en ese archivo: SaldoPixel
+(texto) y SaldoNum (cifras en negrita de ancho fijo para el dinero; lo que no tiene lo pone SaldoPixel).
+
+**Añadir una conversación de Mensajín:** una entrada en `js/data/chat.js` con el día y turno en que llega, lo que escribe
+Kevo, la respuesta del protagonista y lo que Kevo contesta.
 
 ## Pruebas
 
@@ -125,6 +144,7 @@ Los iconos son dibujos en texto en `js/render/sprites.js`; el encapuchado, el ce
 node tools/test/logic.test.js       # fórmulas, COBRAR, giros, fiabilidad de la pista, plazo, fin de partida y equilibrio
 node tools/test/e2e.test.js         # partida completa en Chrome sin ventana, con clics REALES de ratón y capturas
 node tools/test/e2e-paths.test.js   # continuar (también tras cobrar), repetir tutorial, tienda, los 3 finales y pantallas pequeñas
+node tools/test/e2e-desktop.test.js # minimizar, Mensajín (escribir con teclas y clics), Notas, Papelera y volver a FUTURO.exe
 ```
 
 Abre `index.html?debug` para atajos de prueba: `F8` bancarrota, `F9` +$1,000, `F10` pasar un día.

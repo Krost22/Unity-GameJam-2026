@@ -113,7 +113,7 @@
     const news = run ? run.news.slice().reverse() : [];
     const today = run ? `Día ${run.day} · ${D.sim.turnNames[run.turn]}` : '';
     body.insertAdjacentHTML('beforeend', `<div class="np-mast">EL DIARIO DEL FUTURO</div>
-      <div class="np-sub"><span>${today}</span><span>Edición de la ciudad</span><span>$0.50</span></div>`);
+      <div class="np-sub"><span>${today}</span><span>Edición de la ciudad</span><span>$1</span></div>`);
     // Si hay pocas noticias del mercado, la ciudad rellena el periódico (nunca sale vacío)
     const filler = D.story.fillerNews.map((n) => Object.assign({ day: 1, turn: 0, filler: true }, n));
     const items = news.slice(0, 31);

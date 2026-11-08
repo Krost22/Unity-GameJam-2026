@@ -82,7 +82,7 @@
       await SN.Cine.faceBeat('relieved', 'Uf... Libre. Por fin.', 2.2);
       await this.hoodedScene(story().hoodedEvents.debtPaid);
       SN.Economy.add(25, 'reward');
-      SN.FX.float('+$25.00 regalo', 210, 90, 'gold');
+      SN.FX.float('+$25 regalo', 210, 90, 'gold');
       SN.Audio.sfx('unlock');
       run.flags.debtPaid = true;
       await SN.UI.stamp('OBJETIVO: $1,000', '', 'Nuevo objetivo · ×10 · tienda · límite', 2.2);

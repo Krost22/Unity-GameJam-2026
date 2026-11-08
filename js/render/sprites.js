@@ -6,6 +6,18 @@
   const Px = SN.Px;
 
   const DEFS = {
+    // --- Escritorio del PC (16x16) y avatares del chat (12x12) ---
+    icoChat: ['................', '................', '..kkkkkkkkkkkk..', '.khhhhhhhhhhhhk.', 'khhggggggggggggk', 'khgggggggggggGGk',
+      'kgggwwggwwggwwGk', 'kgggwwggwwggwwGk', 'kggggggggggggGGk', '.kgggggggggGGGk.', '..kkkkkGGGkkkk..', '......kGGk......',
+      '.....kGk........', '.....kk.........', '................', '................'],
+    icoNotes: ['................', '..kkkkkkkkkkkk..', '..kkwkwkwkwkwk..', '..kuuuuuuuuuuk..', '..kuDDDDDDDDuk..', '..kuuuuuuuuuuk..',
+      '..kuDDDDDDuuuk..', '..kuuuuuuuuuuk..', '..kuDDDDDDDDuk..', '..kuuuuuuuuuuk..', '..kuDDDDuuuuuk..', '..kuuuuuuuuuuk..',
+      '..kuuuuuuuuuuk..', '..kkkkkkkkkkkk..', '................', '................'],
+    icoTrash: ['................', '.....kkkkkk.....', '..kkkkkkkkkkkk..', '..kddddddddddk..', '..kkkkkkkkkkkk..', '...kdnndnndnk...',
+      '...kdnndnndnk...', '...kdnndnndnk...', '...kdnndnndnk...', '...kdnndnndnk...', '...kdnndnndnk...', '...kdnndnndnk...',
+      '....kkkkkkkk....', '................', '................', '................'],
+    avaKevo: ['...rrrrrr...', '..rrrrrrrr..', '..RRRRRRRRRR', '..kssssssk..', '..sskssksS..', '..sssssssS..', '..ssszzssS..',
+      '...ssssSS...', '....SSSS....', '..oooooooo..', '.oooooooooo.', '.oooooooooo.'],
     // --- Mercados (12x12) ---
     salud: [
       '...kkkkkk...',

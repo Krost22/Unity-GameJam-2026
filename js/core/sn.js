@@ -53,20 +53,20 @@ window.SN = window.SN || {};
     outElastic: (t) => (t === 0 || t === 1 ? t : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * (2 * Math.PI) / 3) + 1),
   };
 
-  // Dinero en formato $1,234.56 (USD)
-  U.money = (v, { sign = false, cents = true } = {}) => {
-    const abs = Math.abs(v);
-    const s = abs.toLocaleString('en-US', { minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: cents ? 2 : 0 });
-    const pre = v < 0 ? '-' : (sign ? '+' : '');
+  // Dinero en dólares enteros: $1,234 (sin centavos en ningún sitio)
+  U.money = (v, { sign = false } = {}) => {
+    const r = Math.round(v);
+    const s = Math.abs(r).toLocaleString('en-US', { maximumFractionDigits: 0 });
+    const pre = r < 0 ? '-' : (sign ? '+' : '');
     return `${pre}$${s}`;
   };
   U.short = (v) => {
     const a = Math.abs(v);
-    if (a >= 1e6) return `$${(v / 1e6).toFixed(a >= 1e7 ? 0 : 1)}M`;
-    if (a >= 1e4) return `$${(v / 1e3).toFixed(0)}K`;
-    return U.money(v, { cents: a < 1000 });
+    if (a >= 1e6) return `$${Math.round(v / 1e6)}M`;
+    if (a >= 1e4) return `$${Math.round(v / 1e3)}K`;
+    return U.money(v);
   };
-  U.pct = (v, digits = 1) => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(digits)}%`;
+  U.pct = (v, digits = 0) => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(digits)}%`;
 
   // Crea un elemento DOM con clase y contenido
   U.el = (tag, cls, html) => {

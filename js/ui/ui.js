@@ -106,6 +106,7 @@
     onKey(e) {
       SN.Audio.unlock();
       if (!e.repeat) { SN.Hands.tapKey(e.code); SN.Audio.sfx('key'); }
+      if (SN.Desktop.onKey(e)) return;
       if (SN.Dialog.active && (e.code === 'Space' || e.code === 'Enter')) { e.preventDefault(); SN.Dialog.advance(); return; }
       if (SN.Cine && SN.Cine.onKey(e)) return;
       if (SN.Game.state !== 'GAMEPLAY' && SN.Game.state !== 'TUTORIAL') return;
@@ -310,7 +311,7 @@
       if (!run || run.position) return;
       const f = run.form;
       const max = SN.Trading.maxAmount();
-      if (f.frac != null) f.amount = Math.floor(max * f.frac * 100) / 100;
+      if (f.frac != null) f.amount = Math.floor(max * f.frac);
       SN.Trading.clampForm();
       const amt = $('amount');
       amt.textContent = U.money(f.amount);
@@ -473,7 +474,7 @@
       $('trade-form').classList.add('hidden');
       $('trade-live').classList.remove('hidden');
       const dir = $('live-dir');
-      dir.textContent = position.direction > 0 ? '▲ Sube' : '▼ Baja';
+      dir.textContent = position.direction > 0 ? '▲ Subirá' : '▼ Bajará';
       dir.className = 'dir ' + (position.direction > 0 ? 'long' : 'short');
       $('live-bet').textContent = `${U.short(position.amount)} ×${position.leverage}`;
       const steps = $('live-steps');
@@ -486,7 +487,7 @@
       // Medio segundo de margen: un doble clic en SUBE/BAJA no cobra sin querer al precio de entrada
       SN.after(0.5, () => { if (S.run && S.run.position === position && !position.settled) { close.disabled = false; close.classList.remove('arming'); } });
       $('close-lbl').textContent = 'Cobrar';
-      $('close-amt').textContent = '+$0.00';
+      $('close-amt').textContent = '+$0';
       this.setLiveNote('');
       $('btn-fast').classList.remove('hidden');
       this.live = { shown: null, lastPnl: 0, warned: false };
@@ -696,7 +697,7 @@
     },
   };
 
-  function fmt(p) { return p >= 1000 ? p.toFixed(0) : p.toFixed(2); }
+  function fmt(p) { return String(Math.round(p)); }
 
   // Nivel de "rareza" de las fotos de noticias extrañas
   function darkLevel() { return Math.max(1, Math.min(8, (S.run && S.run.darkness) || 1)); }

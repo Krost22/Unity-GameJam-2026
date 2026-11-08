@@ -29,6 +29,7 @@
       this.deskCtx = SN.Px.ctx($('desk'));
       SN.ScreenCanvas.init();
       SN.UI.init();
+      SN.Desktop.init();
       SN.Cine.init();
       SN.UI.renderSound();
       window.addEventListener('resize', () => this.layout());
@@ -189,7 +190,7 @@
       const lines = [
         'KROST OS V2.1',
         'MEMORIA: 640 KB (DEBERÍA BASTAR)',
-        'COMPROBANDO SALDO......... <span class="ok">$100.00</span>',
+        'COMPROBANDO SALDO......... <span class="ok">$100</span>',
         'COMPROBANDO DEUDAS........ <span style="color:#F05B54">CALCULANDO...</span>',
         'BUSCANDO FUTURO........... <span style="color:#F28B43">NO ENCONTRADO</span>',
         'INICIANDO SALDO NEGRO..... <span class="ok">OK</span>',
@@ -290,6 +291,7 @@
     async startRun({ tutorial = false, greeting = false, loaded = false } = {}) {
       if (!loaded) S.newRun();
       const run = S.run;
+      SN.Desktop.reset();
       this.resetTime();
       SN.Narrative.pending = [];
       SN.Narrative.profitableSinceDebt = 0;
@@ -329,6 +331,8 @@
         await SN.Narrative.hoodedScene(D.story.retryGreeting);
         SN.UI.setBusy(false);
       }
+      // Kevo escribe en cuanto el jugador tiene las manos libres
+      setTimeout(() => SN.Desktop.check(), 2500);
     },
 
     // ---------- Turnos ----------

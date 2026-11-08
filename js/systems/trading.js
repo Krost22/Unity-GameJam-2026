@@ -8,13 +8,13 @@
   'use strict';
   const S = SN.State, D = SN.Data;
 
-  const round2 = (v) => Math.round(v * 100) / 100;
+  const round2 = (v) => Math.round(v); // dólares enteros
 
   SN.Trading = {
     get position() { return S.run.position; },
 
     limit() { return SN.Upgrades.value('limite') || D.sim.baseInvestLimit; },
-    maxAmount() { return Math.max(0, Math.floor(Math.min(S.run.capital, this.limit()) * 100) / 100); },
+    maxAmount() { return Math.max(0, Math.floor(Math.min(S.run.capital, this.limit()))); },
 
     leverageAvailable(v) {
       const l = D.sim.leverages.find((x) => x.value === v);

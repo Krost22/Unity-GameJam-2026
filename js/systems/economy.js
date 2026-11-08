@@ -49,5 +49,5 @@
     liquid() { return S.run.capital + S.run.committed; },
   };
 
-  function round2(v) { return Math.round(v * 100) / 100; }
+  function round2(v) { return Math.round(v); } // dinero siempre en dólares enteros
 })(window.SN);

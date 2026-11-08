@@ -16,7 +16,7 @@
   const WIN = { x: 4, y: 16, w: 38, h: 72 };
   const DESK_Y = 128;
   const KB = { x: 84, y: 150, w: 128, h: 22 };
-  const HANDS = { kx: 104, ky: 156, mx: 247, my: 154 };
+  const HANDS = { kx: 104, ky: 158, mx: 247, my: 154 };
   SN.SCREEN = { x: SCR.x * 2, y: SCR.y * 2, w: SCR.w * 2, h: SCR.h * 2 };
 
   // Dígitos diminutos (3x5) para el pósit y el calendario

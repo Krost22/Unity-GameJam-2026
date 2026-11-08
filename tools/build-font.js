@@ -159,6 +159,31 @@ function parse(spec) {
   return { top, rows: spec.split('|') };
 }
 
+// Fuente de números: cifras en negrita (trazos de 2 px), todas del mismo ancho para que las cantidades
+// no bailen al cambiar. Lo que no está aquí (letras, %, ×...) lo pone SaldoPixel por detrás.
+const NUM = {
+  0: '.####.|##..##|##..##|##..##|##..##|##..##|.####.',
+  1: '..##..|.###..|..##..|..##..|..##..|..##..|.####.',
+  2: '.####.|##..##|....##|..###.|.##...|##....|######',
+  3: '#####.|....##|....##|..###.|....##|....##|#####.',
+  4: '##..##|##..##|##..##|######|....##|....##|....##',
+  5: '######|##....|#####.|....##|....##|##..##|.####.',
+  6: '.####.|##....|##....|#####.|##..##|##..##|.####.',
+  7: '######|....##|...##.|..##..|..##..|..##..|..##..',
+  8: '.####.|##..##|##..##|.####.|##..##|##..##|.####.',
+  9: '.####.|##..##|##..##|.#####|....##|....##|.####.',
+  '$': '2:..##..|.#####|##....|##....|.####.|....##|....##|#####.|..##..',
+  '.': '..|..|..|..|..|##|##',
+  ',': '..|..|..|..|..|##|##|#.',
+  '+': '......|..##..|..##..|######|..##..|..##..|......',
+  '-': '.....|.....|.....|#####|#####|.....|.....',
+  '/': '....##|....##|...##.|..##..|.##...|##....|##....',
+  K: '##..##|##.##.|####..|###...|####..|##.##.|##..##',
+  M: '##...##|###.###|#######|##.#.##|##...##|##...##|##...##',
+};
+const NUM_ADV = { ' ': 4, 1: 7 };
+
+function buildTTF(familyName, G, ACCENTED, ADVANCE) {
 const glyphs = []; // { char, top, rows }
 function addGlyph(char, g) { glyphs.push({ char, top: g.top, rows: g.rows }); }
 for (const [ch, spec] of Object.entries(G)) addGlyph(ch, parse(spec));
@@ -257,7 +282,7 @@ ordered.forEach((g, gid) => {
   if (!g.char) return;
   cmapPairs.push([g.char.codePointAt(0), gid]);
   const lower = g.char.toLowerCase();
-  if (lower !== g.char && !own.has(lower)) cmapPairs.push([lower.codePointAt(0), gid]);
+  if (familyName !== 'SaldoNum' && lower !== g.char && !own.has(lower)) cmapPairs.push([lower.codePointAt(0), gid]);
 });
 cmapPairs.sort((a, b) => a[0] - b[0]);
 const segs = [];
@@ -304,7 +329,7 @@ const os2 = new Buf().u16(4).i16(600).u16(400).u16(5).u16(0)
   .tag('KROS').u16(0x40).u16(Math.min(...codes)).u16(Math.min(0xFFFF, Math.max(...codes)))
   .i16(ASC).i16(-DESC).i16(0).u16(ASC).u16(DESC)
   .u32(1).u32(0).i16(700).i16(700).u16(0).u16(32).u16(1);
-const names = { 1: 'SaldoPixel', 2: 'Regular', 3: 'SaldoPixel-1.0', 4: 'SaldoPixel Regular', 5: 'Version 1.0', 6: 'SaldoPixel-Regular' };
+const names = { 1: familyName, 2: 'Regular', 3: familyName + '-1.0', 4: familyName + ' Regular', 5: 'Version 1.0', 6: familyName + '-Regular' };
 const nameRecs = Object.entries(names);
 const nameStr = new Buf();
 const name = new Buf().u16(0).u16(nameRecs.length).u16(6 + nameRecs.length * 12);
@@ -344,10 +369,15 @@ const headOff = layout.find((l) => l.t === 'head').offset + 8;
 font.b[headOff] = (adj >>> 24) & 255; font.b[headOff + 1] = (adj >>> 16) & 255;
 font.b[headOff + 2] = (adj >>> 8) & 255; font.b[headOff + 3] = adj & 255;
 
+return Buffer.from(font.b);
+}
+
 const root = path.join(__dirname, '..');
-const ttf = Buffer.from(font.b);
+const ttf = buildTTF('SaldoPixel', G, ACCENTED, ADVANCE);
+const ttfNum = buildTTF('SaldoNum', NUM, {}, NUM_ADV);
 fs.mkdirSync(path.join(root, 'assets', 'fonts'), { recursive: true });
 fs.writeFileSync(path.join(root, 'assets', 'fonts', 'SaldoPixel.ttf'), ttf);
+fs.writeFileSync(path.join(root, 'assets', 'fonts', 'SaldoNum.ttf'), ttfNum);
 const css = `/* Generado por tools/build-font.js — fuente pixel art propia de Saldo Negro. No editar a mano. */
 @font-face {
   font-family: 'SaldoPixel';
@@ -355,6 +385,12 @@ const css = `/* Generado por tools/build-font.js — fuente pixel art propia de 
   font-weight: normal;
   font-style: normal;
 }
+@font-face {
+  font-family: 'SaldoNum';
+  src: url(data:font/ttf;base64,${ttfNum.toString('base64')}) format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
 `;
 fs.writeFileSync(path.join(root, 'css', 'font.css'), css);
-console.log(`SaldoPixel: ${numGlyphs} glifos, ${ttf.length} bytes`);
+console.log(`SaldoPixel: ${ttf.length} bytes · SaldoNum: ${ttfNum.length} bytes`);

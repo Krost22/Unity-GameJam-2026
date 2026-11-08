@@ -179,7 +179,7 @@
       }
 
       // Cuadrícula y escala
-      const step = niceStep((v.max - v.min) / 3.2);
+      const step = Math.max(1, niceStep((v.max - v.min) / 3.2));
       for (let p = Math.ceil(v.min / step) * step; p <= v.max; p += step) {
         const y = yOf(p);
         if (y < TOP - 2 || y > H - BOTTOM) continue;
@@ -355,8 +355,6 @@
   }
 
   function fmtPrice(p) {
-    if (p >= 1000) return String(Math.round(p));
-    if (p >= 100) return p.toFixed(1);
-    return p.toFixed(2);
+    return String(Math.round(p)); // precios enteros
   }
 })(window.SN);

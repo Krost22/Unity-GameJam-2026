@@ -54,9 +54,9 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
   ok(p && run.capital === 40 && run.committed === 60 && p.amount === 60, 'el dinero queda comprometido al abrir');
   ok(SN.Trading.open(1) === null, 'no se pueden abrir dos operaciones a la vez');
   ok(p.total === SN.Data.markets[0].candles, 'la operación dura las velas del mercado');
-  const expected = p.liquidated ? -60 : Math.max(-60, 60 * ((p.exit - p.entry) / p.entry) * 1 * 2);
+  const expected = p.liquidated ? -60 : Math.round(Math.max(-60, 60 * ((p.exit - p.entry) / p.entry) * 1 * 2));
   const r = SN.Trading.close();
-  ok(near(r.pnl, expected), `P/L según la fórmula (${r.pnl} vs ${expected.toFixed(2)})`);
+  ok(near(r.pnl, expected), `P/L según la fórmula, en dólares enteros (${r.pnl} vs ${expected.toFixed(2)})`);
   ok(near(run.capital, 100 + r.pnl) && run.committed === 0, 'capital final = inicial + P/L');
   ok(run.turn === 1, 'operar consume un turno');
   ok(SN.Trading.close() === null, 'cerrar dos veces no hace nada');
@@ -89,7 +89,7 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
     const p = SN.Trading.open(-1);
     const res = SN.Trading.close();
     shortTrades++;
-    if (p.liquidated || (p.exit < p.entry) === (res.pnl > 0)) shortWins++;
+    if (p.liquidated || res.pnl === 0 || (p.exit < p.entry) === (res.pnl > 0)) shortWins++; // 0 = movimiento de centavos
     minPnl = Math.min(minPnl, res.pnl);
     if (p.liquidated) liq++;
     if (run.capital < 0) negCapital = true;
@@ -114,7 +114,7 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
     const seen = Math.min(5, p.candles - 1);
     const price = h[h.length - p.candles + seen - 1].c;
     const r = SN.Trading.cashOut(price, seen);
-    const want = Math.round(Math.max(-50, 50 * (price - p.entry) / p.entry * 2) * 100) / 100;
+    const want = Math.round(Math.max(-50, 50 * (price - p.entry) / p.entry * 2));
     if (!r || !near(r.pnl, want) || !near(run.capital, 100 + want) || run.committed !== 0) allGood = false;
     const r2 = SN.Trading.close();
     if (r2.pnl !== r.pnl || !near(run.capital, 100 + want)) allGood = false;
@@ -235,7 +235,7 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
     const r = SN.Trading.cashOut(h[tp.holdAt - 1].c, tp.holdAt);
     SN.Trading.close();
     if (r.pnl <= 0) allPositive = false;
-    if (r.stayPnl < r.pnl) scared++;
+    if (r.stayPnl <= r.pnl) scared++; // en dólares enteros puede empatar si el giro es de centavos
     if (p.climax !== tp.twistAt) allPositive = false;
   }
   ok(allPositive, 'cobrar en el tutorial siempre deja ganancias (y el giro llega con cámara lenta)');

@@ -91,6 +91,7 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
       await waitFor('!SN.UI.busy && !SN.State.run.position', 20000);
       await ev('SN.Data.markets[0].twist.chance = 0; true');
       const before = await ev('SN.State.run.capital');
+      const tradesBefore = await ev('SN.State.run.stats.trades');
       await mouse('.quick button[data-frac="0.5"]');
       await mouse(n ? '#btn-sell' : '#btn-buy');
       await b.sleep(250);
@@ -105,7 +106,8 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
       } else { await b.sleep(1600); await shot('09-operando'); }
       await waitFor('!SN.State.run.position', 30000);
       const after = await ev('SN.State.run.capital');
-      ok(Math.abs(after - before) > 0.001, `la operación ${n + 1} cambia el capital (${before} -> ${after})`);
+      // En dólares enteros una operación casi plana puede quedar en $0: lo que importa es que se liquide
+      ok(await ev('SN.State.run.stats.trades') === tradesBefore + 1 && Number.isInteger(after), `la operación ${n + 1} se liquida en dólares enteros (${before} -> ${after})`);
       for (let i = 0; i < 30 && await ev('SN.UI.busy'); i++) { await advance(); await b.sleep(250); }
     }
 
