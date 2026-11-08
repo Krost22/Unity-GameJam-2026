@@ -67,6 +67,10 @@
 
   let bg = null, fg = null, bgKey = '';
   let t = 0;
+  // Cosas que pasan al otro lado de la ventana (ver Desk.windowEvent)
+  const winEvents = [];
+  let blindLift = 0;
+  const WIN_DUR = { ambulancia: 6, apagon: 7, fuegos: 4.5, encapuchado: 7, dron: 6, camion: 7, lluvia: 22, cuervo: 8, temblor: 2.5 };
   let room = null, rg = null;
   const motes = Array.from({ length: 12 }, (_, i) => ({ x: 4 + (i * 37) % 44, y: 30 + (i * 53) % 110, s: 0.3 + (i % 5) * 0.12, ph: i }));
 
@@ -82,6 +86,20 @@
     // Brillo del monitor sobre la habitación: sigue al resultado de la operación (verde / rojo)
     glowTo(color, k = 0.5) { this.glow.color = color; this.glow.k = k; },
     flashGlow(color, power = 1) { this.glow.flash = power; this.glow.flashColor = color; },
+    // Un suceso visible por la ventana: ambulancia, apagon, fuegos, encapuchado, dron, camion, lluvia, cuervo, temblor
+    windowEvent(kind) {
+      if (!WIN_DUR[kind] || winEvents.some((e) => e.kind === kind)) return;
+      winEvents.push({ kind, t0: t, dur: WIN_DUR[kind], seed: Math.random() * 1000 });
+      const A = SN.Audio;
+      if (kind === 'ambulancia') A.sfx('siren');
+      else if (kind === 'fuegos') [0, 0.6, 1.3, 2].forEach((d) => SN.after(d, () => A.sfx('pop')));
+      else if (kind === 'encapuchado') { A.sfx('whisper'); SN.after(0.5, () => A.sfx('heart')); }
+      else if (kind === 'apagon') A.sfx('static', { dur: 0.4 });
+      else if (kind === 'temblor') { SN.FX.shake(3, 1.6); A.sfx('thud'); }
+      else if (kind === 'cuervo') A.sfx('tick');
+      SN.Events.emit('window:event', { kind });
+    },
+    get windowEvents() { return winEvents.map((e) => e.kind); },
 
     state() {
       const run = SN.State.run;
@@ -105,6 +123,9 @@
       rg.globalCompositeOperation = 'source-over';
       rg.drawImage(bg, 0, 0);
       drawWindowView(rg, st);
+      // Las persianas se suben solas cuando pasa algo fuera (para que se vea), y bajan después
+      blindLift += ((winEvents.length ? 1 : 0) - blindLift) * Math.min(1, dt * 2.5);
+      drawBlinds(rg, st, blindLift);
       rg.drawImage(fg, 0, 0);
       drawLampGlowBehind(rg, st);
       SN.Hero.update(dt);
@@ -137,7 +158,6 @@
   // Capa delantera (fondo transparente): persianas, planta y pósit, por delante de la ventana animada
   function buildFront(st) {
     const c = Px.canvas(RW, RH), g = Px.ctx(c);
-    drawBlinds(g, st);
     drawPlant(g, st);
     drawPostit(g);
     if (st.owned.lampara) drawLamp(g);
@@ -162,15 +182,19 @@
     R(g, x - 4, y + h + 1, w + 8, 3, P.coalL); R(g, x - 4, y + h + 1, w + 8, 1, P.violetL); R(g, x - 4, y + h + 4, w + 8, 1, P.coalD);
   }
 
-  function drawBlinds(g, st) {
+  // lift: 0 = bajadas, 1 = subidas casi del todo (las láminas se amontonan arriba)
+  function drawBlinds(g, st, lift = 0) {
     const { x, y, w, h } = WIN;
     const lit = st.phase === 'morning' ? [P.creamL, P.creamM, '#CFC4EE'] : st.phase === 'evening' ? ['#FFD49A', '#FFA65A', '#E0663F'] : ['#5C4A96', '#45367A', '#2E2458'];
     // Láminas: entra luz por los huecos (se ve la ciudad)
-    for (let sy = y + 2; sy < y + h - 1; sy += 5) {
+    const bottom = Math.round(y + h - 1 - (h - 12) * lift);
+    for (let sy = y + 2; sy < bottom; sy += 5) {
       R(g, x, sy, w, 1, lit[0]);
       R(g, x, sy + 1, w, 1, lit[1]);
       R(g, x, sy + 2, w, 1, lit[2]);
     }
+    // Láminas recogidas: un bloque apretado en el borde de abajo de la persiana
+    if (lift > 0.05) { R(g, x, bottom - 1, w, 3, lit[2]); R(g, x, bottom - 1, w, 1, lit[0]); }
     // Riel superior y cordón
     R(g, x - 2, y - 3, w + 4, 3, P.coalL); R(g, x - 2, y - 3, w + 4, 1, P.violetL);
     R(g, x + w - 6, y, 1, h - 8, P.creamDD); R(g, x + w - 7, y + h - 8, 3, 3, P.creamD);
@@ -489,7 +513,79 @@
       const flick = Math.sin(t * 13) + Math.sin(t * 3.1) > -0.4;
       if (flick) { R(g, x + 52 + par, y + 34, 12, 3, P.magenta); R(g, x + 53 + par, y + 35, 10, 1, P.magentaL); }
     }
+    drawWindowEvents(g, x, y, w, h, base, par, night);
     g.restore();
+  }
+
+  // Sucesos al otro lado de la ventana (dentro del recorte de la ventana, detrás de las persianas)
+  function drawWindowEvents(g, x, y, w, h, base, par, night) {
+    for (let i = winEvents.length - 1; i >= 0; i--) {
+      const e = winEvents[i];
+      const a = t - e.t0, k = a / e.dur;
+      if (k >= 1) { winEvents.splice(i, 1); continue; }
+      const fade = U.clamp(Math.min(a / 0.6, (e.dur - a) / 0.8), 0, 1);
+      if (e.kind === 'ambulancia') {
+        // Luces rojas y azules barriendo la calle, y la ambulancia cruzando
+        const on = Math.floor(a * 6) % 2 === 0;
+        g.globalAlpha = 0.22 * fade; R(g, x, y, w, h, on ? P.coral : P.cyan); g.globalAlpha = 1;
+        const vx = Math.round(x - 12 + k * (w + 24));
+        R(g, vx, base - 6, 10, 5, P.creamL); R(g, vx, base - 4, 10, 1, P.coral); R(g, vx + 7, base - 6, 3, 2, '#7FA8D8');
+        R(g, vx + 2, base - 7, 2, 1, on ? P.coral : P.cyan); R(g, vx + 5, base - 7, 2, 1, on ? P.cyan : P.coral);
+        R(g, vx + 1, base - 1, 2, 1, P.coalD); R(g, vx + 7, base - 1, 2, 1, P.coalD);
+      } else if (e.kind === 'apagon') {
+        // Las luces de la ciudad se apagan de golpe; al final parpadean y vuelven
+        const flicker = k > 0.8 && Math.sin(a * 40) > 0;
+        if (!flicker) { g.globalAlpha = 0.85 * fade; R(g, x, y + 20, w, h - 20, '#07061A'); g.globalAlpha = 1; }
+      } else if (e.kind === 'fuegos') {
+        for (let n = 0; n < 4; n++) {
+          const ta = a - n * 0.65 - 0.2;
+          if (ta < 0 || ta > 1.4) continue;
+          const cx = x + 8 + ((e.seed + n * 53) % (w - 16)), cy = y + 10 + ((e.seed * 3 + n * 29) % 26);
+          const r = 2 + ta * 9, col = [P.yellowL, P.magentaL, P.cyanL, P.greenL][n % 4];
+          g.globalAlpha = U.clamp(1.4 - ta, 0, 1);
+          for (let j = 0; j < 10; j++) { const an = j / 10 * Math.PI * 2; R(g, Math.round(cx + Math.cos(an) * r), Math.round(cy + Math.sin(an) * r + ta * ta * 3), 1, 1, col); }
+          g.globalAlpha = 1;
+        }
+      } else if (e.kind === 'encapuchado') {
+        // Una silueta encapuchada en una azotea, mirándote. Parpadea.
+        const b = city.reduce((m, c) => (c.x + par > 4 && c.x + par < w - 8 && c.h > m.h ? c : m), { h: 0, x: 14, w: 8 });
+        const sx = x + b.x + par + Math.floor(b.w / 2) - 2, sy = base - b.h - 9;
+        g.globalAlpha = fade;
+        R(g, sx + 1, sy, 3, 1, '#05040A'); R(g, sx, sy + 1, 5, 4, '#05040A'); R(g, sx - 1, sy + 5, 7, 4, '#05040A');
+        if (Math.sin(a * 3) > -0.85) { R(g, sx + 1, sy + 2, 1, 1, P.yellowL); R(g, sx + 3, sy + 2, 1, 1, P.yellowL); }
+        g.globalAlpha = 1;
+      } else if (e.kind === 'dron') {
+        const dx = Math.round(x + w + 8 - k * (w + 20)), dy = Math.round(y + 30 + Math.sin(a * 4) * 2);
+        R(g, dx - 2, dy, 9, 1, P.coalD); R(g, dx, dy + 1, 5, 2, P.coal); R(g, dx + 1, dy + 3, 3, 3, P.coral); R(g, dx + 2, dy + 4, 1, 1, P.creamL);
+        if (Math.floor(a * 4) % 2) R(g, dx + 2, dy - 1, 1, 1, P.greenL);
+      } else if (e.kind === 'camion') {
+        // Camión de embargos cruzando la calle
+        const vx = Math.round(x + w + 14 - k * (w + 30));
+        R(g, vx, base - 8, 12, 7, '#6A6A82'); R(g, vx - 4, base - 6, 4, 5, '#4E4E66'); R(g, vx - 3, base - 5, 2, 2, '#9FB6FF');
+        R(g, vx + 4, base - 6, 3, 3, P.coral); R(g, vx + 5, base - 5, 1, 1, P.creamL);
+        R(g, vx - 2, base - 1, 2, 1, P.coalD); R(g, vx + 8, base - 1, 2, 1, P.coalD);
+      } else if (e.kind === 'lluvia') {
+        g.globalAlpha = 0.18 * fade; R(g, x, y, w, h, '#1A2050'); g.globalAlpha = 0.55 * fade;
+        for (let n = 0; n < 26; n++) {
+          const rx = x + ((n * 13 + e.seed) % w), ry = y + ((n * 29 + a * 90) % h);
+          R(g, Math.round(rx), Math.round(ry), 1, 3, '#9FB6FF');
+        }
+        g.globalAlpha = 1;
+      } else if (e.kind === 'cuervo') {
+        // Llega volando, se posa en el alféizar, gira la cabeza y se va
+        const land = U.clamp(a / 1.2, 0, 1), leave = U.clamp((a - e.dur + 1.4) / 1.4, 0, 1);
+        const cx = Math.round(x + w - 10 + (1 - land) * 16 + leave * 18), cy = Math.round(base - 4 - (1 - land) * 14 - leave * 16);
+        R(g, cx, cy, 5, 3, '#0A0812'); R(g, cx + 4, cy - 2, 3, 3, '#0A0812');
+        const look = Math.sin(a * 1.5) > 0 ? 1 : -1;
+        R(g, look > 0 ? cx + 7 : cx + 3, cy - 1, 1, 1, P.yellow);
+        R(g, cx + (look > 0 ? 5 : 4), cy - 1, 1, 1, P.coral);
+        if (land < 1 || leave > 0) R(g, cx + 1, cy - 2 + (Math.floor(a * 10) % 2) * 3, 3, 1, '#0A0812');
+      } else if (e.kind === 'temblor') {
+        g.globalAlpha = 0.4 * fade;
+        for (let n = 0; n < 14; n++) R(g, x + ((n * 11 + e.seed) % w), y + 20 + ((n * 17 + a * 40) % (h - 20)), 1, 1, P.creamD);
+        g.globalAlpha = 1;
+      }
+    }
   }
 
   // ---------------- Partes animadas ----------------

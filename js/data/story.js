@@ -55,7 +55,7 @@
       { id: 'esperar', wait: 'trade', lines: [] },
       { id: 'susto', target: '#hud-capital', lines: ['¿Lo ves? Las últimas velas pueden darle la vuelta a todo.', 'Tú ya habías cobrado. Dinero fácil.'] },
       { id: 'apuesta', target: '#trade-form', lines: ['Más apuesta y más multiplicador: más premio... y más riesgo.'] },
-      { id: 'meta', target: '#hud-goal', lines: ['Junta $250 antes del día 7 y paga la deuda.', 'Si te quedas sin dinero, se acabó. Suerte.'] },
+      { id: 'meta', target: '#hud-goal', lines: ['Junta $250 antes del día 7 y paga la deuda.', 'Si te quedas sin dinero... tendrás que sacarlo de otra parte. Suerte.'] },
     ],
     tutorialPayHint: ['¡Ya tienes para pagar!', 'Pulsa PAGAR DEUDA. O sigue jugando... tú sabrás.'],
     retryGreeting: ['¿Otra vez por aquí?', 'Te he renovado el crédito. $250, siete días. Como siempre.', 'Esta vez intenta no romper nada.'],
@@ -89,10 +89,21 @@
 
     bankrupt: {
       title: '¡Felicidades!',
-      message: 'Rompiste los ahorros de la cirugía del pequeño Tommy.',
-      extra: ['Tommy lo entenderá. Probablemente.', 'Has recuperado {coins}. No llega ni para la anestesia.'],
+      message: 'Rompiste los ahorros de la cirugía de tu hermano Tommy.',
+      extra: ['Tommy lo entenderá. Probablemente.', 'Recuperas {coins}.'],
+      extension: 'Con eso convences al cobrador: 2 días más.',
       hint: '¡Rómpelo!',
     },
+    // Vida extra: antes de perder del todo
+    piggyLife: { title: 'Queda una salida...', lines: ['El cerdito de Tommy. Sus ahorros para la operación.', 'Está durmiendo. No hagas ruido.'] },
+    embargoPiggy: 'Pero aún te queda el cerdito de Tommy...',
+    // Sin cerdito: se vuelve al inicio de la meta
+    finalLoss: {
+      title: 'Se acabó',
+      message: 'Ya no queda cerdito que romper.',
+      back: 'FUTURO.exe te devuelve al inicio de {where}, con {money}.',
+    },
+    rewindGreeting: ['Vaya. Otra vez sin nada.', 'Te devuelvo al principio de esta meta. Con lo que tenías entonces.', 'Y tu hermano ha vuelto a llenar el cerdito. Qué niño tan ahorrador.'],
     // Noticias de relleno de la ciudad: el periódico nunca sale vacío
     fillerNews: [
       { title: 'LA PLEYZETA 6 ULTRA, AGOTADA EN TODA LA CIUDAD', text: 'Los que la tienen dicen que calienta la casa. Literalmente.', tone: 'neu', art: 'rebajas' },
@@ -104,6 +115,6 @@
     embargoEarly: ['YA NO LLEGAS', 'Ni con suerte juntas $250 a tiempo', 'El cobrador se adelanta'],
     broke: ['SIN FONDOS', 'No te alcanza ni para la apuesta mínima'],
     teaser: 'ACTIVOS HUMANOS: LIQUIDACIÓN EN CURSO',
-    endDemo: ['FIN DE LA VERSIÓN 1.2', 'La historia continuará.', 'Puedes seguir operando... si te atreves.'],
+    endDemo: ['FIN DE LA VERSIÓN 1.4', 'La historia continuará.', 'Puedes seguir operando... si te atreves.'],
   };
 })(window.SN);

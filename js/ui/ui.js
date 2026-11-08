@@ -582,6 +582,7 @@
         SN.FX.float(U.money(r.pnl, { sign: true }), cx + 10, cy + 10, 'gain');
         SN.Audio.sfx('win', { big });
         SN.Hands.celebrate(big);
+        if (big) SN.Desk.windowEvent('fuegos');
       } else {
         SN.FX.loss(r.pnl, cx, cy, big || r.liquidated);
         SN.FX.float(U.money(r.pnl), cx + 10, cy + 6, 'loss');
@@ -674,6 +675,31 @@
         };
         el.addEventListener('click', finish);
         SN.after(time, finish);
+      });
+    },
+    // Resultado de la apuesta, sin prisa: se queda sobre la gráfica hasta 2.6 s (clic o tecla para seguir antes)
+    resultCard(r) {
+      const win = r.pnl > 0, even = r.pnl === 0;
+      const label = r.liquidated ? 'Liquidado' : even ? 'Te quedas igual' : win ? 'Ganaste' : 'Perdiste';
+      const html = `<span class="rc-l">${label}</span><b class="rc-v">${U.money(r.pnl, { sign: win })}</b><span class="rc-t">Ahora tienes ${U.money(S.run.capital)}</span><kbd>clic</kbd>`;
+      const p = this.posIn($('chart-wrap'));
+      return new Promise((resolve) => {
+        const el = U.el('button', 'result-card ' + (win ? 'rc-win' : even ? 'rc-even' : 'rc-lose'), html);
+        el.style.left = (p.x + p.w / 2) + 'px';
+        el.style.top = (p.y + p.h / 2) + 'px';
+        $('layer-top').appendChild(el);
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          document.removeEventListener('keydown', onKey, true);
+          el.classList.add('out');
+          SN.after(0.25, () => { el.remove(); resolve(); });
+        };
+        const onKey = (e) => { if (!e.repeat) finish(); };
+        el.addEventListener('click', finish);
+        SN.after(0.5, () => document.addEventListener('keydown', onKey, true));
+        SN.after(2.6, finish);
       });
     },
     dayCard(day, sub, warn) { return this.card(`<div class="d1">DÍA ${day}</div><div class="d2${warn ? ' warn' : ''}">${sub}</div>`, 'daycard', 1.3); },

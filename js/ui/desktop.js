@@ -45,7 +45,10 @@
       root.querySelector('.dt-start').addEventListener('click', () => { SN.Audio.sfx('click'); this.restore(); });
       $('btn-min').querySelector('.ico-min').style.backgroundImage = `url(${SN.Sprites.url('icoMin', 1)})`;
       $('btn-min').addEventListener('click', () => this.minimize());
-      SN.Events.on('turn:ready', () => this.check());
+      SN.Events.on('turn:ready', () => { if (S.run) this.chat().clock++; this.check(); });
+      SN.Events.on('chat:flag', ({ flag }) => this.flag(flag));
+      SN.Events.on('piggy:broken', () => this.flag('piggy'));
+      SN.Events.on('trade:closed', (r) => { if (r && (r.liquidated || r.pnl <= -Math.max(50, r.amount * 0.6))) this.flag('bigLoss'); });
       SN.Events.on('debt:paid', () => this.refreshNotes());
     },
 
@@ -166,19 +169,44 @@
     chat() {
       if (!S.run) return {};
       if (!S.run.chat) S.run.chat = { i: 0, phase: 'wait', k: 0, typed: 0, log: [], unread: 0, nick: null, offline: false };
-      return S.run.chat;
+      const ch = S.run.chat;
+      if (!ch.flags) ch.flags = {};      // lo que ha pasado (y en qué momento del reloj del chat)
+      if (!ch.sideDone) ch.sideDone = {};
+      if (ch.clock == null) ch.clock = 0; // turnos jugados (no retrocede al volver a un punto de control)
+      return ch;
     },
-    convo() { return C().convos[this.chat().i]; },
+    // Conversación en curso: una secundaria (si la hay) o la siguiente de la historia
+    convo() {
+      const ch = this.chat();
+      return ch.side != null ? C().side.find((c) => c.id === ch.side) : C().convos[ch.i];
+    },
+    // Algo ha pasado en la historia: Kevo podrá reaccionar
+    flag(name) {
+      const ch = this.chat();
+      if (!S.run || ch.flags[name] != null) return;
+      ch.flags[name] = ch.clock;
+    },
+    ready(c) {
+      const ch = this.chat(), r = S.run;
+      if (c.when) return ch.flags[c.when] != null && ch.clock >= ch.flags[c.when] + (c.delay || 0);
+      return r.day > c.day || (r.day === c.day && r.turn >= c.turn);
+    },
 
     // ¿Toca que Kevo escriba? (al terminar cada turno)
     check() {
       const ch = this.chat();
       if (!S.run || S.run.over || SN.Game.state !== 'GAMEPLAY') return;
       if (ch.phase !== 'wait') { this.pump(); return; }
+      // Primero las reacciones a lo que acaba de pasar; luego la historia principal
+      const side = C().side.find((c) => !ch.sideDone[c.id] && this.ready(c));
+      if (side) ch.side = side.id;
+      else {
+        ch.side = null;
+        let c = C().convos[ch.i];
+        while (c && c.skipIf && ch.flags[c.skipIf] != null) c = C().convos[++ch.i];
+        if (!c || !this.ready(c)) return;
+      }
       const c = this.convo();
-      if (!c) return;
-      const r = S.run;
-      if (r.day < c.day || (r.day === c.day && r.turn < c.turn)) return;
       ch.phase = 'in'; ch.k = 0; ch.typed = 0;
       if (c.nick) ch.nick = c.nick;
       ch.offline = false;
@@ -193,7 +221,11 @@
       if (!lines) { this.renderChat(); return; }
       if (ch.k >= lines.length) {
         if (ch.phase === 'in') { ch.phase = 'reply'; ch.typed = 0; }
-        else { ch.phase = 'wait'; ch.i++; ch.k = 0; ch.typed = 0; if (c.offline) ch.offline = true; }
+        else {
+          ch.phase = 'wait'; ch.k = 0; ch.typed = 0;
+          if (ch.side != null) { ch.sideDone[ch.side] = true; ch.side = null; } else ch.i++;
+          if (c.offline) ch.offline = true;
+        }
         SN.Save.saveRun();
         this.renderChat();
         this.refresh();
@@ -201,6 +233,8 @@
         return;
       }
       const line = lines[ch.k];
+      // '>evento': pasa algo al otro lado de la ventana (sin mensaje en el chat)
+      if (line.startsWith('>')) { ch.k++; SN.Desk.windowEvent(line.slice(1)); this.pump(); return; }
       const delay = line.startsWith('*') || line === '!zumbido' ? 500 : 450 + Math.min(1400, line.length * 38);
       this.typing = !line.startsWith('*') && line !== '!zumbido';
       this.renderChat();

@@ -78,6 +78,7 @@
       SN.FX.ring(cap.x + 60, cap.y + 14, P.green, 120, 0.9);
       SN.Hands.celebrate();
       SN.Desk.dirty();
+      SN.Desk.windowEvent('fuegos');
       await SN.UI.stamp('DEUDA SALDADA', 'green', auto ? 'Se cobró al vencer el plazo' : 'Eres libre (más o menos)', 2);
       await SN.Cine.faceBeat('relieved', 'Uf... Libre. Por fin.', 2.2);
       await this.hoodedScene(story().hoodedEvents.debtPaid);
@@ -87,10 +88,13 @@
       run.flags.debtPaid = true;
       await SN.UI.stamp('OBJETIVO: $1,000', '', 'Nuevo objetivo · ×10 · tienda · límite', 2.2);
       this.addNews({ title: 'Deuda saldada. Nuevo objetivo: $1,000', tone: 'pos', art: 'sello' });
+      S.checkpoint('la meta de $1,000');
+      SN.Events.emit('chat:flag', { flag: 'debtPaid' });
       SN.UI.renderAll();
     },
 
     async onGoal(g, next) {
+      SN.Desk.windowEvent('fuegos');
       SN.Audio.sfx('cheer');
       SN.FX.confetti(60);
       await SN.UI.stamp('¡OBJETIVO CUMPLIDO!', 'green', g.reward ? `Bono de la app: +${U.money(g.reward, { cents: false })}` : '', 1.8);
@@ -101,6 +105,8 @@
       if (next) await SN.UI.stamp(`OBJETIVO: ${U.short(next.amount)}`, '', 'Nueva meta desbloqueada', 1.6);
       else await this.endDemo();
       this.addNews({ title: `Objetivo ${U.short(g.amount)} cumplido`, tone: 'pos', art: 'dinero' });
+      if (next) S.checkpoint(`la meta de ${U.short(next.amount)}`);
+      SN.Events.emit('chat:flag', { flag: g.id });
     },
 
     async teaser() {
@@ -160,6 +166,16 @@
   };
 
   // ---------- Suscripciones ----------
+  // Lo que se ve por la ventana: las noticias que pasan en tu calle, y la ciudad que va cambiando
+  SN.Events.on('market:event', ({ event }) => { if (event.window) SN.after(1.2, () => SN.Desk.windowEvent(event.window)); });
+  SN.Events.on('piggy:broken', () => SN.after(1.5, () => SN.Desk.windowEvent('lluvia')));
+  SN.Events.on('turn:ready', () => {
+    const run = S.run;
+    if (!run || SN.Game.state !== 'GAMEPLAY') return;
+    // Cuanto más oscura la historia, más a menudo se le ve en una azotea
+    if (run.darkness >= 3 && run.turn === 2 && Math.random() < 0.18) { SN.Desk.windowEvent('encapuchado'); return; }
+    if (Math.random() < 0.22) SN.Desk.windowEvent(U.pick(run.darkness >= 2 ? ['cuervo', 'lluvia', 'ambulancia', 'cuervo'] : ['cuervo', 'dron', 'ambulancia', 'fuegos']));
+  });
   SN.Events.on('market:event', ({ market, event }) => {
     N.addNews({ title: event.title, text: event.text, tone: event.tone, market, art: event.art });
   });

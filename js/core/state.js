@@ -2,7 +2,7 @@
 // Los sistemas leen y escriben aquí; el SaveManager lo serializa tal cual.
 (function (SN) {
   'use strict';
-  const D = SN.Data;
+  const D = SN.Data, U = SN.Util;
 
   SN.State = {
     run: null,
@@ -62,5 +62,34 @@
     },
 
     nextUid() { return this.run.uid++; },
+
+    // Punto de control: al empezar cada meta (la deuda, $1,000, $5,000...) se guarda la partida tal cual.
+    // Si pierdes del todo, vuelves aquí con los fondos que tenías entonces. Tommy rellena su cerdito.
+    checkpoint(label) {
+      const run = this.run;
+      this.sync();
+      const copy = Object.assign({}, run, { checkpoint: null, chat: null });
+      run.checkpoint = { label, capital: run.capital, data: JSON.stringify(copy) };
+      run.piggy = 'ready';
+    },
+    restoreCheckpoint() {
+      const old = this.run, cp = old.checkpoint;
+      if (!cp) return false;
+      const run = JSON.parse(cp.data);
+      run.checkpoint = cp;
+      run.chat = old.chat;
+      run.piggy = 'ready';
+      run.retries = (old.retries || 0) + 1;
+      run.chatFlags = Object.assign({}, run.chatFlags || {}, old.chatFlags || {});
+      run.over = false;
+      this.adopt(run);
+      return true;
+    },
+    // Lo que da el cerdito: para la deuda, $60; en metas grandes, una parte de lo que tenías al empezarla
+    piggyAmount() {
+      const cp = this.run.checkpoint;
+      const base = cp ? cp.capital : 100;
+      return this.run.debt.paid ? U.clamp(Math.round(base * 0.2), 60, 5000) : 60;
+    },
   };
 })(window.SN);

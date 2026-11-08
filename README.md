@@ -42,8 +42,24 @@ El teclado es un atajo y cada botón muestra su tecla:
 - **Zona de peligro:** las últimas velas (rayadas en naranja) pueden traer un **giro inesperado**. Cuando llega, el
   tiempo se frena, la cámara se acerca, late un corazón y la vela se arrastra antes del latigazo: aún puedes cobrar.
 - **Cada apuesta o ESPERAR gasta un turno.** 3 turnos = 1 día. La deuda vence al final del día 7.
-- **Fin de partida inmediato:** si no te alcanza para la apuesta mínima ($10), o si ya es matemáticamente imposible
-  pagar a tiempo, se acaba en ese momento (el cobrador se adelanta). Nada de pasar turnos esperando lo inevitable.
+- **Perder:** si no te alcanza para la apuesta mínima ($10), si vence el plazo, o si ya es matemáticamente imposible
+  pagar a tiempo, se pierde en ese momento (nada de pasar turnos esperando lo inevitable). Pero no se pierde todo:
+  - **Vida extra: el cerdito de Tommy.** Te cuelas en el cuarto de tu hermano pequeño (mantén pulsado para avanzar y
+    suelta cuando se mueva), coges su cerdito y lo rompes tú mismo en tu mesa. Su dinero es tuyo y la partida sigue
+    (si era por el plazo, el cobrador te da 2 días más). Hay un cerdito por meta.
+  - **Sin cerdito:** vuelves al inicio de la meta en la que ibas (la deuda, $1,000, $5,000, $25,000...) con el dinero,
+    las mejoras y los mercados que tenías al empezarla. Si ibas por los $25,000, te quedas en los $25,000.
+
+## Qué hay en la versión 1.4: el cerdito, Kevo y la ventana
+
+| Cambio | Detalle |
+|---|---|
+| Resultado sin prisa | Al terminar cada apuesta sale una tarjeta grande con lo que ganaste o perdiste y lo que tienes ahora. Se queda 2.6 s (clic o tecla para seguir antes) |
+| Perder no reinicia | Punto de control al empezar cada meta: al perder del todo vuelves ahí con los fondos que tenías, no al día 1 |
+| El cerdito de Tommy | Ya no es un fin de partida: es una vida extra. Cinemática jugable a escondidas en el cuarto de Tommy (si te ve moverte, retrocedes) y después lo rompes a golpes en tu mesa |
+| Kevo dura toda la partida | Sus conversaciones siguen tus hitos: pagar la deuda, cada meta, romper el cerdito, una gran pérdida o volver a un punto de control. Empieza eufórico, deja de dormir, olvida el nombre de su perro, el encapuchado le visita... y al final te escribe su madre desde su cuenta |
+| Más noticias | 9 noticias nuevas (noche de ambulancias, apagón, drones de reparto, ola de embargos, temblor, lluvia que huele a monedas...) |
+| La ventana | Lo que pasa en la ciudad se ve por la ventana y las persianas se suben solas para mirarlo: ambulancias, apagones, fuegos artificiales (también al ganar mucho o cumplir una meta), drones, el camión de embargos, lluvia, un cuervo en el alféizar, temblores... y, cuanto más oscura es la historia, el encapuchado en una azotea |
 
 ## Qué hay en la versión 1.3: el escritorio del PC
 
@@ -103,8 +119,9 @@ js/data/              los "ScriptableObjects": mercados, eventos, simulación/me
                       chat.js (las conversaciones con Kevo)
 js/systems/           economy, debt, time, market-sim (+ PISTA), trading (+ COBRAR y giros), drama (cámara lenta),
                       unlocks, upgrades, save, audio, tutorial, narrative, bankruptcy
-js/render/            pixel.js, pixkit.js (kit de pixel art procedural), sprites.js, desk.js (habitación), hero.js (manos,
-                      gato y primeros planos), hands.js, chart.js, fx.js, news-art.js, characters.js, cinematic.js
+js/render/            pixel.js, pixkit.js (kit de pixel art procedural), sprites.js, desk.js (habitación y ventana), hero.js (manos,
+                      gato y primeros planos), hands.js, chart.js, fx.js, news-art.js, characters.js, cinematic.js,
+                      sneak.js (el cuarto de Tommy)
 js/ui/                ui.js (UIManager), dialog.js, windows.js (mejoras, periódico, tienda, ajustes),
                       desktop.js (escritorio del PC y Mensajín)
 tools/                build-font.js y pruebas
@@ -144,7 +161,7 @@ Kevo, la respuesta del protagonista y lo que Kevo contesta.
 node tools/test/logic.test.js       # fórmulas, COBRAR, giros, fiabilidad de la pista, plazo, fin de partida y equilibrio
 node tools/test/e2e.test.js         # partida completa en Chrome sin ventana, con clics REALES de ratón y capturas
 node tools/test/e2e-paths.test.js   # continuar (también tras cobrar), repetir tutorial, tienda, los 3 finales y pantallas pequeñas
-node tools/test/e2e-desktop.test.js # minimizar, Mensajín (escribir con teclas; el clic no escribe), Notas, Papelera y volver a FUTURO.exe
+node tools/test/e2e-desktop.test.js # minimizar, Mensajín (escribir con teclas; el clic no escribe), la historia de Kevo por hitos, Notas, Papelera
 ```
 
 Abre `index.html?debug` para atajos de prueba: `F8` bancarrota, `F9` +$1,000, `F10` pasar un día.

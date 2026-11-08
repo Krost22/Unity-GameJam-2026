@@ -146,6 +146,7 @@
       for (let i = 0; i < 8; i++) SFX.coinAt(0.15 + Math.random() * 0.6);
     },
     pop: () => tone({ type: 'sine', f0: 300, f1: 700, dur: 0.08, vol: 0.1 }),
+    siren: () => { for (let i = 0; i < 6; i++) tone({ type: 'triangle', f0: i % 2 ? 660 : 880, dur: 0.38, vol: 0.035, at: i * 0.4, attack: 0.05 }); },
     day: () => [67, 72, 76].forEach((n, i) => tone({ type: 'triangle', f0: note(n), dur: 0.25, vol: 0.09, at: i * 0.1 })),
     open: () => tone({ type: 'square', f0: 400, f1: 900, dur: 0.07, vol: 0.05 }),
     close: () => tone({ type: 'square', f0: 900, f1: 400, dur: 0.07, vol: 0.05 }),

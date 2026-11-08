@@ -25,6 +25,30 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
     console.log('  (tiempo agotado esperando)', js);
     return false;
   };
+
+  // Cuarto de Tommy: mantener ESPACIO mientras duerme, soltar cuando se mueve; al final, clic en el cerdito
+  const playSneak = async () => {
+    const t0 = Date.now();
+    let holding = false;
+    while (Date.now() - t0 < 45000) {
+      const o = JSON.parse(await ev('JSON.stringify({ st: SN.Sneak.tommy.st, s: SN.Sneak.state })'));
+      if (o.s !== 'walk') break;
+      const want = o.st === 'sleep';
+      if (want && !holding) { await b.cdp('Input.dispatchKeyEvent', { type: 'keyDown', code: 'Space', key: ' ' }); holding = true; }
+      if (!want && holding) { await b.cdp('Input.dispatchKeyEvent', { type: 'keyUp', code: 'Space', key: ' ' }); holding = false; }
+      await b.sleep(50);
+    }
+    if (holding) await b.cdp('Input.dispatchKeyEvent', { type: 'keyUp', code: 'Space', key: ' ' });
+    const reached = await ev('SN.Sneak.state') === 'reach';
+    await b.click(640, 300);
+    return reached;
+  };
+  const breakPig = async () => {
+    await waitFor('SN.Bankruptcy.pig && SN.Bankruptcy.pig.state === "idle"', 12000);
+    const r = await ev('(() => { const r = document.getElementById("screen-canvas").getBoundingClientRect(); return { x: r.left + r.width * 210 / 420, y: r.top + r.height * 112 / 236 }; })()');
+    for (let i = 0; i < 5; i++) { await b.click(r.x + (i - 2) * 6, r.y + (i % 2) * 5); await b.sleep(250); }
+    return waitFor('!!document.getElementById("bk-continue")', 6000);
+  };
   // Deja pasar diálogos, escenas y el tutorial (pulsando lo que pida)
   const drain = async (max = 80) => {
     for (let i = 0; i < max && await ev('SN.UI.busy || SN.Dialog.active || SN.Tutorial.active'); i++) {
@@ -133,7 +157,14 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
     await waitFor('!!document.querySelector(".stamp")', 6000);
     await shot('p5-sin-fondos');
     ok(await ev('document.querySelector(".stamp").textContent.includes("SIN FONDOS")'), 'fin de partida inmediato: SIN FONDOS');
-    ok(await waitFor('SN.Bankruptcy.active', 8000) && await ev('SN.State.run.day') === 1, 'el cerdito llega el mismo día, sin pasar turnos');
+    ok(await waitFor('SN.Sneak.active', 8000) && await ev('SN.State.run.day') === 1, 'el cerdito de Tommy llega el mismo día, sin pasar turnos');
+    // Si Tommy te ve moverte, retrocedes
+    await ev('SN.Sneak.p = 0.5; SN.Sneak.tommy.st = "look"; SN.Sneak.tommy.t = 0; true');
+    await b.cdp('Input.dispatchKeyEvent', { type: 'keyDown', code: 'Space', key: ' ' });
+    await b.sleep(150);
+    await b.cdp('Input.dispatchKeyEvent', { type: 'keyUp', code: 'Space', key: ' ' });
+    ok(await ev('SN.Sneak.caught') === 1 && await ev('SN.Sneak.p') < 0.5, 'si Tommy te ve moverte, retrocedes');
+    await shot('p5b-pillado');
     await ev('SN.Game.toMenu(); true');
     await b.sleep(400);
 
@@ -146,7 +177,7 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
     await b.sleep(500);
     await shot('p6-ya-no-llegas');
     ok(await ev('document.querySelector(".embargo").textContent.includes("YA NO LLEGAS")'), 'si ya es imposible pagar, se acaba antes del último turno');
-    ok(await waitFor('SN.Bankruptcy.active', 8000) && await ev('SN.State.run.day') === 7, 'el embargo llega el día 7, sin esperar al 8');
+    ok(await waitFor('SN.Sneak.active', 8000) && await ev('SN.State.run.day') === 7, 'el embargo llega el día 7 y antes de perder queda el cerdito');
     await ev('SN.Game.toMenu(); true');
     await b.sleep(400);
 
@@ -159,8 +190,11 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
     await waitFor('!!document.querySelector(".embargo")', 6000);
     await b.sleep(600);
     await shot('p8-embargo');
-    await waitFor('SN.Bankruptcy.active', 8000);
-    ok(await ev('SN.State.run.capital') === 0 && await ev('SN.Bankruptcy.active'), 'sin pagar al día 8: embargo y cerdito');
+    ok(await waitFor('SN.Sneak.active', 8000), 'sin pagar al día 8: embargo, pero queda el cerdito');
+    ok(await playSneak() && await breakPig(), 'cerdito roto');
+    await ev('document.getElementById("bk-continue").click(); true');
+    await b.sleep(800);
+    ok(await ev('SN.Game.state') === 'GAMEPLAY' && await ev('SN.State.run.debt.deadlineDay') >= 9 && !(await ev('SN.State.run.debt.defaulted')), 'con el cerdito el cobrador da 2 días más');
   } catch (e) {
     failed++;
     console.log('  ERROR:', e.message);

@@ -1,8 +1,10 @@
-// BankruptcyManager: el cerdito de arcilla. NO es una mascota ni una barra de vida: solo aparece cuando
-// la partida se acaba: sin dinero ni para la apuesta mínima (nunca por tener dinero comprometido en una
-// operación), cuando vence el plazo sin pagar, o cuando ya es imposible llegar a pagar a tiempo.
-// Secuencia: la interfaz se detiene, se oscurece, desaparecen los paneles, entra el cerdito,
-// cada clic lo agrieta, al final se rompe en pedazos y monedas, y aparece el mensaje.
+// BankruptcyManager: qué pasa al perder. Se pierde sin dinero ni para la apuesta mínima (nunca por tener
+// dinero comprometido en una operación), cuando vence el plazo sin pagar, o cuando ya es imposible pagar a tiempo.
+// 1) VIDA EXTRA: el cerdito de Tommy (tu hermano pequeño). Te cuelas en su cuarto a escondidas (SN.Sneak),
+//    lo traes a tu mesa y lo rompes tú mismo a golpes: su dinero es tuyo y la partida sigue
+//    (si el problema era el plazo, con eso convences al cobrador: 2 días más). Uno por meta.
+// 2) SIN CERDITO: pierdes de verdad y vuelves al inicio de la meta en la que ibas, con los fondos que
+//    tenías al empezarla (punto de control de SN.State). Nunca se pierde toda la partida.
 (function (SN) {
   'use strict';
   const S = SN.State, D = SN.Data, U = SN.Util, P = SN.PAL, Px = SN.Px;
@@ -30,7 +32,7 @@
       SN.Audio.sfx('notifyBad');
       SN.FX.shake(3, 0.4);
       await SN.UI.stamp(a, 'coral', b, 1.8);
-      return this.start();
+      return this.lose('broke');
     },
 
     // Plazo vencido (o imposible de cumplir) sin dinero suficiente: el cobrador se lo lleva todo
@@ -39,34 +41,71 @@
       SN.Game.resetTime();
       SN.Audio.setMood('tense');
       SN.Desk.led = 'alert';
-      const seized = S.run.capital;
       const [a, b, c] = early ? D.story.embargoEarly : D.story.embargo;
       SN.Audio.sfx('notifyBad');
       SN.FX.shake(4, 0.6);
-      await SN.UI.card(`<div class="overlay-panel"><div class="t1">${a}</div><div class="t2">${b}</div><div class="t2">${c}: ${U.money(seized)}</div></div>`, 'daycard embargo', 2.6);
-      if (seized > 0) { SN.Economy.spend(seized, 'embargo'); SN.Audio.sfx('loss', { big: true }); }
-      await SN.wait(0.6);
+      const last = S.run.piggy === 'ready' ? D.story.embargoPiggy : `${c}: ${U.money(S.run.capital)}`;
+      await SN.UI.card(`<div class="overlay-panel"><div class="t1">${a}</div><div class="t2">${b}</div><div class="t2">${last}</div></div>`, 'daycard embargo', 2.6);
+      await SN.wait(0.4);
+      return this.lose(early ? 'hopeless' : 'deadline');
+    },
+
+    async lose(reason) {
+      this.reason = reason;
+      SN.Game.setState('BANKRUPTCY');
+      SN.Windows.close(true);
+      SN.Dialog.hide();
+      SN.UI.clearSpot();
+      SN.Hands.drumming = false;
+      if (S.run.piggy === 'ready') return this.extraLife();
+      return this.finalLoss();
+    },
+
+    // Vida extra: colarse en el cuarto de Tommy y romper su cerdito en tu mesa
+    async extraLife() {
+      const st = D.story.piggyLife;
+      SN.Audio.setMood('tense');
+      await SN.UI.card(`<div class="overlay-panel"><div class="t1">${st.title}</div><div class="t2">${st.lines[0]}</div><div class="t3">${st.lines[1]}</div></div>`, 'daycard', 3.2);
+      await SN.Sneak.play();
       return this.start();
+    },
+
+    // Sin cerdito: vuelves al inicio de la meta con lo que tenías entonces
+    async finalLoss() {
+      const run = S.run, cp = run.checkpoint, st = D.story.finalLoss;
+      SN.Audio.setMood('silent');
+      SN.Audio.sfx('liquidation');
+      SN.Desk.led = 'alert';
+      S.profile.runs++;
+      S.restoreCheckpoint();
+      SN.Save.saveRun();
+      SN.Save.saveProfile();
+      const where = cp ? cp.label : 'la deuda de $250';
+      const money = U.money(cp ? cp.capital : D.sim.startCapital);
+      const el = U.el('div', 'overlay-panel final-loss');
+      el.innerHTML = `<div class="t1">${st.title}</div><div class="t2">${st.message}</div>
+        <div class="t3">${st.back.replace('{where}', where).replace('{money}', money)}</div>
+        <div class="row"><button class="btn btn-yellow" id="bk-retry">Volver a intentarlo</button><button class="btn btn-cream" id="bk-menu">Volver al menú</button></div>`;
+      document.getElementById('layer-top').appendChild(el);
+      this.ui = el;
+      this.active = true;
+      return new Promise((resolve) => {
+        this.resolve = resolve;
+        el.querySelector('#bk-retry').addEventListener('click', () => this.finish('retry'));
+        el.querySelector('#bk-menu').addEventListener('click', () => this.finish('menu'));
+      });
     },
 
     start() {
       if (this.active) return;
       this.active = true;
       SN.Game.setState('BANKRUPTCY');
-      SN.Windows.close(true);
-      SN.Dialog.hide();
-      SN.UI.clearSpot();
       SN.Audio.setMood('silent');
       SN.Audio.sfx('thud');
       SN.Desk.led = 'alert';
       SN.Hands.drumming = false;
-      const run = S.run;
-      run.over = true;
-      S.profile.runs++;
-      SN.Save.clearRun();
-      SN.Save.saveProfile();
       this.dim = 0;
-      this.pig = { state: 'wait', t: 0, y: -130, vy: 0, sx: 1, sy: 1, hits: 0, cracks: [], shake: 0, coins: U.rand(1.5, 9.5) };
+      this.pig = { state: 'wait', t: 0, y: -130, vy: 0, sx: 1, sy: 1, hits: 0, cracks: [], shake: 0, coins: S.piggyAmount() };
       this.buf = Px.canvas(100, 80);
       SN.ScreenCanvas.take('piggy');
       const app = document.getElementById('app');
@@ -134,14 +173,14 @@
     showMessage() {
       const st = D.story.bankrupt;
       const extra = st.extra[1].replace('{coins}', U.money(this.pig.coins));
+      const late = this.reason === 'deadline' || this.reason === 'hopeless';
       const el = U.el('div', 'overlay-panel piggy-ui');
-      el.innerHTML = `<div class="msg"><div class="t1">${st.title}</div><div class="t2">${st.message}</div><div class="t3">${st.extra[0]}<br>${extra}</div></div>
-        <div class="row"><button class="btn btn-yellow" id="bk-retry">Reintentar partida</button><button class="btn btn-cream" id="bk-menu">Volver al menú</button></div>`;
+      el.innerHTML = `<div class="msg"><div class="t1">${st.title}</div><div class="t2">${st.message}</div><div class="t3">${extra}<br>${late ? st.extension : st.extra[0]}</div></div>
+        <div class="row"><button class="btn btn-yellow" id="bk-continue">Seguir jugando</button></div>`;
       document.getElementById('layer-top').appendChild(el);
       this.ui = el;
       SN.Audio.sfx('notify');
-      el.querySelector('#bk-retry').addEventListener('click', () => this.finish('retry'));
-      el.querySelector('#bk-menu').addEventListener('click', () => this.finish('menu'));
+      el.querySelector('#bk-continue').addEventListener('click', () => this.finish('continue'));
     },
 
     // Limpia la secuencia (también se usa al salir al menú)
@@ -162,11 +201,34 @@
 
     finish(choice) {
       SN.Audio.sfx('click');
+      const coins = this.pig ? this.pig.coins : 0;
       this.reset();
       const r = this.resolve;
       this.resolve = null;
-      if (choice === 'retry') SN.Game.retry(); else SN.Game.toMenu();
+      if (choice === 'continue') this.resume(coins);
+      else if (choice === 'retry') SN.Game.startRun({ loaded: true, greeting: 'rewind' });
+      else SN.Game.toMenu();
       if (r) r(choice);
+    },
+
+    // Tras romper el cerdito: su dinero entra y la partida sigue donde estaba
+    resume(coins) {
+      const run = S.run;
+      run.piggy = 'broken';
+      run.piggyBroken = (run.piggyBroken || 0) + 1;
+      if (this.reason === 'deadline' || this.reason === 'hopeless') {
+        run.debt.deadlineDay = Math.max(run.debt.deadlineDay, run.day) + 2;
+        run.debt.defaulted = false;
+      }
+      SN.Game.setState('GAMEPLAY');
+      SN.Audio.setMood('normal');
+      SN.Economy.add(coins, 'piggy');
+      SN.UI.busy = false;
+      SN.UI.allow = null;
+      SN.UI.renderAll();
+      SN.Events.emit('piggy:broken', { coins });
+      SN.Save.saveRun();
+      SN.after(1, () => SN.Desktop.check());
     },
 
     render(g, dt) {

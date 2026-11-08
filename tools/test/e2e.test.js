@@ -37,6 +37,30 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
   // Avanza diálogos y subtítulos abiertos (clic en el escritorio, lejos del texto)
   const advance = async () => { if (await ev('SN.Dialog.active || !!SN.Cine.say_')) await b.click(90, 640); };
 
+  // Cuarto de Tommy: mantener ESPACIO mientras duerme, soltar cuando se mueve; al final, clic en el cerdito
+  const playSneak = async () => {
+    const t0 = Date.now();
+    let holding = false;
+    while (Date.now() - t0 < 45000) {
+      const o = JSON.parse(await ev('JSON.stringify({ st: SN.Sneak.tommy.st, s: SN.Sneak.state })'));
+      if (o.s !== 'walk') break;
+      const want = o.st === 'sleep';
+      if (want && !holding) { await b.cdp('Input.dispatchKeyEvent', { type: 'keyDown', code: 'Space', key: ' ' }); holding = true; }
+      if (!want && holding) { await b.cdp('Input.dispatchKeyEvent', { type: 'keyUp', code: 'Space', key: ' ' }); holding = false; }
+      await b.sleep(50);
+    }
+    if (holding) await b.cdp('Input.dispatchKeyEvent', { type: 'keyUp', code: 'Space', key: ' ' });
+    const reached = await ev('SN.Sneak.state') === 'reach';
+    await b.click(640, 300);
+    return reached;
+  };
+  const breakPig = async () => {
+    await waitFor('SN.Bankruptcy.pig && SN.Bankruptcy.pig.state === "idle"', 12000);
+    const r = await ev('(() => { const r = document.getElementById("screen-canvas").getBoundingClientRect(); return { x: r.left + r.width * 210 / 420, y: r.top + r.height * 112 / 236 }; })()');
+    for (let i = 0; i < 5; i++) { await b.click(r.x + (i - 2) * 6, r.y + (i % 2) * 5); await b.sleep(250); }
+    return waitFor('!!document.getElementById("bk-continue")', 6000);
+  };
+
   try {
     await waitFor('SN.Game && SN.Game.state === "MENU"', 8000);
     ok(await ev('SN.Game.state') === 'MENU', 'arranca en el menú');
@@ -193,26 +217,36 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
     ok(await ev('SN.State.run.selected') === 'tecno', 'se cambia de mercado con un clic');
     await shot('19-tecnologia');
 
-    // --- Bancarrota: sin dinero para la apuesta mínima ---
+    // --- Sin dinero: el cerdito de Tommy es una vida extra ---
+    const cp = await ev('SN.State.run.checkpoint.capital');
     await ev('SN.Economy.spend(SN.State.run.capital - 4, "test"); SN.UI.setBusy(true); SN.Game.afterTurn(null); true');
     await waitFor('!!document.querySelector(".stamp")', 6000);
     ok(await ev('document.querySelector(".stamp").textContent.includes("SIN FONDOS")'), 'con menos de la apuesta mínima: SIN FONDOS');
-    await waitFor('SN.Bankruptcy.pig && SN.Bankruptcy.pig.state === "idle"', 10000);
-    await b.sleep(300);
-    await shot('20-cerdito');
-    ok(await ev('SN.Game.state') === 'BANKRUPTCY', 'se acaba la partida sin esperar al último día');
-    const r = await ev('(() => { const r = document.getElementById("screen-canvas").getBoundingClientRect(); return { x: r.left + r.width * 210 / 420, y: r.top + r.height * 112 / 236 }; })()');
-    for (let i = 0; i < 5; i++) { await b.click(r.x + (i - 2) * 6, r.y + (i % 2) * 5); await b.sleep(250); }
-    await waitFor('!!document.getElementById("bk-retry")', 5000);
-    await b.sleep(1200);
+    ok(await waitFor('SN.Sneak.active', 10000), 'vida extra: te cuelas en el cuarto de Tommy');
+    await b.sleep(400);
+    await shot('20-cuarto-tommy');
+    ok(await playSneak(), 'avanzando a escondidas se llega a la estantería');
+    ok(await breakPig(), 'en tu mesa rompes el cerdito a golpes');
+    await b.sleep(800);
     await shot('21-tommy');
     ok(await ev('document.querySelector(".piggy-ui").textContent.toUpperCase().includes("TOMMY")'), 'aparece el mensaje de Tommy');
-    ok(!await ev('SN.Save.hasRun()'), 'la partida en bancarrota se borra');
+    const coins = await ev('SN.Bankruptcy.pig.coins');
+    await mouse('#bk-continue');
+    await b.sleep(900);
+    ok(await ev('SN.Game.state') === 'GAMEPLAY' && await ev('SN.State.run.capital') === 4 + coins && await ev('SN.State.run.piggy') === 'broken', `la partida sigue con el dinero del cerdito (+${coins})`);
+    ok(await ev('SN.Save.hasRun()'), 'la partida no se borra');
+    // --- Sin cerdito: se vuelve al inicio de la meta con lo que tenías ---
+    await ev('SN.Economy.spend(SN.State.run.capital - 3, "test"); SN.UI.setBusy(true); SN.Game.afterTurn(null); true');
+    ok(await waitFor('!!document.querySelector(".final-loss")', 9000), 'sin cerdito: se acaba de verdad');
+    await b.sleep(400);
+    await shot('22-final');
+    ok(await ev('document.querySelector(".final-loss").textContent.includes("inicio de")'), 'dice a qué meta vuelves y con cuánto');
     await mouse('#bk-retry');
     await b.sleep(1500);
     for (let i = 0; i < 20 && await ev('SN.Dialog.active || SN.UI.busy'); i++) { await advance(); await b.sleep(300); }
-    ok(await ev('SN.Game.state') === 'GAMEPLAY' && await ev('SN.State.run.capital') === 100, 'REINTENTAR empieza otra partida con $100');
-    await shot('22-reintento');
+    ok(await ev('SN.Game.state') === 'GAMEPLAY' && await ev('SN.State.run.capital') === cp && await ev('SN.Unlocks.isUnlocked("tecno")'), `vuelves al inicio de la meta con ${cp} y lo desbloqueado`);
+    ok(await ev('SN.State.run.piggy') === 'ready', 'Tommy ha vuelto a llenar el cerdito');
+    await shot('23-vuelta-a-la-meta');
   } catch (e) {
     failed++;
     console.log('  ERROR:', e.message);

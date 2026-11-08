@@ -80,6 +80,36 @@ const ok = (c, msg) => { if (c) pass++; else fail++; console.log(`  ${c ? 'ok   
     await b.key('KeyD', 'd');
     ok(!(await ev('SN.Desktop.open')), 'con una operación en marcha no se minimiza');
     ok(await ev('!!SN.State.run.chat && SN.State.run.chat.log.length > 3'), 'la conversación queda guardada en la partida');
+    // La historia de Kevo sigue los hitos: pagar la deuda, cada meta, el cerdito...
+    const arc = await ev(`(() => {
+      const D = SN.Desktop, ch = D.chat(), ids = SN.Data.chat.convos.map((c) => c.id);
+      clearTimeout(D.timer); D.timer = null;
+      const start = (i) => {
+        ch.i = i; ch.phase = 'wait'; ch.side = null;
+        D.check();
+        clearTimeout(D.timer); D.timer = null;
+        const id = ch.phase === 'in' && D.convo() ? D.convo().id : null;
+        ch.phase = 'wait';
+        return id;
+      };
+      SN.State.run.day = 20;
+      const out = {};
+      out.esperaDeuda = start(ids.indexOf('libre'));
+      D.flag('debtPaid'); ch.clock += 1;
+      out.libre = start(ids.indexOf('libre'));
+      out.saltaPlazo = start(ids.indexOf('plazo'));
+      D.flag('piggy'); ch.clock += 1;
+      out.cerdito = start(ids.indexOf('hospital'));
+      ch.sideDone.piggy = true;
+      D.flag('g25000'); ch.clock += 5;
+      out.madre = start(ids.indexOf('madre'));
+      out.ultima = ids[ids.length - 1];
+      return out;
+    })()`);
+    ok(arc.esperaDeuda === null && arc.libre === 'libre', 'las conversaciones de después de la deuda esperan a que la pagues');
+    ok(arc.saltaPlazo === 'libre', 'si ya pagaste, Kevo no te pregunta por el plazo');
+    ok(arc.cerdito === 'piggy', 'si rompes el cerdito, Kevo reacciona antes de seguir la historia');
+    ok(arc.madre === 'madre' && arc.ultima === 'mira', 'Kevo sigue hasta las últimas metas (su madre escribe en la de $25K)');
   } catch (e) {
     fail++;
     console.log('  ERROR:', e.message);

@@ -278,6 +278,7 @@
     },
 
     toMenu() {
+      SN.Sneak.abort();
       if (SN.Bankruptcy.active) SN.Bankruptcy.reset();
       if (S.run && !S.run.over && !S.run.position) SN.Save.saveRun();
       this.resetTime();
@@ -289,9 +290,14 @@
     },
 
     async startRun({ tutorial = false, greeting = false, loaded = false } = {}) {
-      if (!loaded) S.newRun();
+      if (!loaded) { S.newRun(); S.checkpoint('la deuda de $250'); }
       const run = S.run;
+      // Partidas de versiones anteriores: sin punto de control ni cerdito
+      if (!run.checkpoint) S.checkpoint(run.debt.paid ? 'esta meta' : 'la deuda de $250');
+      if (run.piggy == null) run.piggy = 'ready';
       SN.Desktop.reset();
+      SN.Sneak.abort();
+      if (SN.Bankruptcy.active) SN.Bankruptcy.reset();
       this.resetTime();
       SN.Narrative.pending = [];
       SN.Narrative.profitableSinceDebt = 0;
@@ -324,15 +330,33 @@
         this.closeTrade();
         return;
       }
+      // Partida guardada justo al perder (se cerró el juego en medio): se retoma la derrota
+      if (loaded && !tutorial && this.lost()) {
+        SN.UI.setBusy(true);
+        await SN.wait(0.6);
+        await this.checkLoss();
+        return;
+      }
       if (tutorial) await SN.Tutorial.run();
       else if (greeting) {
         SN.UI.setBusy(true);
         await SN.wait(0.6);
-        await SN.Narrative.hoodedScene(D.story.retryGreeting);
+        await SN.Narrative.hoodedScene(greeting === 'rewind' ? D.story.rewindGreeting : D.story.retryGreeting);
+        if (greeting === 'rewind') SN.Desktop.flag('rewind');
         SN.UI.setBusy(false);
       }
       // Kevo escribe en cuanto el jugador tiene las manos libres
       setTimeout(() => SN.Desktop.check(), 2500);
+    },
+
+    // ¿Se ha perdido? (plazo vencido, sin dinero para la apuesta mínima o ya imposible pagar a tiempo)
+    lost() { return !!S.run && (S.run.debt.defaulted || SN.Bankruptcy.shouldTrigger() || SN.Debt.hopeless()); },
+    async checkLoss() {
+      if (S.run.debt.defaulted) return SN.Bankruptcy.embargo();
+      // Sin dinero para la apuesta mínima: se acaba en el momento, sin esperar al último día
+      if (SN.Bankruptcy.shouldTrigger()) return SN.Bankruptcy.broke();
+      // Ya es imposible llegar a la deuda a tiempo: el cobrador se adelanta
+      if (SN.Debt.hopeless()) return SN.Bankruptcy.embargo({ early: true });
     },
 
     // ---------- Turnos ----------
@@ -389,13 +413,9 @@
 
     async afterTurn(result) {
       const UI = SN.UI, run = S.run;
-      await SN.wait(result ? 1.1 : 0.15);
+      if (result) { await SN.wait(0.6); await UI.resultCard(result); } else await SN.wait(0.15);
       UI.endTrade();
-      if (run.debt.defaulted) { await SN.Bankruptcy.embargo(); return; }
-      // Sin dinero para la apuesta mínima: se acabó, sin esperar al último día
-      if (SN.Bankruptcy.shouldTrigger()) { await SN.Bankruptcy.broke(); return; }
-      // Ya es imposible llegar a la deuda a tiempo: el cobrador se adelanta
-      if (SN.Debt.hopeless()) { await SN.Bankruptcy.embargo({ early: true }); return; }
+      if (this.lost()) { await this.checkLoss(); return; }
       if (this.dayChanged) {
         this.dayChanged = false;
         SN.Audio.sfx('day');
