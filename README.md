@@ -50,11 +50,11 @@ El teclado es un atajo y cada botón muestra su tecla:
 | Cambio | Detalle |
 |---|---|
 | Escritorio | FUTURO.exe se minimiza (botón `_` o `D`) y aparece el ordenador del protagonista: fondo de la Pleyzeta, iconos, barra de tareas con el día. Programas: Mensajín, Notas (la lista de tareas, que se tacha al pagar) y Papelera. FUTURO.exe no tiene botón de cerrar... |
-| Mensajín | Parodia de la mensajería de los 2000. Kevo, tu amigo, también se endeudó por la Pleyzeta 6 y también recibió FUTURO.exe; su historia avanza día a día (con zumbidos). Para contestar se pulsa cualquier tecla, o se hace clic en la caja: el juego escribe por ti lo que dice el protagonista. Cuando escribe estando en FUTURO.exe sale un aviso que lleva al chat |
+| Mensajín | Parodia de la mensajería de los 2000. Kevo, tu amigo, también se endeudó por la Pleyzeta 6 y también recibió FUTURO.exe; su historia avanza día a día (con zumbidos). Para contestar se pulsa cualquier tecla (el clic no escribe, a propósito): el juego escribe por ti lo que dice el protagonista. Los mensajes seguidos van agrupados bajo un solo nombre. Cuando escribe estando en FUTURO.exe sale un aviso que lleva al chat |
 | Dinero entero | Sin centavos ni decimales: dinero, ganancias, precios y la gráfica en números enteros |
 | Números legibles | Fuente de números propia (SaldoNum): cifras gruesas de 2 px, todas del mismo ancho para que las cantidades no bailen, sin la negrita falsa que emborronaba el 0, el 6, el 8 y el 9 |
 | Botones claros | SUBE / BAJA pasan a **SUBIRÁ / BAJARÁ** con una línea debajo ("ganas si sube"): es una predicción, no una orden |
-| Manos | Rehechas: una sola silueta (no piezas sueltas), dedos en abanico y de distinto largo, brazo en diagonal con la manga remangada. La derecha agarra el ratón (se ven los botones y la rueda) |
+| Manos | Rehechas: una sola silueta (no piezas sueltas, también los pulgares), dedos en abanico y de distinto largo, brazo en diagonal con la manga remangada. La derecha agarra el ratón (se ven los botones y la rueda) |
 
 ## Qué hay en la versión 1.2: estilo lo-fi neón
 
@@ -144,7 +144,7 @@ Kevo, la respuesta del protagonista y lo que Kevo contesta.
 node tools/test/logic.test.js       # fórmulas, COBRAR, giros, fiabilidad de la pista, plazo, fin de partida y equilibrio
 node tools/test/e2e.test.js         # partida completa en Chrome sin ventana, con clics REALES de ratón y capturas
 node tools/test/e2e-paths.test.js   # continuar (también tras cobrar), repetir tutorial, tienda, los 3 finales y pantallas pequeñas
-node tools/test/e2e-desktop.test.js # minimizar, Mensajín (escribir con teclas y clics), Notas, Papelera y volver a FUTURO.exe
+node tools/test/e2e-desktop.test.js # minimizar, Mensajín (escribir con teclas; el clic no escribe), Notas, Papelera y volver a FUTURO.exe
 ```
 
 Abre `index.html?debug` para atajos de prueba: `F8` bancarrota, `F9` +$1,000, `F10` pasar un día.

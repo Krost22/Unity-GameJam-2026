@@ -43,10 +43,11 @@ const ok = (c, msg) => { if (c) pass++; else fail++; console.log(`  ${c ? 'ok   
     const typed = await ev('document.querySelector(".ch-box").textContent');
     ok(typed.length > 0 && reply.startsWith(typed.trim()), `las teclas escriben la respuesta del guion ("${typed.trim()}")`);
     ok(await ev('SN.State.run.capital') === before && !(await ev('!!SN.State.run.position')), 'teclear en el chat no dispara atajos de FUTURO.exe');
-    // Con el ratón también se escribe (clic en la caja)
+    // El clic no escribe: solo las teclas
     const t0 = await ev('SN.State.run.chat.typed');
     await clickSel('.ch-box');
-    ok(await ev('SN.State.run.chat.typed') > t0, 'un clic en la caja también escribe');
+    ok(await ev('SN.State.run.chat.typed') === t0, 'un clic en la caja no escribe (solo las teclas)');
+    ok(await ev('document.querySelectorAll(".ch-msg.f b").length') === 1, 'el nombre de Kevo sale una vez por bloque de mensajes, no en cada línea');
     let guard = 0;
     while (!(await ev('SN.Desktop.replyDone()')) && guard++ < 120) await b.key('KeyK', 'k');
     ok(await ev('SN.Desktop.replyDone() && !document.querySelector(".ch-send").disabled'), 'al terminar la frase se puede enviar');

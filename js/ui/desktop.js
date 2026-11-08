@@ -1,7 +1,8 @@
 // Escritorio del PC: FUTURO.exe se minimiza (botón _ o tecla D) y debajo está el ordenador del
 // protagonista, con sus programas: Mensajín (chat con Kevo), Notas y Papelera.
-// En Mensajín no se escribe de verdad: cualquier tecla (o clic en la caja) pone las letras de la
+// En Mensajín no se escribe de verdad: cualquier tecla pone las letras de la
 // respuesta que el protagonista tiene que dar; el jugador siente que escribe y la historia sigue su guion.
+// El clic no escribe (a propósito): la gracia es teclear.
 (function (SN) {
   'use strict';
   const S = SN.State, U = SN.Util;
@@ -42,6 +43,7 @@
         icons.appendChild(b);
       }
       root.querySelector('.dt-start').addEventListener('click', () => { SN.Audio.sfx('click'); this.restore(); });
+      $('btn-min').querySelector('.ico-min').style.backgroundImage = `url(${SN.Sprites.url('icoMin', 1)})`;
       $('btn-min').addEventListener('click', () => this.minimize());
       SN.Events.on('turn:ready', () => this.check());
       SN.Events.on('debt:paid', () => this.refreshNotes());
@@ -260,11 +262,6 @@
         <div class="ch-typing"></div>
         <div class="ch-input"><div class="ch-box"></div><button class="ch-send btn btn-green">Enviar<kbd>⏎</kbd></button></div>`;
       w.querySelector('.ch-ava').appendChild(SN.Sprites.node('avaKevo', 2));
-      w.querySelector('.ch-box').addEventListener('click', () => {
-        if (this.chat().phase !== 'reply') return;
-        SN.Hands.tapKey('KeyA'); SN.Audio.sfx('key');
-        this.typeChunk();
-      });
       w.querySelector('.ch-send').addEventListener('click', () => this.send());
       void f;
       const ch = this.chat();
@@ -323,10 +320,13 @@
       st.className = 'ch-status' + (ch.offline ? ' off' : '');
       const log = w.querySelector('.ch-log');
       log.innerHTML = ch.log.length ? '' : `<p class="ch-sys">${esc(f.name)} todavía no ha escrito.</p>`;
+      // Varios mensajes seguidos de la misma persona van en un bloque con su nombre una sola vez
+      let prev = null;
       for (const m of ch.log) {
-        if (m.who === 's') { log.insertAdjacentHTML('beforeend', `<p class="ch-sys">${esc(m.t)}</p>`); continue; }
-        const who = m.who === 'f' ? f.name : 'Tú';
-        log.insertAdjacentHTML('beforeend', `<p class="ch-msg ${m.who}"><b>${esc(who)} ${m.who === 'f' ? 'dice' : 'dices'}:</b> ${esc(m.t)}</p>`);
+        if (m.who === 's') { log.insertAdjacentHTML('beforeend', `<p class="ch-sys">${esc(m.t)}</p>`); prev = null; continue; }
+        const head = m.who !== prev ? `<b>${esc(m.who === 'f' ? f.name : 'Tú')}</b>` : '';
+        log.insertAdjacentHTML('beforeend', `<p class="ch-msg ${m.who}${head ? ' first' : ''}">${head}${esc(m.t)}</p>`);
+        prev = m.who;
       }
       log.scrollTop = log.scrollHeight;
       w.querySelector('.ch-typing').textContent = this.typing ? `${f.name} está escribiendo…` : '';

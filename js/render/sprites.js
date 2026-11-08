@@ -6,6 +6,8 @@
   const Px = SN.Px;
 
   const DEFS = {
+    // Minimizar ventana (7x7): un marco con la ventana encogida abajo
+    icoMin: ['wwwwwww', 'w.....w', 'w.....w', 'w.....w', 'w.www.w', 'w.www.w', 'wwwwwww'],
     // --- Escritorio del PC (16x16) y avatares del chat (12x12) ---
     icoChat: ['................', '................', '..kkkkkkkkkkkk..', '.khhhhhhhhhhhhk.', 'khhggggggggggggk', 'khgggggggggggGGk',
       'kgggwwggwwggwwGk', 'kgggwwggwwggwwGk', 'kggggggggggggGGk', '.kgggggggggGGGk.', '..kkkkkGGGkkkk..', '......kGGk......',

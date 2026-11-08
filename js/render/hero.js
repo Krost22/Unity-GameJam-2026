@@ -225,7 +225,8 @@
     // Antebrazo + dorso + dedos en una sola silueta: se ven como una mano, no como piezas sueltas
     const hand = sp.mask()
       .taper(26, 31, 6, 33, 46, 7)
-      .poly([[16, 19], [19, 16], [24, 15], [29, 16], [33, 19], [34, 24], [32, 30], [28, 34], [21, 34], [17, 29]]);
+      .poly([[16, 19], [19, 16], [24, 15], [29, 16], [33, 19], [34, 24], [32, 30], [28, 34], [21, 34], [17, 29]])
+      .taper(18.5, 28, 3, 16, 23.5, 2.1); // pulgar: sale de la base de la palma y abraza el costado del ratón
     const K = [[20, 17], [24.5, 16], [28.5, 17.5], [32, 20]];
     const tips = [
       finger(hand, K[0][0], K[0][1], -5, 6.5 - p, 2.2, 1.9),
@@ -241,11 +242,9 @@
     sp.px(20, 18, P.skinL).px(25, 17, P.skinL);
     sp.line(22, 22, 23, 27, P.skinM).line(26, 22, 26, 26, P.skinM);
     sleeve(sp, 33, 38, -28, phase, [1, 0]);
-    // Pulgar en el costado izquierdo del ratón, en otro plano (con su contorno)
-    const thumb = sp.mask().taper(19, 28, 2.5, 15, 23, 2);
-    sp.part(thumb, RAMP.skin, { light: HAND_LIGHT, lit: 1, sh: 1, outline: false });
-    sp.line(17, 22, 19, 25, P.skinD);
-    sp.px(15, 21, P.skinL);
+    // Pliegue suave entre el pulgar y la palma, y la uña del pulgar
+    sp.px(18, 25, P.skinM).px(19, 26, P.skinM);
+    sp.px(15, 22, P.skinL);
     sp.rim(hand, rim, [1, 0]);
     return sp.c;
   }
@@ -258,7 +257,8 @@
     const rim = RIM[phase] || RIM.evening;
     const hand = sp.mask()
       .taper(21, 27, 6, 13, 42, 7)
-      .poly([[8, 20], [12, 15], [19, 12], [26, 13], [30, 17], [30, 23], [27, 29], [16, 30], [10, 26]]);
+      .poly([[8, 20], [12, 15], [19, 12], [26, 13], [30, 17], [30, 23], [27, 29], [16, 30], [10, 26]])
+      .taper(26.5, 25, 3, 31.5, 23.5, 2.1); // pulgar: asoma por el lado del índice y descansa en la barra
     const K = [[10.5, 18], [15.5, 14.5], [21, 13], [26, 14]];
     const ANG = [-16, -7, 0, 7], LEN = [4.5, 6, 7, 6], R0 = [1.9, 2.3, 2.4, 2.3], R1 = [1.6, 1.9, 2, 1.9];
     const tips = K.map(([x, y], i) => {
@@ -274,11 +274,9 @@
     sp.px(21, 15, P.skinL).px(26, 16, P.skinL);
     sp.line(19, 19, 18, 25, P.skinM).line(23, 19, 22, 24, P.skinM);
     sleeve(sp, 14, 37, 26, phase, [-1, 0]);
-    // Pulgar: baja por el lado derecho hacia la barra espaciadora
-    const thumb = sp.mask().taper(27, 23, 2.6, 32, 28, 2);
-    sp.part(thumb, RAMP.skin, { light: HAND_LIGHT, lit: 1, sh: 1, outline: false });
-    sp.line(28, 21, 30, 23, P.skinD);
-    sp.px(32, 26, P.skinL);
+    // Pliegue suave entre el pulgar y el índice, y la uña del pulgar
+    sp.px(27, 22, P.skinM).px(28, 22, P.skinM);
+    sp.px(32, 22, P.skinL);
     sp.rim(hand, rim, [-1, 0]);
     return sp.c;
   }
