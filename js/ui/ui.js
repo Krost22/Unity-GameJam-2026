@@ -17,6 +17,8 @@
     init() {
       $('screen').querySelector('.app-icon').style.backgroundImage = `url(${SN.Sprites.url('app', 1)})`;
       document.querySelector('#hud-capital .coin').style.backgroundImage = `url(${SN.Sprites.url('coin0', 1)})`;
+      // Iconos de los botones de navegación
+      for (const [cls, name] of [['ico-up', 'wrench'], ['ico-news', 'news'], ['ico-shop', 'cart']]) { const el = document.querySelector('.' + cls); if (el) el.style.backgroundImage = `url(${SN.Sprites.url(name, 1)})`; }
       SN.Chart.init($('chart'));
       SN.FX.init($('fx'), $('layer-float'), $('screen'));
       SN.Dialog.init();
@@ -54,7 +56,7 @@
       D.sim.leverages.forEach((l, i) => {
         const b = U.el('button', l.value >= 10 ? 'max' : l.value >= 5 ? 'hot' : '', '×' + l.value);
         b.dataset.l = l.value;
-        b.title = `MULTIPLICA EL RESULTADO ×${l.value} · TECLA ${i + 1}`;
+        b.title = `Multiplica el resultado ×${l.value} · tecla ${i + 1}`;
         b.addEventListener('click', () => this.setLeverage(l.value));
         lv.appendChild(b);
       });
@@ -171,7 +173,7 @@
       let pips = '';
       for (let i = 0; i < D.sim.turnNames.length; i++) pips += `<i class="pip ${i < run.turn ? 'on' : i === run.turn ? 'now' : ''}"></i>`;
       $('clock').innerHTML = `${SN.Time.turnName()} ${pips}`;
-      $('clock').title = 'CADA APUESTA GASTA UN TURNO · 3 TURNOS = 1 DÍA';
+      $('clock').title = 'Cada apuesta gasta un turno · 3 turnos = 1 día';
     },
 
     renderHUD() {
@@ -180,12 +182,12 @@
       const goal = SN.Unlocks.currentGoal();
       const fill = $('goal-fill');
       if (goal) {
-        $('goal-title').textContent = goal.type === 'debt' ? 'DEUDA' : `META ${U.short(goal.amount)}`;
+        $('goal-title').textContent = goal.type === 'debt' ? 'Deuda' : `Meta ${U.short(goal.amount)}`;
         fill.style.width = (U.clamp(run.capital / goal.amount, 0, 1) * 100).toFixed(1) + '%';
         fill.classList.toggle('debt', goal.type === 'debt');
         $('goal-text').textContent = `${U.short(run.capital)} / ${U.short(goal.amount)}`;
       } else {
-        $('goal-title').textContent = 'SIN LÍMITES';
+        $('goal-title').textContent = 'Sin límites';
         fill.style.width = '100%';
         $('goal-text').textContent = '';
       }
@@ -201,7 +203,7 @@
       const key = `${run.day}|${run.debt.paid}|${run.debt.deadlineDay}`;
       if (key === this.daysKey) return;
       this.daysKey = key;
-      if (run.debt.paid) { box.innerHTML = `<span class="free">LIBRE · DÍA<b>${run.day}</b></span>`; return; }
+      if (run.debt.paid) { box.innerHTML = `<span class="free">Libre · día<b>${run.day}</b></span>`; return; }
       let html = '';
       for (let d = 1; d <= run.debt.deadlineDay; d++) {
         const cls = [d < run.day ? 'past' : '', d === run.day ? 'now' : '', d === run.debt.deadlineDay ? 'last' : ''].join(' ');
@@ -244,14 +246,14 @@
         card.appendChild(ico);
         if (!m.unlocked) {
           card.classList.add('locked');
-          card.title = `SE ABRE AL LLEGAR A ${def.unlock.label}`;
+          card.title = `Se abre al llegar a ${def.unlock.label}`;
           card.insertAdjacentHTML('beforeend', `<span class="nm">${def.short}</span><span class="hint">${def.unlock.label || ''}</span>`);
           const lock = SN.Sprites.node('lock', 1);
           lock.className = 'lock';
           card.appendChild(lock);
         } else {
           const live = S.run.position && S.run.position.market === def.id;
-          let hint = '<span class="hint live">EN JUEGO</span>';
+          let hint = '<span class="hint live">En juego</span>';
           if (!live) {
             const h = SN.Market.hint(def.id);
             hint = `<span class="hint ${h.dir > 0 ? 'up' : h.dir < 0 ? 'down' : 'flat'}">${h.dir ? (h.dir > 0 ? '▲' : '▼').repeat(h.power) : '?'}</span>`;
@@ -289,16 +291,16 @@
       let item = null, kicker = '', arrows = '';
       if (ev) {
         item = { title: ev.title, tone: ev.tone, art: ev.art };
-        kicker = '¡ÚLTIMA HORA!';
+        kicker = '¡Última hora!';
         arrows = eventArrows(ev);
       } else {
         for (let i = run.news.length - 1; i >= 0; i--) if (run.news[i].market === id) { item = run.news[i]; break; }
-        if (item) kicker = `DÍA ${item.day} · ${D.sim.turnNames[item.turn] || ''}`;
+        if (item) kicker = `Día ${item.day} · ${D.sim.turnNames[item.turn] || ''}`;
       }
       box.className = item ? `${item.dark ? 'neg' : item.tone}${ev ? '' : ' old'}${animateNew ? ' new' : ''}` : 'empty';
-      box.title = item ? 'VER TODAS LAS NOTICIAS (N)' : '';
+      box.title = item ? 'Ver todas las noticias (N)' : '';
       box.innerHTML = '';
-      if (!item) { box.innerHTML = '<div class="tk" style="left:6px"><span class="tk-k">SIN NOTICIAS</span><span class="tk-t">LA CALMA ANTES DE LA TORMENTA.</span></div>'; return; }
+      if (!item) { box.innerHTML = '<div class="tk" style="left:6px"><span class="tk-k">Sin noticias</span><span class="tk-t">La calma antes de la tormenta.</span></div>'; return; }
       box.appendChild(SN.NewsArt.node(item.art || 'ciudad', item.tone || 'neu', item.dark ? darkLevel() : 0, [52, 32]));
       box.insertAdjacentHTML('beforeend', `<div class="tk"><span class="tk-k">${kicker}</span><span class="tk-a">${arrows}</span><span class="tk-t">${item.title}</span></div>`);
     },
@@ -314,7 +316,7 @@
       amt.textContent = U.money(f.amount);
       amt.classList.toggle('small', U.money(f.amount).length > 9);
       const lim = SN.Trading.limit();
-      $('bet-box').title = `MÁXIMO POR APUESTA: ${U.money(lim, { cents: false })} · MÍNIMO: ${U.money(D.sim.minInvestment, { cents: false })}`;
+      $('bet-box').title = `Máximo por apuesta: ${U.money(lim, { cents: false })} · mínimo: ${U.money(D.sim.minInvestment, { cents: false })}`;
       const k = max > 0 ? U.clamp(f.amount / max, 0, 1) : 0;
       $('slider-fill').style.width = (k * 100) + '%';
       $('slider-knob').style.left = (k * 100) + '%';
@@ -323,7 +325,7 @@
         const v = +b.dataset.l;
         const ok = SN.Trading.leverageAvailable(v);
         b.disabled = !ok;
-        if (!ok) b.title = 'SE DESBLOQUEA AL PAGAR LA DEUDA';
+        if (!ok) b.title = 'Se desbloquea al pagar la deuda';
         b.classList.toggle('on', v === f.leverage);
       });
       // Riesgo de un vistazo: cuánto de tu dinero apuestas, multiplicado
@@ -346,9 +348,9 @@
       badge.classList.toggle('hidden', unread <= 0);
       const shop = $('nav-shop');
       shop.disabled = !run.debt.paid;
-      shop.title = run.debt.paid ? 'TIENDA DE ESTILO DE VIDA' : 'SE ABRE AL PAGAR LA DEUDA';
+      shop.title = run.debt.paid ? 'Tienda de estilo de vida' : 'Se abre al pagar la deuda';
       $('btn-skip-turn').disabled = this.busy || !!run.position || !this.allowed('skip');
-      $('btn-skip-turn').title = 'NO APOSTAR: PASA EL TURNO Y EL MERCADO SIGUE';
+      $('btn-skip-turn').title = 'No apostar: pasa el turno y el mercado sigue';
     },
 
     renderSound() {
@@ -467,22 +469,23 @@
       SN.Audio.sfx(position.direction > 0 ? 'buy' : 'sell');
       SN.Hands.drumming = true;
       SN.Desk.led = 'busy';
+      SN.Desk.glowTo(P.cyan, 0.9);
       $('trade-form').classList.add('hidden');
       $('trade-live').classList.remove('hidden');
       const dir = $('live-dir');
-      dir.textContent = position.direction > 0 ? '▲ SUBE' : '▼ BAJA';
+      dir.textContent = position.direction > 0 ? '▲ Sube' : '▼ Baja';
       dir.className = 'dir ' + (position.direction > 0 ? 'long' : 'short');
       $('live-bet').textContent = `${U.short(position.amount)} ×${position.leverage}`;
       const steps = $('live-steps');
       steps.innerHTML = '';
       for (let i = 0; i < position.total; i++) steps.appendChild(U.el('i', i >= position.total - D.sim.dangerCandles ? 'danger' : ''));
-      steps.title = 'LAS RAYADAS SON LAS ÚLTIMAS VELAS: AHÍ PUEDE HABER GIROS';
+      steps.title = 'Las rayadas son las últimas velas: ahí puede haber giros';
       const close = $('btn-close');
       close.className = 'btn btn-yellow arming';
       close.disabled = true;
       // Medio segundo de margen: un doble clic en SUBE/BAJA no cobra sin querer al precio de entrada
       SN.after(0.5, () => { if (S.run && S.run.position === position && !position.settled) { close.disabled = false; close.classList.remove('arming'); } });
-      $('close-lbl').textContent = 'COBRAR';
+      $('close-lbl').textContent = 'Cobrar';
       $('close-amt').textContent = '+$0.00';
       this.setLiveNote('');
       $('btn-fast').classList.remove('hidden');
@@ -498,12 +501,14 @@
       const lv = this.live;
       if (!lv || (lv.shown != null && Math.abs(pnl - lv.shown) < 0.005)) return;
       lv.shown = pnl;
+      // La habitación se tiñe del color de la operación (verde si ganas, rojo si pierdes)
+      SN.Desk.glowTo(pnl >= 0 ? P.green : P.coral, Math.min(1.4, 0.7 + Math.abs(pnl) / Math.max(1, S.run.position ? S.run.position.amount : 1)));
       const pe = $('live-pnl');
       pe.textContent = U.money(pnl, { sign: true });
       pe.className = 'pnl ' + (pnl >= 0 ? 'up' : 'down');
       const close = $('btn-close');
       if (close.classList.contains('done')) return;
-      $('close-lbl').textContent = pnl >= 0 ? 'COBRAR' : 'SALIR';
+      $('close-lbl').textContent = pnl >= 0 ? 'Cobrar' : 'Salir';
       $('close-amt').textContent = U.money(pnl, { sign: true });
       close.classList.toggle('losing', pnl < 0);
     },
@@ -532,9 +537,9 @@
       $('btn-close').classList.toggle('hot', danger && pnl > 0);
       if (danger && !this.live.warned) {
         this.live.warned = true;
-        this.setLiveNote('¡ÚLTIMAS VELAS!', 'warn');
+        this.setLiveNote('¡Últimas velas!', 'warn');
         SN.Audio.sfx('tick');
-        this.tip('danger', 'ÚLTIMAS VELAS: AQUÍ PUEDE PASAR DE TODO. ¿COBRAS O AGUANTAS?');
+        this.tip('danger', 'Últimas velas: aquí puede pasar de todo. ¿Cobras o aguantas?');
       }
       // Lo que acaba de ganar o perder esta vela, saltando junto a ella
       const d = pnl - this.live.lastPnl;
@@ -553,13 +558,13 @@
       close.classList.remove('hot', 'losing');
       close.classList.add('done');
       close.disabled = true;
-      $('close-lbl').textContent = r.pnl >= 0 ? '¡COBRADO!' : 'FUERA';
+      $('close-lbl').textContent = r.pnl >= 0 ? '¡Cobrado!' : 'Fuera';
       $('close-amt').textContent = U.money(r.pnl, { sign: true });
       const pe = $('live-pnl');
       pe.textContent = U.money(r.pnl, { sign: true });
       pe.className = 'pnl ' + (r.pnl >= 0 ? 'up' : 'down');
       $('chart-wrap').classList.remove('danger');
-      this.setLiveNote('...Y EL MERCADO SIGUE SIN TI');
+      this.setLiveNote('...y el mercado sigue sin ti');
       SN.Audio.sfx('cash');
       SN.Hands.drumming = false;
     },
@@ -568,19 +573,20 @@
       const cap = this.posIn($('hud-capital'));
       const cx = cap.x + 60, cy = cap.y + 14;
       const big = r.ret >= 0.5 || r.pnl >= Math.max(100, S.run.capital * 0.4);
+      SN.Desk.flashGlow(r.pnl >= 0 ? P.green : P.coral, big ? 1.4 : 0.9);
       if (r.pnl >= 0) {
         SN.FX.win(r.pnl, cx, cy, big);
         const cp = SN.Chart.lastCandlePos();
         SN.FX.burst(cp.x, cp.y, { n: 14, colors: [P.green, P.yellow], speed: 70 });
         SN.FX.float(U.money(r.pnl, { sign: true }), cx + 10, cy + 10, 'gain');
         SN.Audio.sfx('win', { big });
-        SN.Hands.celebrate();
+        SN.Hands.celebrate(big);
       } else {
         SN.FX.loss(r.pnl, cx, cy, big || r.liquidated);
         SN.FX.float(U.money(r.pnl), cx + 10, cy + 6, 'loss');
         SN.Audio.sfx(r.liquidated ? 'liquidation' : 'loss', { big });
-        SN.Hands.flinch();
-        if (r.liquidated) this.stamp('¡LIQUIDADO!', 'coral', `EL MERCADO FUE ${Math.round(100 / r.leverage)}% EN TU CONTRA`, 1.3);
+        SN.Hands.flinch(big || r.liquidated);
+        if (r.liquidated) this.stamp('¡LIQUIDADO!', 'coral', `El mercado fue ${Math.round(100 / r.leverage)}% en tu contra`, 1.3);
       }
       SN.Hands.drumming = false;
       SN.Desk.led = 'idle';
@@ -591,12 +597,13 @@
       $('chart-wrap').classList.remove('danger');
       if (!r || !r.cashed) return;
       const diff = r.stayPnl - r.pnl;
-      if (diff < -0.5) this.setLiveNote(`¡TE AHORRASTE ${U.money(-diff)}!`, 'good');
-      else if (diff > 0.5) this.setLiveNote(`TE PERDISTE ${U.money(diff)} MÁS`, 'bad');
-      else this.setLiveNote('JUSTO A TIEMPO');
+      if (diff < -0.5) this.setLiveNote(`¡Te ahorraste ${U.money(-diff)}!`, 'good');
+      else if (diff > 0.5) this.setLiveNote(`Te perdiste ${U.money(diff)} más`, 'bad');
+      else this.setLiveNote('Justo a tiempo');
     },
 
     endTrade() {
+      SN.Desk.glowTo(P.cyan, 0.5);
       $('trade-form').classList.remove('hidden');
       $('trade-live').classList.add('hidden');
       $('btn-fast').classList.add('hidden');
@@ -624,8 +631,8 @@
       const run = S.run;
       if (!run || run.position) return;
       const h = SN.Market.hint(run.selected);
-      if (h.power === 0) this.tip('flat', 'SIN PISTA CLARA (?). PUEDES ESPERAR: EL MERCADO SIGUE SOLO.');
-      else if (run.markets[run.selected].events.length) this.tip('news', 'LAS NOTICIAS MUEVEN EL PRECIO: ▲ SUBE, ▼ BAJA, ? RUMOR.');
+      if (h.power === 0) this.tip('flat', 'Sin pista clara (?). Puedes esperar: el mercado sigue solo.');
+      else if (run.markets[run.selected].events.length) this.tip('news', 'Las noticias mueven el precio: ▲ sube, ▼ baja, ? rumor.');
     },
 
     // ---------- Tutorial: resaltado ----------

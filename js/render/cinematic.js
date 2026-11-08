@@ -6,6 +6,8 @@
   const P = SN.PAL, Px = SN.Px, U = SN.Util, S = SN.State;
   const R = (g, x, y, w, h, c) => Px.rect(g, x, y, w, h, c);
   const SKIP = { skip: true };
+  // Expresiones de las cinemáticas -> expresiones del protagonista
+  const HERO_EXPR = { star: 'star', happy: 'happy', confused: 'worried', worried: 'nervous', relieved: 'relieved', shocked: 'shock', neutral: 'calm' };
   const $ = (id) => document.getElementById(id);
 
   const C = SN.Cine = {
@@ -55,7 +57,7 @@
       el.classList.remove('hidden');
       el.classList.toggle('click', !auto);
       return new Promise((resolve) => {
-        this.say_ = { name, full: text.toUpperCase(), shown: 0, auto, t: 0, resolve };
+        this.say_ = { name, full: text, shown: 0, auto, t: 0, resolve };
         this.renderSubs();
       }).then(() => this.check());
     },
@@ -134,7 +136,7 @@
       $('app').classList.add('hidden');
       $('webshop').classList.remove('hidden');
       SN.Game.camTo({ x: 320, y: 180, zoom: 1 }, 0.01);
-      SN.Game.camTo({ x: 318, y: 150, zoom: 1.14 }, 10);
+      SN.Game.camTo({ x: SN.SCREEN.x + SN.SCREEN.w / 2, y: 150, zoom: 1.14 }, 10);
       this.moveCursor(330, 200, 0.01);
       await this.wait(0.6);
       await this.say('', sub.browsing, { auto: 2.4 });
@@ -156,7 +158,7 @@
       btn.classList.remove('wiggle');
       btn.classList.add('pressed');
       await this.wait(0.15);
-      const thanks = U.el('div', 'thanks', `${st.thanks}<span style="font-size:8px;line-height:12px;color:${P.coalL}">PAGO APLAZADO: 7 DÍAS</span>`);
+      const thanks = U.el('div', 'thanks', `${st.thanks}<span style="font-size:8px;line-height:12px;color:${P.coalL}">Pago aplazado: 7 días</span>`);
       $('webshop').appendChild(thanks);
       SN.FX.confetti(50);
       SN.Audio.sfx('cheer');
@@ -165,7 +167,7 @@
       // Cara de felicidad
       this.setShot({ type: 'face', expr: 'star', opts: { fist: true }, confetti: true });
       SN.Audio.sfx('win', { big: true });
-      await this.say('TÚ', sub.happy, { auto: 2.2 });
+      await this.say('Tú', sub.happy, { auto: 2.2 });
     },
 
     // ESCENA 2 — La deuda
@@ -196,10 +198,10 @@
           SN.Audio.sfx('notifyBad');
         });
       });
-      await this.say('TÚ', sub.confused, { auto: 2.2 });
+      await this.say('Tú', sub.confused, { auto: 2.2 });
       this.shot.expr = 'worried';
       this.shot.opts = {};
-      await this.say('TÚ', sub.worried, { auto: 3 });
+      await this.say('Tú', sub.worried, { auto: 3 });
       this.notifs.forEach((n) => n.remove());
       this.notifs = [];
     },
@@ -213,7 +215,7 @@
       const screen = $('screen');
       screen.classList.add('off');
       SN.Game.camTo({ x: 320, y: 180, zoom: 1 }, 0.01);
-      SN.Game.camTo({ x: 318, y: 140, zoom: 1.12 }, 8);
+      SN.Game.camTo({ x: SN.SCREEN.x + SN.SCREEN.w / 2, y: 140, zoom: 1.12 }, 8);
       SN.Audio.setMood('silent');
       await this.wait(1.4);
       // El monitor se enciende solo
@@ -252,7 +254,7 @@
       this.beat = true;
       this.setShot({ type: 'face', expr, opts: {} });
       $('subs').classList.remove('hidden');
-      $('subs').innerHTML = `<b>TÚ:</b> ${text.toUpperCase()}`;
+      $('subs').innerHTML = `<b>Tú:</b> ${text}`;
       await new Promise((r) => { this.beatResolve = r; SN.after(dur, () => { if (this.beatResolve === r) { this.beatResolve = null; r(); } }); });
       $('subs').classList.add('hidden');
       this.setShot(null);
@@ -349,14 +351,15 @@
 
     renderFace(g, sh) {
       const b = Px.ctx(this.buf);
-      // Fondo: la pared de la habitación desde el punto de vista del monitor
+      // Fondo: la habitación vista desde el monitor (pared violeta y persianas con luz)
       R(b, 0, 0, 160, 90, P.wall);
-      for (let x = 2; x < 160; x += 7) R(b, x, 0, 1, 90, '#EAD4A8');
-      R(b, 8, 8, 30, 38, P.coal); R(b, 10, 10, 26, 34, P.cyan); R(b, 10, 30, 26, 14, P.green); R(b, 14, 16, 6, 6, P.yellow);
+      for (let x = 2; x < 160; x += 7) R(b, x, 0, 1, 90, P.wallM);
+      R(b, 6, 4, 46, 50, P.coalD);
+      for (let y = 6; y < 52; y += 4) { R(b, 8, y, 42, 2, sh.night ? '#45367A' : '#FFA65A'); R(b, 8, y + 2, 42, 2, sh.night ? '#140E30' : '#9A3488'); }
       R(b, 118, 30, 42, 3, P.woodM); R(b, 122, 18, 5, 12, P.coral); R(b, 128, 20, 5, 10, P.orange); R(b, 134, 16, 5, 14, P.green);
       // De noche la habitación se oscurece, pero la cara queda iluminada por la pantalla
       if (sh.night) { b.globalAlpha = 0.55; R(b, 0, 0, 160, 90, P.coalDD); b.globalAlpha = 1; }
-      SN.Chars.face(b, 80, 26, sh.expr, sh.t, sh.opts || {});
+      SN.Hero.closeUp(b, HERO_EXPR[sh.expr] || 'worried', sh.t, sh.opts || {});
       if (sh.night) { b.globalAlpha = 0.14; R(b, 0, 0, 160, 90, P.coalDD); b.globalAlpha = 1; }
       if (sh.confetti) {
         for (let i = 0; i < 40; i++) {

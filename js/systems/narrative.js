@@ -78,29 +78,29 @@
       SN.FX.ring(cap.x + 60, cap.y + 14, P.green, 120, 0.9);
       SN.Hands.celebrate();
       SN.Desk.dirty();
-      await SN.UI.stamp('DEUDA SALDADA', 'green', auto ? 'SE COBRÓ AL VENCER EL PLAZO' : 'ERES LIBRE (MÁS O MENOS)', 2);
+      await SN.UI.stamp('DEUDA SALDADA', 'green', auto ? 'Se cobró al vencer el plazo' : 'Eres libre (más o menos)', 2);
       await SN.Cine.faceBeat('relieved', 'Uf... Libre. Por fin.', 2.2);
       await this.hoodedScene(story().hoodedEvents.debtPaid);
       SN.Economy.add(25, 'reward');
-      SN.FX.float('+$25.00 REGALO', 210, 90, 'gold');
+      SN.FX.float('+$25.00 regalo', 210, 90, 'gold');
       SN.Audio.sfx('unlock');
       run.flags.debtPaid = true;
-      await SN.UI.stamp('OBJETIVO: $1,000', '', 'OBJETIVO DESBLOQUEADO · ×10 · TIENDA · LÍMITE', 2.2);
-      this.addNews({ title: 'DEUDA SALDADA. NUEVO OBJETIVO: $1,000', tone: 'pos', art: 'sello' });
+      await SN.UI.stamp('OBJETIVO: $1,000', '', 'Nuevo objetivo · ×10 · tienda · límite', 2.2);
+      this.addNews({ title: 'Deuda saldada. Nuevo objetivo: $1,000', tone: 'pos', art: 'sello' });
       SN.UI.renderAll();
     },
 
     async onGoal(g, next) {
       SN.Audio.sfx('cheer');
       SN.FX.confetti(60);
-      await SN.UI.stamp('¡OBJETIVO CUMPLIDO!', 'green', g.reward ? `BONO DE LA APP: +${U.money(g.reward, { cents: false })}` : '', 1.8);
+      await SN.UI.stamp('¡OBJETIVO CUMPLIDO!', 'green', g.reward ? `Bono de la app: +${U.money(g.reward, { cents: false })}` : '', 1.8);
       if (g.markets.length) SN.Audio.sfx('unlock');
       const lines = story().hoodedEvents[g.story];
       if (lines) await this.hoodedScene(lines, { smile: g.id !== 'g1000' });
       if (g.id === 'g25000') await this.teaser();
-      if (next) await SN.UI.stamp(`OBJETIVO: ${U.short(next.amount)}`, '', 'NUEVA META DESBLOQUEADA', 1.6);
+      if (next) await SN.UI.stamp(`OBJETIVO: ${U.short(next.amount)}`, '', 'Nueva meta desbloqueada', 1.6);
       else await this.endDemo();
-      this.addNews({ title: `OBJETIVO ${U.short(g.amount)} CUMPLIDO`, tone: 'pos', art: 'dinero' });
+      this.addNews({ title: `Objetivo ${U.short(g.amount)} cumplido`, tone: 'pos', art: 'dinero' });
     },
 
     async teaser() {
@@ -146,7 +146,7 @@
         run.darkUsed.generic = gi + 1;
       }
       run.darkness++;
-      this.addNews({ title: text, tone: 'neg', market, dark: true, art, text: `MOMENTOS DESPUÉS DE TU OPERACIÓN EN ${D.marketById(market).short}` });
+      this.addNews({ title: text, tone: 'neg', market, dark: true, art, text: `Momentos después de tu operación en ${D.marketById(market).short}` });
       SN.Desk.dirty();
       SN.Audio.setDarkness(run.darkness / 12);
       SN.Audio.sfx('notifyBad');
@@ -169,7 +169,7 @@
   SN.Events.on('debt:paid', ({ auto }) => {
     N.pending.unshift(() => N.onDebtPaid(auto));
   });
-  SN.Events.on('debt:defaulted', () => N.addNews({ title: 'PLAZO VENCIDO. EMBARGO.', tone: 'neg', art: 'documento' }));
+  SN.Events.on('debt:defaulted', () => N.addNews({ title: 'Plazo vencido. Embargo.', tone: 'neg', art: 'documento' }));
   SN.Events.on('trade:closed', (r) => {
     const run = S.run;
     if (!run.debt.paid || r.pnl <= 0) return;

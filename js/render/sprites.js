@@ -132,6 +132,10 @@
       '.....kk.....',
       '............',
     ],
+    // --- Iconos de navegación (10x10): mejoras, noticias, tienda ---
+    wrench: ['.......kk.', '......kwwk', '.....kwkk.', '....kwwk..', '...kwwk...', '..kwwk....', '.kwwk.....', 'kwwk......', 'kwk.......', 'kk........'],
+    news: ['kkkkkkkkk.', 'kwwwwwwwkk', 'kwcccwwwkk', 'kwcccwwwkk', 'kwwwwwwwkk', 'kwdddddwkk', 'kwwwwwwwkk', 'kwdddddwkk', 'kwwwwwwwk.', '.kkkkkkkk.'],
+    cart: ['kk........', '.k........', '.kkkkkkkkk', '.kyyyyyyk.', '..kyyyyyk.', '..kyyyyk..', '..kkkkkk..', '...k...k..', '..kkk.kkk.', '...k...k..'],
     // --- Calavera de la liquidación (7x6) y llama de la racha (7x8) ---
     skull: ['.kkkkk.', 'kwwwwwk', 'kwkwkwk', 'kwwwwwk', '.kwkwk.', '..kkk..'],
     // --- Moneda girando (8x8, 4 fotogramas) ---

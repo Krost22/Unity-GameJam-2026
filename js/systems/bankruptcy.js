@@ -136,7 +136,7 @@
       const extra = st.extra[1].replace('{coins}', U.money(this.pig.coins));
       const el = U.el('div', 'overlay-panel piggy-ui');
       el.innerHTML = `<div class="msg"><div class="t1">${st.title}</div><div class="t2">${st.message}</div><div class="t3">${st.extra[0]}<br>${extra}</div></div>
-        <div class="row"><button class="btn btn-yellow" id="bk-retry">REINTENTAR PARTIDA</button><button class="btn btn-cream" id="bk-menu">VOLVER AL MENÚ</button></div>`;
+        <div class="row"><button class="btn btn-yellow" id="bk-retry">Reintentar partida</button><button class="btn btn-cream" id="bk-menu">Volver al menú</button></div>`;
       document.getElementById('layer-top').appendChild(el);
       this.ui = el;
       SN.Audio.sfx('notify');

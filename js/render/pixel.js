@@ -85,7 +85,7 @@
       g.font = `${size}px SaldoPixel`;
       g.textBaseline = 'alphabetic';
       g.textAlign = opts.align || 'left';
-      str = String(str).toUpperCase();
+      str = String(str);
       if (opts.outline) {
         g.fillStyle = opts.outline;
         const o = size / 8;
@@ -97,7 +97,7 @@
     },
     textWidth(g, str, size = 8) {
       g.font = `${size}px SaldoPixel`;
-      return g.measureText(String(str).toUpperCase()).width;
+      return g.measureText(String(str)).width;
     },
     // Sprite desde filas de texto. pal opcional para remapear letras.
     fromRows(rows, pal) {

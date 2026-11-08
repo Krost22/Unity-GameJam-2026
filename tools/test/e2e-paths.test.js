@@ -90,7 +90,7 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
     await b.sleep(400);
     await shot('p1-ajustes');
     ok(await ev('document.querySelector(".set-keys").textContent.includes("ESPACIO")'), 'AJUSTES lista las teclas');
-    await ev('[...document.querySelectorAll(".set-row .btn")].find((x) => x.textContent === "REPASAR").click()');
+    await ev('[...document.querySelectorAll(".set-row .btn")].find((x) => x.textContent === "Repasar").click()');
     await b.sleep(400);
     ok(await ev('SN.Tutorial.active'), 'el tutorial se puede repetir desde AJUSTES');
     await drain(200);

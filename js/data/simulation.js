@@ -7,7 +7,7 @@
     startCapital: 100,
     startDebt: 250,
     deadlineDays: 7,
-    turnNames: ['MAÑANA', 'TARDE', 'NOCHE'], // cada operación consume un turno; 3 turnos = 1 día
+    turnNames: ['Mañana', 'Tarde', 'Noche'], // cada operación consume un turno; 3 turnos = 1 día
     initialHistory: 60,  // velas de historial al empezar
     historyLength: 120,  // velas que se guardan por mercado
     idleCandles: 3,      // velas que avanzan los mercados que no operas en cada turno
@@ -38,31 +38,31 @@
 
   D.upgrades = [
     {
-      id: 'suerte', name: 'SUERTE', icon: 'trebol', color: 'green',
+      id: 'suerte', name: 'Suerte', icon: 'trebol', color: 'green',
       desc: 'Inclina un poquito el mercado a tu favor.',
       unlock: { type: 'start' },
       levels: [{ cost: 25, value: 1 }, { cost: 90, value: 2 }, { cost: 320, value: 3 }, { cost: 1400, value: 4 }, { cost: 6000, value: 5 }],
-      effect: (v) => (v ? `≈ +${v * 3}% DE ACIERTO` : 'SIN EFECTO'),
+      effect: (v) => (v ? `≈ +${v * 3}% de acierto` : 'Sin efecto'),
     },
     {
-      id: 'limite', name: 'LÍMITE', icon: 'caja', color: 'yellow',
+      id: 'limite', name: 'Límite', icon: 'caja', color: 'yellow',
       desc: 'Apuestas más grandes.',
-      unlock: { type: 'flag', flag: 'debtPaid', label: 'PAGA TU DEUDA' },
+      unlock: { type: 'flag', flag: 'debtPaid', label: 'Paga tu deuda' },
       base: 250,
       levels: [{ cost: 150, value: 1000 }, { cost: 700, value: 5000 }, { cost: 3500, value: 25000 }, { cost: 15000, value: 100000 }, { cost: 60000, value: 1000000 }],
-      effect: (v) => `MÁXIMO: ${SN.Util.short(v)}`,
+      effect: (v) => `Máximo: ${SN.Util.short(v)}`,
     },
     {
-      id: 'analisis', name: 'ANÁLISIS', icon: 'lupa', color: 'cyan',
-      desc: 'La PISTA de la gráfica acierta más.',
-      unlock: { type: 'goal', goal: 'g1000', label: 'META $1,000' },
+      id: 'analisis', name: 'Análisis', icon: 'lupa', color: 'cyan',
+      desc: 'La pista de la gráfica acierta más.',
+      unlock: { type: 'goal', goal: 'g1000', label: 'Meta $1,000' },
       levels: [{ cost: 400, value: 1 }, { cost: 2500, value: 2 }, { cost: 12000, value: 3 }],
-      effect: (v) => ['SIN EFECTO', 'PISTA NÍTIDA', 'PISTA MUY NÍTIDA', 'PISTA CASI EXACTA'][v],
+      effect: (v) => ['Sin efecto', 'Pista nítida', 'Pista muy nítida', 'Pista casi exacta'][v],
     },
     {
-      id: 'resistencia', name: 'RESISTENCIA', icon: 'escudo', color: 'orange',
+      id: 'resistencia', name: 'Resistencia', icon: 'escudo', color: 'orange',
       desc: 'Reduce ciertos efectos... de cosas que todavía no han pasado.',
-      unlock: { type: 'future', label: 'PRÓXIMAMENTE' },
+      unlock: { type: 'future', label: 'Próximamente' },
       levels: [],
       effect: () => '???',
     },
@@ -78,13 +78,13 @@
 
   // Tienda de estilo de vida: cada compra aparece en el escritorio
   D.shop = [
-    { id: 'taza', name: 'TAZA DECENTE', price: 30, desc: 'Adiós al vaso de papel de hace tres días.' },
-    { id: 'planta', name: 'PLANTA QUE NO SE MUERE', price: 90, desc: 'De plástico. Garantizado.' },
-    { id: 'lampara', name: 'LÁMPARA DE ESCRITORIO', price: 250, desc: 'Luz cálida para decisiones frías.' },
-    { id: 'poster', name: 'PÓSTER MOTIVACIONAL', price: 600, desc: '"EL DINERO NO DUERME". Tú tampoco.' },
-    { id: 'alfombrilla', name: 'ALFOMBRILLA XXL', price: 1500, desc: 'Más superficie para hacer clic en SUBE.' },
-    { id: 'teclado', name: 'TECLADO DE COLORES', price: 4000, desc: 'Cada tecla, un color. Cada color, una deuda menos.' },
-    { id: 'cascos', name: 'AURICULARES PRO', price: 9000, desc: 'Para no oír lo que pasa fuera.' },
-    { id: 'trofeo', name: 'TORO DE ORO', price: 30000, desc: 'Un toro alcista de oro macizo. Bueno, chapado.' },
+    { id: 'taza', name: 'Taza decente', price: 30, desc: 'Adiós al vaso de papel de hace tres días.' },
+    { id: 'planta', name: 'Planta que no se muere', price: 90, desc: 'De plástico. Garantizado.' },
+    { id: 'lampara', name: 'Farolillo de papel', price: 250, desc: 'Luz cálida para decisiones frías.' },
+    { id: 'poster', name: 'Póster motivacional', price: 600, desc: '"EL DINERO NO DUERME". Tú tampoco.' },
+    { id: 'alfombrilla', name: 'Alfombrilla XXL', price: 1500, desc: 'Más superficie para hacer clic en Sube.' },
+    { id: 'teclado', name: 'Teclado de colores', price: 4000, desc: 'Cada tecla, un color. Cada color, una deuda menos.' },
+    { id: 'cascos', name: 'Auriculares pro', price: 9000, desc: 'Para no oír lo que pasa fuera. Te los cuelgas al cuello.' },
+    { id: 'trofeo', name: 'Toro de oro', price: 30000, desc: 'Un toro alcista de oro macizo. Bueno, chapado.' },
   ];
 })(window.SN);

@@ -103,6 +103,47 @@ const G = {
   '♪': '..##.|..#.#|..#..|..#..|###..|###..|.....',
   '✓': '......|.....#|....#.|#..#..|.##...|......|......',
 };
+// Minúsculas: altura x de 5 filas (5-9), ascendentes desde la fila 3 y descendentes hasta la 11
+const LOWER = {
+  a: '5:.###.|....#|.####|#...#|.####',
+  b: '#....|#....|####.|#...#|#...#|#...#|####.',
+  c: '5:.###|#...|#...|#...|.###',
+  d: '....#|....#|.####|#...#|#...#|#...#|.####',
+  e: '5:.###.|#...#|#####|#....|.####',
+  f: '..##|.#..|####|.#..|.#..|.#..|.#..',
+  g: '5:.####|#...#|#...#|#...#|.####|....#|.###.',
+  h: '#....|#....|####.|#...#|#...#|#...#|#...#',
+  i: '#|.|#|#|#|#|#',
+  j: '..#|...|..#|..#|..#|..#|..#|#.#|.#.',
+  k: '#...|#...|#..#|#.#.|##..|#.#.|#..#',
+  l: '#.|#.|#.|#.|#.|#.|.#',
+  m: '5:####.|#.#.#|#.#.#|#.#.#|#.#.#',
+  n: '5:####.|#...#|#...#|#...#|#...#',
+  o: '5:.###.|#...#|#...#|#...#|.###.',
+  p: '5:####.|#...#|#...#|#...#|####.|#....|#....',
+  q: '5:.####|#...#|#...#|#...#|.####|....#|....#',
+  r: '5:#.##|##..|#...|#...|#...',
+  s: '5:.####|#....|.###.|....#|####.',
+  t: '.#..|.#..|####|.#..|.#..|.#..|..##',
+  u: '5:#...#|#...#|#...#|#...#|.####',
+  v: '5:#...#|#...#|#...#|.#.#.|..#..',
+  w: '5:#...#|#...#|#.#.#|#.#.#|.#.#.',
+  x: '5:#...#|.#.#.|..#..|.#.#.|#...#',
+  y: '5:#...#|#...#|#...#|#...#|.####|....#|.###.',
+  z: '5:#####|...#.|..#..|.#...|#####',
+};
+Object.assign(G, LOWER);
+// Minúsculas con tilde: la tilde va en las filas 3-4, sobre la altura x
+const LOWER_ACCENTED = {
+  'á': ['a', ['..#..', '.#...']], 'é': ['e', ['..#..', '.#...']], 'ó': ['o', ['..#..', '.#...']], 'ú': ['u', ['..#..', '.#...']],
+  'ñ': ['n', ['.##.#', '#..#.']], 'ü': ['u', ['.....', '.#.#.']],
+};
+for (const [ch, [base, acc]] of Object.entries(LOWER_ACCENTED)) {
+  const b = /^(\d+):(.*)$/.exec(G[base]);
+  G[ch] = '3:' + acc.join('|') + '|' + b[2];
+}
+G['í'] = '3:.#|#.|..|#.|#.|#.|#.';
+
 // Tildes para mayúsculas (filas 0-1), centradas sobre el glifo
 const ACCENTS = { acute: ['..#', '.#.'], tilde: ['.##.#', '#..#.'], diaer: ['.....', '.#.#.'] };
 const ACCENTED = {
@@ -209,13 +250,14 @@ for (const g of ordered) {
 loca.push(glyf.length);
 const numGlyphs = ordered.length;
 
-// cmap: las minúsculas usan los mismos glifos que las mayúsculas
+// cmap: cada carácter con su glifo; si falta una minúscula, usa la mayúscula
 const cmapPairs = [];
+const own = new Set(ordered.filter((g) => g.char).map((g) => g.char));
 ordered.forEach((g, gid) => {
   if (!g.char) return;
   cmapPairs.push([g.char.codePointAt(0), gid]);
   const lower = g.char.toLowerCase();
-  if (lower !== g.char) cmapPairs.push([lower.codePointAt(0), gid]);
+  if (lower !== g.char && !own.has(lower)) cmapPairs.push([lower.codePointAt(0), gid]);
 });
 cmapPairs.sort((a, b) => a[0] - b[0]);
 const segs = [];

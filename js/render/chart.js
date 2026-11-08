@@ -172,8 +172,8 @@
 
       // ---------- Fondo ----------
       const pnlNow = pos && !pos.settled ? (lastClose - pos.entry) * pos.direction : 0;
-      R(g, 0, 0, W, H, P.creamL);
-      if (pos && !pos.settled && a) R(g, 0, 0, plotW + 1, H, pnlNow >= 0 ? 'rgba(85,201,87,0.07)' : 'rgba(240,91,84,0.08)');
+      R(g, 0, 0, W, H, P.navy);
+      if (pos && !pos.settled && a) R(g, 0, 0, plotW + 1, H, pnlNow >= 0 ? 'rgba(61,220,132,0.08)' : 'rgba(255,79,109,0.09)');
       if (a && a.revealed >= a.total - SN.Data.sim.dangerCandles && pos && !pos.settled && Math.floor(this.t * 4) % 2 === 0) {
         for (let y = 0; y < H; y += 4) R(g, plotW - 2, y, 2, 2, P.orange);
       }
@@ -183,10 +183,10 @@
       for (let p = Math.ceil(v.min / step) * step; p <= v.max; p += step) {
         const y = yOf(p);
         if (y < TOP - 2 || y > H - BOTTOM) continue;
-        for (let x = 1; x < plotW; x += 3) R(g, x, y, 1, 1, P.creamM);
-        Px.text(g, fmtPrice(p), W - AXIS + 2, y + 4, P.coalL);
+        for (let x = 1; x < plotW; x += 3) R(g, x, y, 1, 1, P.navyL);
+        Px.text(g, fmtPrice(p), W - AXIS + 2, y + 4, P.creamDD);
       }
-      R(g, plotW + 1, 0, 1, H, P.creamD);
+      R(g, plotW + 1, 0, 1, H, P.navyLL);
 
       // ---------- Operación: sombreado entre la entrada y el precio ----------
       const firstIdx = pos ? hist.length - pos.candles : -1;
@@ -194,7 +194,7 @@
       if (pos && !pos.settled) {
         const ys = yOf(pos.entry), yc = yOf(lastClose);
         const x0 = entrySlot >= 0 ? xOf(entrySlot) - 1 : 1;
-        R(g, x0, Math.min(ys, yc), plotW - x0, Math.abs(yc - ys) + 1, pnlNow >= 0 ? 'rgba(85,201,87,0.18)' : 'rgba(240,91,84,0.18)');
+        R(g, x0, Math.min(ys, yc), plotW - x0, Math.abs(yc - ys) + 1, pnlNow >= 0 ? 'rgba(61,220,132,0.2)' : 'rgba(255,79,109,0.2)');
       }
 
       // Media móvil (tendencia)
@@ -204,7 +204,7 @@
         const s = forming && it.idx === visibleEnd ? null : sma[it.idx];
         if (s == null) { prev = null; continue; }
         const pt = { x: xOf(it.slot) + Math.floor(bw / 2), y: yOf(s) };
-        if (prev) Px.line(g, prev.x, prev.y, pt.x, pt.y, 'rgba(33,146,176,0.55)');
+        if (prev) Px.line(g, prev.x, prev.y, pt.x, pt.y, 'rgba(168,128,255,0.6)');
         prev = pt;
       }
 
@@ -245,7 +245,7 @@
           const slot = items.findIndex((it) => it.idx === exitIdx);
           if (slot >= 0) {
             const x = xOf(slot) + Math.floor(bw / 2), y = yOf(pos.exit);
-            for (let yy = TOP; yy < H - BOTTOM; yy += 3) R(g, x, yy, 1, 2, P.coalL);
+            for (let yy = TOP; yy < H - BOTTOM; yy += 3) R(g, x, yy, 1, 2, P.navyLL);
             g.drawImage(SN.Sprites.get('coin0'), x - 4, y - 4);
           }
         }
@@ -258,8 +258,8 @@
       const ly = U.clamp(this.lastY, TOP, H - BOTTOM - 1);
       for (let x = this.lastX + bw + 1; x < plotW; x += 2) if (!hint) R(g, x, ly, 1, 1, P.yellowD);
       R(g, W - AXIS, ly - 5, AXIS, 10, P.yellow);
-      R(g, W - AXIS, ly - 5, 1, 10, P.coal);
-      Px.text(g, fmtPrice(lastClose), W - AXIS + 2, ly + 4, P.coal);
+      R(g, W - AXIS, ly - 5, 1, 10, P.navyDD);
+      Px.text(g, fmtPrice(lastClose), W - AXIS + 2, ly + 4, P.navyD);
     },
   };
 
@@ -282,7 +282,7 @@
     const col = hint.dir > 0 ? P.green : hint.dir < 0 ? P.coral : P.orange;
     const dark = hint.dir > 0 ? P.greenD : hint.dir < 0 ? P.coralD : P.orangeD;
     // Separador AHORA | FUTURO
-    for (let y = 2; y < H - 2; y += 3) R(g, x0 + 1, y, 1, 1, P.creamD);
+    for (let y = 2; y < H - 2; y += 3) R(g, x0 + 1, y, 1, 1, P.navyLL);
     let tipY = y0;
     for (let dx = 2; dx <= len; dx++) {
       const f = dx / len;
@@ -307,7 +307,7 @@
     // Flechas: una por cada nivel de fuerza
     for (let i = 0; i < hint.power; i++) {
       const cy = hint.dir > 0 ? tipY - 6 - i * 5 + bob : tipY + 6 + i * 5 - bob;
-      chevron(g, tx, cy, hint.dir, i === hint.power - 1 ? dark : col);
+      chevron(g, tx, cy, hint.dir, i === hint.power - 1 ? (hint.dir > 0 ? P.greenL : P.coralL) : col);
     }
   }
 

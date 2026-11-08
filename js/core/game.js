@@ -70,7 +70,8 @@
         // Planos de cinemática a pantalla completa: encuadre fijo, sin el zoom del escritorio
         base = Math.min(this.vw / SN.W, this.vh / SN.H); fx = 320; fy = 180; zoom = 1;
       } else {
-        if (this.mode === 'monitor') { fx = 318 + (this.cam.x - 320); fy = 133 + (this.cam.y - 180) * 0.3; }
+        // En pantallas pequeñas la cámara se queda centrada en el monitor
+        if (this.mode === 'monitor') { fx = SN.SCREEN.x + SN.SCREEN.w / 2; fy = SN.SCREEN.y + SN.SCREEN.h / 2 - 4; }
         const f = this.focus;
         if (f.k > 0) {
           const k = U.ease.inOutSine(U.clamp(f.k, 0, 1));
@@ -81,7 +82,13 @@
         zoom *= 1 + this.pulse;
       }
       const z = base * zoom;
-      const tx = Math.round(this.vw / 2 - fx * z), ty = Math.round(this.vh / 2 - fy * z);
+      let tx = Math.round(this.vw / 2 - fx * z), ty = Math.round(this.vh / 2 - fy * z);
+      // Con zoom, la cámara nunca enseña lo que hay fuera del escenario
+      if (!shot) {
+        const sw = SN.W * z, sh = SN.H * z;
+        if (sw >= this.vw) tx = Math.round(U.clamp(tx, this.vw - sw, 0));
+        if (sh >= this.vh) ty = Math.round(U.clamp(ty, this.vh - sh, 0));
+      }
       const key = `${tx},${ty},${z.toFixed(4)}`;
       if (key === this.camKey) return;
       this.camKey = key;
@@ -100,8 +107,8 @@
       if (zoom > 0) {
         const p = SN.Chart.lastCandlePos();
         // Entre la vela y el panel de operar, para no perder de vista COBRAR
-        f.x = U.clamp(SN.SCREEN.x + p.x * 0.45 + 365 * 0.55, 300, 420);
-        f.y = U.clamp(SN.SCREEN.y + p.y, 110, 165);
+        f.x = SN.SCREEN.x + U.clamp(p.x * 0.45 + 365 * 0.55, 190, 312);
+        f.y = SN.SCREEN.y + U.clamp(p.y, 96, 151);
         f.zoom = zoom;
       }
       f.from = f.k; f.to = zoom > 0 ? 1 : 0; f.t = 0; f.dur = Math.max(0.01, dur);
@@ -204,13 +211,13 @@
       btnNew.addEventListener('click', () => {
         if (SN.Save.hasRun() && !btnNew.dataset.confirm) {
           btnNew.dataset.confirm = '1';
-          btnNew.textContent = '¿SEGURO? SE BORRA';
+          btnNew.textContent = '¿Seguro? Se borra';
           SN.Audio.sfx('error');
-          SN.after(2.5, () => { delete btnNew.dataset.confirm; btnNew.textContent = 'NUEVA PARTIDA'; });
+          SN.after(2.5, () => { delete btnNew.dataset.confirm; btnNew.textContent = 'Nueva partida'; });
           return;
         }
         delete btnNew.dataset.confirm;
-        btnNew.textContent = 'NUEVA PARTIDA';
+        btnNew.textContent = 'Nueva partida';
         this.newGame();
       });
       $('btn-continue').addEventListener('click', () => this.continueGame());
@@ -389,8 +396,8 @@
         this.dayChanged = false;
         SN.Audio.sfx('day');
         const left = SN.Debt.daysLeft();
-        const sub = run.debt.paid ? (run.darkness >= 4 ? 'LA CIUDAD ESTÁ MÁS SILENCIOSA' : 'OTRO DÍA, OTRA OPORTUNIDAD')
-          : left <= 1 ? '¡ÚLTIMO DÍA PARA PAGAR!' : `FALTAN ${left} DÍAS PARA PAGAR`;
+        const sub = run.debt.paid ? (run.darkness >= 4 ? 'La ciudad está más silenciosa' : 'Otro día, otra oportunidad')
+          : left <= 1 ? '¡Último día para pagar!' : `Faltan ${left} días para pagar`;
         await UI.dayCard(run.day, sub, !run.debt.paid && left <= 2);
       }
       await SN.Narrative.afterTurn();

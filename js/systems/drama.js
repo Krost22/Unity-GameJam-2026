@@ -87,6 +87,7 @@
       SN.Audio.duck(false);
       SN.Audio.sfx(this.up ? 'boom' : 'crash', { big });
       SN.FX.flash(this.good ? P.yellowL : P.coral, big ? 0.28 : 0.16, big ? 0.6 : 0.35);
+      SN.Desk.flashGlow(this.good ? P.yellow : P.coral, big ? 1.6 : 0.8);
       SN.FX.shake(big ? 6 : 3, big ? 0.5 : 0.25);
       SN.FX.speedLines(p.x, p.y, this.good ? P.yellow : P.coralL, big ? 0.7 : 0.4);
       SN.FX.ring(p.x, p.y, col, big ? 130 : 70, 0.8);
@@ -97,7 +98,7 @@
       let word = this.up ? '¡BOOM!' : '¡CRASH!';
       if (this.light) word = this.good ? '¡SE TE ESCAPÓ!' : '¡TE LIBRASTE!';
       SN.FX.word(word, p.x - (p.x > 300 ? 30 : 0), p.y - 18, this.good ? 'gain' : 'loss');
-      if (big) { if (this.good) SN.Hands.celebrate(); else SN.Hands.flinch(); }
+      if (big) { if (this.good) SN.Hands.celebrate(true); else SN.Hands.flinch(true); }
       SN.Events.emit('drama:impact', { good: this.good, up: this.up, light: this.light });
     },
 

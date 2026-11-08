@@ -12,19 +12,31 @@ window.SN = window.SN || {};
   SN.DEBUG = /[?&]debug\b/.test(location.search);
   SN.Data = SN.Data || {};
 
-  // Paleta oficial + tonos derivados para sombrear el pixel art
+  // Paleta lo-fi neón: noche violeta, luz cálida de ventana y acentos de neón.
+  // Las rampas cambian de tono (sombras hacia violeta, luces hacia naranja/amarillo), no solo de brillo.
+  // Los nombres antiguos se conservan con el mismo papel (cream = claro, coal = oscuro, green = gana...).
   SN.PAL = {
-    green: '#55C957', greenL: '#8EE08A', greenD: '#2F8A3C', greenDD: '#1F5E2A',
-    yellow: '#FFD447', yellowL: '#FFE98F', yellowD: '#D9A520', yellowDD: '#A8761A',
-    coral: '#F05B54', coralL: '#F78F87', coralD: '#C23B36', coralDD: '#8A2724',
-    cyan: '#42C5E5', cyanL: '#8EE0F2', cyanD: '#2192B0', cyanDD: '#186A80',
-    orange: '#F28B43', orangeL: '#F7B27A', orangeD: '#C9662A', orangeDD: '#8F4520',
-    cream: '#F4EBD3', creamL: '#FFFAEC', creamM: '#E6DABB', creamD: '#CDBE98', creamDD: '#A89A78',
-    coal: '#30332B', coalL: '#4A4E43', coalM: '#3B3E35', coalD: '#22241E', coalDD: '#171814',
-    wood: '#D39A5B', woodM: '#B87A40', woodD: '#94592C', woodDD: '#6E3F1E',
-    skin: '#F6C49A', skinM: '#E39E6E', skinD: '#BF7448', skinDD: '#8E4E2C',
-    wall: '#F0DDB6', wallM: '#E5CC9E', wallD: '#D6B985',
+    green: '#3DDC84', greenL: '#9CF5BE', greenD: '#1E9A5C', greenDD: '#135C45',
+    yellow: '#FFD34E', yellowL: '#FFF0A3', yellowD: '#E39A2D', yellowDD: '#9C5A22',
+    coral: '#FF4F6D', coralL: '#FF9DB0', coralD: '#C42A52', coralDD: '#7A1640',
+    cyan: '#45E3DA', cyanL: '#AEFFF4', cyanD: '#2394B4', cyanDD: '#174C74',
+    orange: '#FF8F3F', orangeL: '#FFC27E', orangeD: '#D3502F', orangeDD: '#842B33',
+    cream: '#E8E0FA', creamL: '#F8F4FF', creamM: '#D4CAEE', creamD: '#AEA3D2', creamDD: '#8378AC',
+    coal: '#231838', coalL: '#3F2F60', coalM: '#2F2249', coalD: '#180F2A', coalDD: '#0E0A1C',
+    wood: '#9C4A3E', woodM: '#7A3438', woodD: '#55222F', woodDD: '#331425',
+    skin: '#F7B996', skinM: '#E38E72', skinD: '#B85E58', skinDD: '#7E3A47', skinL: '#FFDCC4',
+    wall: '#3B2557', wallM: '#2F1D48', wallD: '#24153A',
     white: '#FFFFFF',
+    // Habitación e interfaz
+    violetDD: '#1F0F3F', violetD: '#3A1E6A', violet: '#6B3FC4', violetL: '#A880FF',
+    magentaDD: '#470F3C', magentaD: '#86206A', magenta: '#D33F9C', magentaL: '#FF82CB',
+    navyDD: '#070A17', navyD: '#0C1025', navy: '#121835', navyM: '#1A2148', navyL: '#262F62', navyLL: '#38448C',
+    // Protagonista y gato
+    hairDD: '#26101F', hairD: '#4A1A2A', hair: '#7A2C32', hairM: '#AB4237', hairL: '#E2723F',
+    shirtDD: '#3A3162', shirtD: '#6A5D9A', shirt: '#A99CD0', shirtM: '#D2C8EE', shirtL: '#F5F0FF',
+    tieD: '#13122C', tie: '#232350', tieL: '#3B3B7A',
+    catD: '#120C20', cat: '#1F1733', catL: '#3A2C59', catEye: '#FFD34E', catPink: '#FF8FB4',
+    leafDD: '#0D3A35', leafD: '#1A684C', leaf: '#33A35E', leafL: '#8FDB6A',
   };
 
   const U = SN.Util = {};

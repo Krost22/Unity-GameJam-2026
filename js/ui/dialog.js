@@ -56,7 +56,7 @@
     },
 
     startLine() {
-      this.full = (this.lines[this.idx] || '').toUpperCase();
+      this.full = this.lines[this.idx] || '';
       this.shown = 0;
       this.txt.textContent = '';
       this.el.querySelector('.next').style.visibility = 'hidden';

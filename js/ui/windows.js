@@ -3,7 +3,7 @@
   'use strict';
   const U = SN.Util, S = SN.State, D = SN.Data;
 
-  const TITLES = { upgrades: 'MEJORAS', news: 'NOTICIAS', shop: 'TIENDA · ESTILO DE VIDA', settings: 'AJUSTES' };
+  const TITLES = { upgrades: 'Mejoras', news: 'Noticias', shop: 'Tienda · estilo de vida', settings: 'Ajustes' };
 
   const W = SN.Windows = {
     current: null, back: null, win: null,
@@ -53,7 +53,7 @@
   }
 
   function buildUpgrades(body) {
-    body.appendChild(U.el('div', 'win-note', 'SE PAGAN CON TU CAPITAL. NINGUNA GARANTIZA NADA.'));
+    body.appendChild(U.el('div', 'win-note', 'Se pagan con tu capital. Ninguna garantiza nada.'));
     for (const d of D.upgrades) {
       const unlocked = SN.Upgrades.isUnlocked(d.id);
       const lv = SN.Upgrades.level(d.id);
@@ -65,7 +65,7 @@
       const eff = next ? `→ ${d.effect(next.value)}` : (unlocked && d.levels.length ? `${d.effect(SN.Upgrades.value(d.id))} · MÁXIMO` : '');
       row.insertAdjacentHTML('beforeend', `
         <div class="t">${d.name}<span class="lv">${unlocked && d.levels.length ? `NV.${lv}` : ''}</span></div>
-        <div class="d">${unlocked ? d.desc : (d.unlock.label || 'BLOQUEADO')}</div>
+        <div class="d">${unlocked ? d.desc : (d.unlock.label || 'Bloqueado')}</div>
         ${unlocked && d.levels.length ? `<div class="e">${eff}</div><div class="pips">${pips}</div>` : ''}`);
       if (unlocked && next) {
         const can = SN.Upgrades.canBuy(d.id);
@@ -101,7 +101,7 @@
     if (/EMBARGO/.test(n.title)) return 'documento';
     return MARKET_ART[n.market] || 'ciudad';
   }
-  function when(n) { return n.filler ? 'EN LA CIUDAD' : `DÍA ${n.day} · ${D.sim.turnNames[n.turn] || ''}`; }
+  function when(n) { return n.filler ? 'En la ciudad' : `Día ${n.day} · ${D.sim.turnNames[n.turn] || ''}`; }
   function tag(n) {
     if (n.dark) return { cls: 'dark', text: 'SUCESOS' };
     const where = n.market ? D.marketById(n.market).short : 'CIUDAD';
@@ -111,9 +111,9 @@
   function buildNews(body) {
     const run = S.run;
     const news = run ? run.news.slice().reverse() : [];
-    const today = run ? `DÍA ${run.day} · ${D.sim.turnNames[run.turn]}` : '';
+    const today = run ? `Día ${run.day} · ${D.sim.turnNames[run.turn]}` : '';
     body.insertAdjacentHTML('beforeend', `<div class="np-mast">EL DIARIO DEL FUTURO</div>
-      <div class="np-sub"><span>${today}</span><span>EDICIÓN DE LA CIUDAD</span><span>$0.50</span></div>`);
+      <div class="np-sub"><span>${today}</span><span>Edición de la ciudad</span><span>$0.50</span></div>`);
     // Si hay pocas noticias del mercado, la ciudad rellena el periódico (nunca sale vacío)
     const filler = D.story.fillerNews.map((n) => Object.assign({ day: 1, turn: 0, filler: true }, n));
     const items = news.slice(0, 31);
@@ -136,16 +136,16 @@
       grid.appendChild(it);
     }
     body.appendChild(grid);
-    body.insertAdjacentHTML('beforeend', '<div class="np-ad">PUBLICIDAD · <b>PLEYZETA 6 ULTRA</b> · AHORA TAMBIÉN A PLAZOS. MUCHOS PLAZOS.</div>');
+    body.insertAdjacentHTML('beforeend', '<div class="np-ad">Publicidad · <b>Pleyzeta 6 Ultra</b> · ahora también a plazos. Muchos plazos.</div>');
   }
 
   function buildShop(body) {
-    body.appendChild(U.el('div', 'win-note', 'TE LO HAS GANADO. ¿O NO? CADA COMPRA APARECE EN TU ESCRITORIO.'));
+    body.appendChild(U.el('div', 'win-note', 'Te lo has ganado. ¿O no? Cada compra aparece en tu habitación.'));
     for (const it of D.shop) {
       const owned = !!S.run.owned[it.id];
       const row = U.el('div', 'shop-row' + (owned ? ' owned' : ''));
       row.appendChild(icon(owned ? 'trebol' : 'caja'));
-      row.insertAdjacentHTML('beforeend', `<div class="t">${it.name}</div><div class="d">${owned ? 'EN TU ESCRITORIO' : it.desc}</div>`);
+      row.insertAdjacentHTML('beforeend', `<div class="t">${it.name}</div><div class="d">${owned ? 'En tu habitación' : it.desc}</div>`);
       if (!owned) {
         const b = U.el('button', 'btn btn-yellow', U.short(it.price));
         b.disabled = S.run.capital - it.price < D.sim.bankruptcyThreshold || !!S.run.position;
@@ -176,19 +176,19 @@
       body.appendChild(r);
       return b;
     };
-    row('MÚSICA', st.music ? 'SÍ' : 'NO', st.music ? 'btn-green' : 'btn-cream', () => { st.music = !st.music; SN.Audio.setMusic(st.music); SN.Save.saveProfile(); W.refresh(); });
-    row('EFECTOS DE SONIDO', st.sfx ? 'SÍ' : 'NO', st.sfx ? 'btn-green' : 'btn-cream', () => { st.sfx = !st.sfx; SN.Audio.setSfx(st.sfx); SN.Save.saveProfile(); SN.UI.renderSound(); W.refresh(); });
-    row('PANTALLA COMPLETA', 'CAMBIAR', 'btn-cyan', () => {
+    row('Música', st.music ? 'Sí' : 'No', st.music ? 'btn-green' : 'btn-cream', () => { st.music = !st.music; SN.Audio.setMusic(st.music); SN.Save.saveProfile(); W.refresh(); });
+    row('Efectos de sonido', st.sfx ? 'Sí' : 'No', st.sfx ? 'btn-green' : 'btn-cream', () => { st.sfx = !st.sfx; SN.Audio.setSfx(st.sfx); SN.Save.saveProfile(); SN.UI.renderSound(); W.refresh(); });
+    row('Pantalla completa', 'Cambiar', 'btn-cyan', () => {
       try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); } catch (_) { /* no disponible */ }
     });
     const inGame = SN.Game.state === 'GAMEPLAY' && S.run;
     if (inGame) {
-      row('REPETIR TUTORIAL', 'REPASAR', 'btn-yellow', () => { W.close(true); SN.Tutorial.replay(); });
-      row('GUARDAR Y SALIR AL MENÚ', 'SALIR', 'btn-coral', () => { W.close(true); SN.Game.toMenu(); });
+      row('Repetir tutorial', 'Repasar', 'btn-yellow', () => { W.close(true); SN.Tutorial.replay(); });
+      row('Guardar y salir al menú', 'Salir', 'btn-coral', () => { W.close(true); SN.Game.toMenu(); });
     }
-    body.appendChild(U.el('div', 'set-keys', 'TODO SE PUEDE HACER CON EL RATÓN. ATAJOS DE TECLADO:<br>' +
-      '<kbd>↑</kbd><kbd>B</kbd> SUBE · <kbd>↓</kbd><kbd>V</kbd> BAJA · <kbd>ESPACIO</kbd> COBRAR · <kbd>F</kbd> ACELERAR<br>' +
-      '<kbd>← →</kbd> APUESTA · <kbd>1-4</kbd> MULTIPLICADOR · <kbd>P</kbd> ESPERAR · <kbd>TAB</kbd> MERCADO<br>' +
-      '<kbd>M</kbd> MEJORAS · <kbd>N</kbd> NOTICIAS · <kbd>T</kbd> TIENDA · <kbd>ESC</kbd> MENÚ / CERRAR'));
+    body.appendChild(U.el('div', 'set-keys', 'Todo se puede hacer con el ratón. Atajos de teclado:<br>' +
+      '<kbd>↑</kbd><kbd>B</kbd> sube · <kbd>↓</kbd><kbd>V</kbd> baja · <kbd>ESPACIO</kbd> cobrar · <kbd>F</kbd> acelerar<br>' +
+      '<kbd>← →</kbd> apuesta · <kbd>1-4</kbd> multiplicador · <kbd>P</kbd> esperar · <kbd>TAB</kbd> mercado<br>' +
+      '<kbd>M</kbd> mejoras · <kbd>N</kbd> noticias · <kbd>T</kbd> tienda · <kbd>ESC</kbd> menú / cerrar'));
   }
 })(window.SN);
