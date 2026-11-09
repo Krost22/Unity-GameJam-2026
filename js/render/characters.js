@@ -235,9 +235,10 @@
     }
   };
 
-  // ---------- Cerdito de arcilla (unos 80x64), en coordenadas locales ----------
+  // ---------- Cerdito de Timmy (unos 80x64), en coordenadas locales ----------
+  // El mismo cerdito rosa que se roba en su cuarto (js/render/sneak.js, drawPig), en grande
   Chars.piggy = function (g, cx, cy, opts = {}) {
-    const body = P.orange, dark = P.orangeD, deep = P.orangeDD, light = P.orangeL;
+    const body = '#E8899E', dark = '#D4708A', deep = '#C9607A', light = '#F5B3C2';
     // Patas
     for (const lx of [-20, -9, 7, 18]) {
       R(g, cx + lx - 1, cy + 14, 9, 13, P.coal);
@@ -256,21 +257,19 @@
     // Rabito
     R(g, cx - 34, cy - 6, 4, 2, P.coal); R(g, cx - 36, cy - 9, 2, 4, P.coal); R(g, cx - 34, cy - 11, 3, 2, P.coal);
     // Oreja
-    R(g, cx + 10, cy - 27, 9, 8, P.coal); R(g, cx + 11, cy - 26, 7, 7, dark); R(g, cx + 12, cy - 25, 4, 4, P.coralL);
+    R(g, cx + 10, cy - 27, 9, 8, P.coal); R(g, cx + 11, cy - 26, 7, 7, dark); R(g, cx + 12, cy - 25, 4, 4, light);
+    R(g, cx - 4, cy - 27, 9, 8, P.coal); R(g, cx - 3, cy - 26, 7, 7, dark); R(g, cx - 2, cy - 25, 4, 4, light);
     // Hocico
     Px.ellipse(g, cx + 30, cy + 2, 7, 8, P.coal);
-    Px.ellipse(g, cx + 30, cy + 2, 6, 7, P.coralL);
-    R(g, cx + 28, cy, 2, 4, P.coralD); R(g, cx + 32, cy, 2, 4, P.coralD);
+    Px.ellipse(g, cx + 30, cy + 2, 6, 7, dark);
+    R(g, cx + 28, cy, 2, 4, '#8A3A50'); R(g, cx + 32, cy, 2, 4, '#8A3A50');
     // Ojo y moflete
     if (opts.dizzy) {
       R(g, cx + 15, cy - 9, 1, 1, P.coal); R(g, cx + 17, cy - 9, 1, 1, P.coal); R(g, cx + 16, cy - 8, 1, 1, P.coal); R(g, cx + 15, cy - 7, 1, 1, P.coal); R(g, cx + 17, cy - 7, 1, 1, P.coal);
     } else {
       R(g, cx + 15, cy - 10, 3, 4, P.coal); R(g, cx + 15, cy - 10, 1, 1, P.creamL);
     }
-    R(g, cx + 12, cy - 2, 6, 3, P.coralL);
-    // Lo que pone en la tripa (con rotulador, como lo escribiría un niño de 8 años)
-    Px.text(g, 'AHORROS', cx - 3, cy + 10, deep, { align: 'center' });
-    Px.text(g, 'AHORROS', cx - 4, cy + 9, P.creamL, { align: 'center' });
+    R(g, cx + 12, cy - 2, 6, 3, '#F7C6D2');
     // Grietas
     if (opts.cracks) {
       for (const c of opts.cracks) {

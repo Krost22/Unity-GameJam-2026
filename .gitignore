@@ -5,3 +5,5 @@ Thumbs.db
 # Herramientas
 node_modules/
 *.log
+# Capturas que generan las pruebas
+tools/test/shots-desktop/

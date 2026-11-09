@@ -114,6 +114,13 @@ const ok = (c, msg) => { if (c) pass++; else fail++; console.log(`  ${c ? 'ok   
     await b.key('KeyD', 'd');
     ok(!(await ev('SN.Desktop.open')), 'con una operación en marcha no se minimiza');
     ok(await ev('!!SN.State.run.chat && SN.State.run.chat.log.length > 3'), 'la conversación queda guardada en la partida');
+    // Notas.txt: nada se sale de la ventana
+    await wait('!SN.State.run.position && !SN.UI.busy', 30000);
+    await ev('document.getElementById("desktop").classList.remove("hidden"); SN.Desktop.launch("notes"); true');
+    await b.sleep(400);
+    ok(await ev('(() => { const w = SN.Desktop.wins.notes, b = w.querySelector(".dt-body"), p = w.querySelector(".nt"); return p.scrollWidth <= b.clientWidth + 1 && (p.offsetHeight <= b.clientHeight || getComputedStyle(b).overflowY === "auto"); })()'), 'Notas.txt no se sale de su ventana');
+    await ev('SN.Desktop.closeWin("notes"); if (!SN.Desktop.open) document.getElementById("desktop").classList.add("hidden"); true');
+    await b.sleep(300);
     // La historia de Kevo sigue los hitos: pagar la deuda, cada regalo, los ahorros de Timmy...
     const arc = await ev(`(() => {
       const D = SN.Desktop, ch = D.chat(), ids = SN.Data.chat.convos.map((c) => c.id);

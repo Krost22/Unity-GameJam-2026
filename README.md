@@ -88,6 +88,15 @@ La app **Símbolos** aparece al encontrar el primero, con una pista vaga más ca
 Hasta el nombre del programa, **FUTURO**, está escrito así (la F tiene su propia pista).
 El encapuchado sabe leerlo. No le gusta que lo leas.
 
+## Qué hay en la versión 1.6.1: Tienda y Academia nuevas
+
+| Cambio | Detalle |
+|---|---|
+| Tienda | Ventana grande con tu dinero arriba, 6 categorías (Destacados, Mejoras, Objetos clave, Estilo de vida, Coleccionables, Mercados), banner con la oferta del objeto que toca, ofertas del día, tarjetas con iconos propios y panel de detalle. Las compras son las de siempre |
+| Academia | Árbol de habilidades en grande: Bravo y tu dinero arriba, navegación por ramas, nodos unidos por líneas con su estado (comprado, disponible, bloqueado, próximamente), detalle del nodo y barra de progreso |
+| Legibilidad | Mejoras con más aire, botón Volver visible en el periódico, papel sin rayas de monitor y Notas.txt que ya no se sale |
+| Cerdito | El de la bancarrota es el mismo cerdito rosa del cuarto de Timmy, sin letras |
+
 ## Qué hay en la versión 1.6: deudas en cadena, Bravo Fines y noticias que se entienden
 
 | Cambio | Detalle |

@@ -601,9 +601,9 @@
       const box = (on) => (on ? '[x]' : '[ ]');
       // Las deudas que llegaron después también van a la lista (la última, sin tachar si no está pagada)
       const later = [...(run.debts || []), d].filter((x) => x && x.id !== 'pleyzeta').slice(-3)
-        .map((x) => `${box(x.paid)} Pagar ${esc(x.label)}: ${U.money(x.amount)} antes del día ${x.deadlineDay}`).join('\n');
+        .map((x) => `${box(x.paid)} Pagar ${esc(x.label)}: ${U.money(x.amount)} · día ${x.deadlineDay}`).join('\n');
       w.querySelector('.dt-body').innerHTML = `<pre class="nt">COSAS QUE HACER
-${box(paid)} Pagar la Pleyzeta: ${U.money(SN.Data.sim.startDebt)} antes del día 7${later ? '\n' + later : ''}
+${box(paid)} Pagar la Pleyzeta: ${U.money(SN.Data.sim.startDebt)} · día 7${later ? '\n' + later : ''}
 ${box(false)} Comprar ramen (otra vez)
 ${box(this.chat().i > 0)} Contestar a Kevo
 ${box(false)} NO apostarlo todo

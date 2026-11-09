@@ -20,7 +20,7 @@
       const layer = document.getElementById('layer-windows');
       this.back = U.el('div', 'win-back');
       this.back.addEventListener('click', () => this.close());
-      this.win = U.el('div', 'win' + (kind === 'news' ? ' wide paper' : kind === 'offer' ? ' offer-win' : ''));
+      this.win = U.el('div', 'win' + (kind === 'news' ? ' wide paper' : kind === 'offer' ? ' offer-win' : kind === 'shop' ? ' big sh-win' : ''));
       if (kind === 'offer') this.win.innerHTML = '<div class="win-body"></div>';
       else {
         this.win.innerHTML = `<div class="win-head"><span>${TITLES[kind]}</span><button class="win-x">X<kbd>ESC</kbd></button></div><div class="win-body"></div>`;
@@ -29,6 +29,7 @@
       }
       layer.appendChild(this.back);
       layer.appendChild(this.win);
+      document.getElementById('screen').classList.toggle('paper-open', kind === 'news');
       SN.Audio.sfx(kind === 'offer' ? 'notify' : 'open');
       this.refresh();
       SN.Events.emit('window:opened', { kind });
@@ -44,6 +45,7 @@
       this.current = null;
       this.win = this.back = null;
       if (!silent) SN.Audio.sfx('close');
+      document.getElementById('screen').classList.remove('paper-open');
       back.remove();
       win.classList.add('closing');
       SN.after(0.16, () => win.remove());
@@ -72,7 +74,8 @@
     const acOpen = SN.Academy && SN.Academy.open();
     if (!acOpen) W.tab = 'mejoras';
     const tab = W.tab || 'mejoras';
-    W.win.classList.toggle('wide', tab === 'academia');
+    W.win.classList.toggle('big', tab === 'academia');
+    W.win.classList.toggle('ac-win', tab === 'academia');
     if (acOpen) {
       const tabs = U.el('div', 'up-tabs');
       const n = SN.Academy.buyable().length;
@@ -124,57 +127,136 @@
     }
   }
 
-  // ---------- La Academia de Bravo Fines: un árbol de habilidades (js/data/academy.js) ----------
-  // Cada rama es una fila; cada nodo necesita el anterior. Clic en un nodo: sus detalles y el botón de comprar.
+  // ---------- La Academia de Bravo Fines: árbol de habilidades (js/data/academy.js) ----------
+  // Encabezado con Bravo, navegación por ramas, las tres ramas con sus nodos unidos por líneas, el detalle
+  // del nodo elegido y, abajo, el progreso. Todo sale de SN.Academy: aquí solo se pinta.
+  const AC_NAV = [['arbol', 'Árbol', 'estrella'], ['negocios', 'Negocios', 'tienda'], ['trading', 'Trading', 'grafica'], ['contactos', 'Contactos', 'contacto']];
+  const AC_BRANCH = { negocios: ['tienda', 'Dinero cada día'], trading: ['grafica', 'Mejora tus apuestas'], contactos: ['contacto', 'Ayudas y amigos'] };
+  const cap1 = (t) => t.charAt(0) + t.slice(1).toLowerCase();
+  // El efecto de un nodo, en palabras (sale de sus datos: income, bonus, halve, offer)
+  function acEffect(n) {
+    if (n.soon) return 'Próximamente';
+    if (n.income) return `+${U.money(n.income)} al día`;
+    if (n.bonus) return `+${Math.round(n.bonus * 100)}% en cada ganancia`;
+    if (n.halve) return '1ª pérdida del día, a la mitad';
+    if (n.offer) return `Ofertas: −${Math.round((1 - n.offer) * 100)}% de deuda`;
+    return '';
+  }
+  // Icono de pixel art grande (los sprites de 12x12, al doble o al triple)
+  function big(name, scale = 2) { const c = SN.Sprites.node(name, scale); c.classList.add('px-ico'); return c; }
+
   function buildAcademy(body) {
-    const A = SN.Academy, data = D.academy;
-    const head = U.el('div', 'ac-head');
-    const ava = U.el('i', 'ac-ava');
-    ava.appendChild(SN.Sprites.node('avaBravo', 2));
-    head.appendChild(ava);
-    head.insertAdjacentHTML('beforeend', `<div class="ac-who"><b>${data.guru.name}</b><span>"El dinero no se gana. Se manifiesta."</span></div>
-      <em class="ac-inc">Tus negocios: +${U.money(A.income())} al día</em>`);
-    body.appendChild(head);
-    const all = A.nodes();
+    const A = SN.Academy, data = D.academy, run = S.run;
+    const view = W.acView || 'arbol';
+    const all = A.nodes(), real = all.filter((n) => !n.soon);
     if (!W.acSel || !A.node(W.acSel)) W.acSel = (all.find((n) => A.canBuy(n.id).ok) || all.find((n) => !A.has(n.id) && !n.soon) || all[0]).id;
+    const box = U.el('div', 'ac');
+
+    // Encabezado: Bravo, sus negocios y tu dinero
+    const head = U.el('div', 'ac-top');
+    const ava = U.el('i', 'ac-ava');
+    ava.appendChild(big('avaBravo', 2));
+    head.appendChild(ava);
+    head.insertAdjacentHTML('beforeend', `<div class="ac-ttl"><b>Academia de Bravo Fines</b><span>"El dinero no se gana. Se manifiesta."</span></div>
+      <div class="ac-inc"><span>Negocios</span><b>+${U.money(A.income())}/día</b></div>
+      <div class="ac-cash"><i></i><div><span>Tu dinero</span><b>${U.money(run.capital)}</b></div></div>`);
+    head.querySelector('.ac-cash i').appendChild(big('estrella', 1));
+    box.appendChild(head);
+
+    // Navegación lateral: todo el árbol o una rama
+    const nav = U.el('div', 'ac-nav');
+    for (const [id, label, ic] of AC_NAV) {
+      const b = U.el('button', 'ac-nb' + (view === id ? ' on' : ''));
+      b.dataset.view = id;
+      b.appendChild(big(ic, 1));
+      b.insertAdjacentHTML('beforeend', `<span>${label}</span>`);
+      b.addEventListener('click', (e) => { e.stopPropagation(); if (W.acView === id) return; W.acView = id; W.acAnim = true; SN.Audio.sfx('select'); W.refresh(); });
+      nav.appendChild(b);
+    }
+    box.appendChild(nav);
+
+    // Las ramas: una fila cada una, con los nodos unidos por líneas (se encienden al comprar el anterior)
+    const tree = U.el('div', 'ac-tree' + (W.acAnim ? ' in' : ''));
+    W.acAnim = false;
     for (const br of data.branches) {
-      const row = U.el('div', 'ac-row ' + br.color);
-      row.appendChild(U.el('div', 'ac-br', br.name));
+      if (view !== 'arbol' && view !== br.id) continue;
+      const row = U.el('div', 'ac-br ' + br.color);
+      const [bic, bdesc] = AC_BRANCH[br.id] || ['estrella', ''];
+      const lab = U.el('div', 'ac-bl');
+      lab.appendChild(big(bic, 1));
+      lab.insertAdjacentHTML('beforeend', `<b>${br.name}</b><span>${bdesc}</span>`);
+      row.appendChild(lab);
       br.nodes.forEach((n, i) => {
-        if (i) row.appendChild(U.el('i', 'ac-link' + (A.has(br.nodes[i - 1].id) ? ' on' : '')));
+        if (i) row.appendChild(U.el('i', 'ac-ln' + (A.has(br.nodes[i - 1].id) ? ' on' : '')));
         const can = A.canBuy(n.id), own = A.has(n.id);
-        const el = U.el('button', 'ac-node' + (own ? ' own' : n.soon ? ' soon' : can.ok ? ' can' : ' locked') + (W.acSel === n.id ? ' sel' : ''));
+        const st = own ? 'own' : n.soon ? 'soon' : can.ok ? 'can' : 'locked';
+        const el = U.el('button', `ac-n ${st}${W.acSel === n.id ? ' sel' : ''}${W.acBump === n.id ? ' bump' : ''}${W.acDone === n.id ? ' done' : ''}`);
         el.dataset.node = n.id;
         el.title = n.name;
-        el.appendChild(icon(n.soon ? 'lock' : n.icon));
-        el.insertAdjacentHTML('beforeend', `<span class="nm">${n.short || n.name}</span><span class="pr">${own ? 'TUYO' : n.soon ? 'PRONTO' : U.short(n.cost)}</span>`);
-        el.addEventListener('click', (e) => { e.stopPropagation(); W.acSel = n.id; SN.Audio.sfx('select'); W.refresh(); });
+        el.appendChild(big(n.icon, 2));
+        if (st === 'soon' || (st === 'locked' && can.locked)) { const l = SN.Sprites.node('lock', 1); l.className = 'ac-lock'; el.appendChild(l); }
+        el.insertAdjacentHTML('beforeend', `<em>${n.soon ? '···' : own ? '1/1' : '0/1'}</em>`);
+        el.addEventListener('click', (e) => { e.stopPropagation(); W.acSel = n.id; W.acBump = n.id; SN.Audio.sfx('select'); W.refresh(); });
         row.appendChild(el);
       });
-      body.appendChild(row);
+      tree.appendChild(row);
     }
+    // Con una sola rama a la vista, debajo, la lista de sus avances con su efecto y su precio
+    if (view !== 'arbol') {
+      const br = data.branches.find((b) => b.id === view);
+      const list = U.el('div', 'ac-list');
+      for (const n of br.nodes) {
+        const p = U.el('p', A.has(n.id) ? 'own' : n.soon ? 'soon' : '', `<b>${n.name}</b> · ${acEffect(n)}${n.soon ? '' : ` · ${A.has(n.id) ? 'Tuyo' : U.money(n.cost)}`}`);
+        p.addEventListener('click', (e) => { e.stopPropagation(); W.acSel = n.id; W.acBump = n.id; SN.Audio.sfx('select'); W.refresh(); });
+        list.appendChild(p);
+      }
+      tree.appendChild(list);
+    }
+    box.appendChild(tree);
+
     // Detalle del nodo elegido
     const n = A.node(W.acSel), can = A.canBuy(n.id), own = A.has(n.id);
-    const det = U.el('div', 'ac-det');
-    det.innerHTML = `<div class="t">${n.name}${n.soon ? ' <em>· Próximamente</em>' : ''}</div><div class="d">${n.desc}</div>`;
+    const det = U.el('div', 'ac-dt' + (W.acBump === n.id ? ' bump' : ''));
+    det.innerHTML = `<div class="ac-dh">Detalle</div><div class="ac-dico"></div><b class="ac-dn">${n.name}</b>
+      <span class="ac-dl">${n.soon ? 'Próximamente' : `Nv. ${own ? 1 : 0} / 1`}</span><p class="ac-dd">${n.desc}</p>
+      ${own ? `<div class="ac-de"><span>Efecto actual:</span><b>${acEffect(n)}</b></div>` : n.soon ? '' : `<div class="ac-de nx"><span>Efecto actual: <i>ninguno</i></span><span>Al comprarlo:</span><b>${acEffect(n)}</b></div>`}`;
+    det.querySelector('.ac-dico').appendChild(big(n.soon ? 'lock' : n.icon, 2));
     if (!own && !n.soon) {
-      const b = U.el('button', 'btn btn-yellow', `Comprar ${U.money(n.cost)}`);
+      const b = U.el('button', 'btn btn-yellow ac-buy', `Comprar ${U.money(n.cost)}`);
       b.disabled = !can.ok;
-      if (!can.ok && can.reason) { b.title = can.reason; det.insertAdjacentHTML('beforeend', `<div class="r">${can.reason.charAt(0) + can.reason.slice(1).toLowerCase()}</div>`); }
+      if (!can.ok && can.reason) { b.title = can.reason; det.insertAdjacentHTML('beforeend', `<div class="ac-why">${cap1(can.reason)}</div>`); }
       b.addEventListener('click', (e) => {
         e.stopPropagation();
         if (!A.buy(n.id)) { SN.Audio.sfx('error'); return; }
         SN.Audio.sfx('unlock');
         const p = SN.UI.posIn(b);
-        SN.FX.burst(p.x + p.w / 2, p.y, { n: 18, colors: [SN.PAL.yellow, SN.PAL.green, SN.PAL.creamL] });
-        SN.FX.ring(p.x + p.w / 2, p.y + 5, SN.PAL.yellow, 40);
+        SN.FX.burst(p.x + p.w / 2, p.y, { n: 22, colors: [SN.PAL.yellow, SN.PAL.green, SN.PAL.creamL] });
+        SN.FX.ring(p.x + p.w / 2, p.y + 5, SN.PAL.yellow, 46);
         SN.Save.saveRun();
+        W.acDone = n.id;
         W.acSel = null;
         W.refresh();
       });
       det.appendChild(b);
-    } else if (own) det.insertAdjacentHTML('beforeend', '<div class="r ok">Ya es tuyo.</div>');
-    body.appendChild(det);
+    } else det.insertAdjacentHTML('beforeend', `<div class="ac-why${own ? ' ok' : ''}">${own ? 'Ya es tuyo.' : 'Llegará en una versión futura.'}</div>`);
+    box.appendChild(det);
+
+    // Abajo: el progreso de la Academia y lo siguiente que llegará a esa rama
+    const done = real.filter((x) => A.has(x.id)).length;
+    const pct = Math.round(done / Math.max(1, real.length) * 100);
+    const br = data.branches.find((b) => b.id === (view !== 'arbol' ? view : n.branch)) || data.branches[0];
+    const next = br.nodes.find((x) => x.soon);
+    const bar = U.el('div', 'ac-bot');
+    bar.innerHTML = `<div class="ac-prog"><i class="ac-pi"></i><div class="ac-pt"><b>Progreso</b><div class="ac-bar"><i style="width:${pct}%"></i></div></div><em>${done} / ${real.length}</em></div>
+      <div class="ac-rew"><div class="ac-rt"><b>Siguiente en ${br.name}</b><span>${next ? `${next.name}: próximamente` : 'Rama completa'}</span></div><i class="ac-ri"></i></div>`;
+    bar.querySelector('.ac-pi').appendChild(big('estrella', 1));
+    bar.querySelector('.ac-ri').appendChild(big('cofre', 1));
+    if (W.acPct != null && W.acPct !== pct) bar.querySelector('.ac-bar i').classList.add('grow');
+    W.acPct = pct;
+    box.appendChild(bar);
+    body.appendChild(box);
+    W.acBump = null;
+    W.acDone = null;
   }
 
   // ---------- El periódico ----------
@@ -295,78 +377,244 @@
   }
 
   // ---------- La tienda ----------
-  // Se puede mirar siempre. Los objetos clave van en orden: el que toca tiene su oferta de FUTURO.exe
-  // esperando (un poco hoy y el resto después), que también salta sola al pagar la deuda anterior.
-  function buildShop(body) {
-    const run = S.run;
-    body.appendChild(U.el('div', 'win-note', 'Mira lo que quieras. Los objetos clave van en orden: FUTURO.exe te avisa cuando toca el siguiente.'));
-    body.appendChild(U.el('div', 'sec-title', 'Objetos clave'));
-    const pending = SN.Unlocks.pendingItem();
-    for (const it of D.keyItems) {
-      const can = SN.Unlocks.canBuyItem(it.id);
+  // Una tienda de pixel art: cabecera con tu dinero, categorías a la izquierda, productos en el centro y el
+  // detalle del producto elegido a la derecha. Todo sale de los sistemas de siempre (SN.Unlocks para los
+  // objetos clave y su oferta, SN.Upgrades, SN.Luck, SN.ShopWatch): aquí solo cambia cómo se ve.
+  const SHOP_CATS = [['destacados', 'Destacados', 'estrella'], ['mejoras', 'Mejoras', 'flecha'], ['clave', 'Objetos clave', 'llave'],
+    ['estilo', 'Estilo de vida', 'taza'], ['coleccion', 'Coleccionables', 'gema'], ['mercados', 'Mercados', 'grafica']];
+  // Icono de cada producto (los de la tienda, los objetos clave y los dorados de Don Siete)
+  const ITEM_ICON = { taza: 'taza', planta: 'planta', lampara: 'lampara', poster: 'poster', alfombrilla: 'alfombra', teclado: 'teclado',
+    cascos: 'cascos', trofeo: 'toro', tele: 'tele', movil: 'movil', moto: 'moto', reloj: 'reloj', maneki: 'maneki', herradura: 'herradura',
+    trebol4: 'trebol', billete7: 'billete' };
+
+  // Un producto, con lo que se ve de él y lo que pasa al comprarlo. Devuelve null si no existe.
+  function shopProduct(sel) {
+    if (!sel) return null;
+    const run = S.run, keep = D.sim.bankruptcyThreshold;
+    if (sel.kind === 'life' || sel.kind === 'gold') {
+      const it = (sel.kind === 'gold' ? D.luck.golden : D.shop).find((x) => x.id === sel.id);
+      if (!it) return null;
+      const off = sel.kind === 'life' ? SN.Luck.discount() : 0;
+      const price = Math.round(it.price * (1 - off));
       const owned = !!run.owned[it.id];
-      const row = U.el('div', 'shop-row key' + (owned ? ' owned' : can.locked ? ' locked' : ''));
-      row.dataset.item = it.id;
-      row.appendChild(icon(owned ? 'trebol' : 'caja'));
-      const o = SN.Unlocks.offer(it);
-      const desc = owned ? 'En tu habitación' : can.locked ? can.reason.charAt(0) + can.reason.slice(1).toLowerCase() : `${it.desc} Oferta: ${U.money(o.now)} hoy.`;
-      row.insertAdjacentHTML('beforeend', `<div class="t">${it.name}</div><div class="d">${desc}</div>`);
-      if (!owned && !can.locked && pending && pending.id === it.id) {
-        const b = U.el('button', 'btn btn-cyan', 'Ver oferta');
-        b.disabled = !!run.position;
-        b.addEventListener('click', (e) => { e.stopPropagation(); W.offer(it.id, 'shop'); });
-        row.appendChild(b);
-      }
-      body.appendChild(row);
+      const today = sel.kind !== 'gold' || SN.Luck.goldenToday().includes(it.id);
+      const poor = run.capital - price < keep;
+      return { sel, icon: ITEM_ICON[it.id] || 'caja', name: it.name, desc: it.desc, price, old: off ? it.price : null,
+        state: owned ? 'own' : !today ? 'locked' : poor ? 'poor' : 'can', note: owned ? 'En tu habitación' : !today ? 'Solo en días con 7' : poor ? 'No te alcanza' : '',
+        action: owned || !today ? null : 'buy', gold: sel.kind === 'gold' };
     }
-    // Día de la suerte: la Ruleta de la Fortuna y el Mercado Dorado de Don Siete
-    const luck = SN.Luck.today();
-    if (luck && luck.events.includes('ruleta')) {
-      const row = U.el('div', 'shop-row gold');
-      row.appendChild(icon('coin0'));
-      row.insertAdjacentHTML('beforeend', `<div class="t">★ Ruleta de la Fortuna</div><div class="d">${luck.spun ? 'Ya has girado hoy. Vuelve el próximo día de la suerte.' : 'Un giro gratis. Solo hoy.'}</div>`);
-      if (!luck.spun) {
-        const b = U.el('button', 'btn btn-yellow', 'Girar');
-        b.disabled = !!run.position;
-        b.addEventListener('click', (e) => { e.stopPropagation(); W.open('ruleta'); });
-        row.appendChild(b);
-      }
-      body.appendChild(row);
+    if (sel.kind === 'up') {
+      const d = SN.Upgrades.def(sel.id);
+      if (!d) return null;
+      const unlocked = SN.Upgrades.isUnlocked(d.id), lv = SN.Upgrades.level(d.id), next = SN.Upgrades.next(d.id), can = SN.Upgrades.canBuy(d.id);
+      return { sel, icon: d.icon, name: d.name, desc: unlocked ? d.desc : d.unlock.label || 'Bloqueado', price: next ? next.cost : null,
+        level: `Nv. ${lv} / ${d.levels.length}`, effect: next ? d.effect(next.value) : unlocked ? `${d.effect(SN.Upgrades.value(d.id))} · máximo` : '',
+        state: !unlocked ? 'locked' : !next ? 'own' : can.ok ? 'can' : 'poor', note: !unlocked ? 'Llega como "regalo"' : !next ? 'Al máximo' : can.ok ? '' : cap1(can.reason || 'NO TE ALCANZA'),
+        action: unlocked && next ? 'up' : null };
     }
-    const golden = SN.Luck.goldenToday();
-    if (golden.length) {
-      body.appendChild(U.el('div', 'sec-title gold', '★ Mercado Dorado de Don Siete'));
-      for (const id of golden) buyRow(body, D.luck.golden.find((g) => g.id === id), 'gold');
+    if (sel.kind === 'key') {
+      const it = D.keyItemById(sel.id);
+      if (!it) return null;
+      const can = SN.Unlocks.canBuyItem(it.id), owned = !!run.owned[it.id], pend = SN.Unlocks.pendingItem();
+      const o = SN.Unlocks.offer(it), mine = pend && pend.id === it.id;
+      return { sel, icon: ITEM_ICON[it.id], name: it.name, desc: it.desc, price: o.now, old: it.price,
+        state: owned ? 'own' : mine ? (can.ok ? 'can' : 'poor') : 'locked', note: owned ? 'En tu habitación' : can.reason ? cap1(can.reason) : '',
+        action: mine ? 'offer' : null, sub: mine ? `Hoy ${U.money(o.now)} · luego debes ${U.money(o.debt)}` : '' };
     }
-    const off = SN.Luck.discount();
-    body.appendChild(U.el('div', 'sec-title', off ? `Estilo de vida · Don Siete rebaja un ${Math.round(off * 100)}%` : 'Estilo de vida'));
-    for (const it of D.shop) buyRow(body, it, '', off);
+    if (sel.kind === 'ruleta') {
+      const l = SN.Luck.today();
+      if (!l || !l.events.includes('ruleta')) return null;
+      return { sel, icon: 'coin0', name: 'Ruleta de la Fortuna', desc: 'Un giro gratis. Solo hoy, día de la suerte.', price: 0, free: true,
+        state: l.spun ? 'own' : 'can', note: l.spun ? 'Ya has girado hoy' : '', action: l.spun ? null : 'ruleta' };
+    }
+    if (sel.kind === 'mkt') {
+      const def = D.marketById(sel.id);
+      if (!def) return null;
+      const open = SN.Unlocks.isUnlocked(def.id);
+      return { sel, icon: def.icon, name: def.name, desc: def.desc, info: `Tope: ±${U.money(def.cap)} por apuesta`,
+        state: open ? 'own' : 'locked', note: open ? 'Abierto' : `Se abre: ${def.unlock.label || 'más adelante'}`, action: null, short: D.marketLabel(def.id) };
+    }
+    return null;
   }
 
-  // Una fila de la tienda que se compra con dinero (estilo de vida y objetos dorados): aparece en tu cuarto
-  function buyRow(body, it, cls, discount = 0) {
-    const run = S.run, owned = !!run.owned[it.id];
-    const price = Math.round(it.price * (1 - discount));
-    const row = U.el('div', 'shop-row' + (owned ? ' owned' : '') + (cls ? ' ' + cls : ''));
-    row.appendChild(icon(owned ? 'trebol' : cls === 'gold' ? 'coin0' : 'caja'));
-    row.insertAdjacentHTML('beforeend', `<div class="t">${it.name}</div><div class="d">${owned ? 'En tu habitación' : it.desc}</div>`);
-    if (!owned) {
-      const b = U.el('button', 'btn btn-yellow', discount ? `<s>${U.short(it.price)}</s> ${U.short(price)}` : U.short(price));
-      b.disabled = run.capital - price < D.sim.bankruptcyThreshold || !!run.position;
-      b.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (run.position || run.capital - price < D.sim.bankruptcyThreshold || !SN.Economy.spend(price, 'shop')) { SN.Audio.sfx('error'); return; }
-        run.owned[it.id] = true;
-        SN.Desk.dirty();
-        SN.Audio.sfx(cls === 'gold' ? 'lucky' : 'pay');
-        SN.FX.confetti(30);
-        SN.Hands.celebrate();
-        SN.Save.saveRun();
-        W.refresh();
-      });
-      row.appendChild(b);
+  // Lo que sale en cada categoría
+  function shopList(cat) {
+    const run = S.run;
+    if (cat === 'mejoras') return D.upgrades.map((d) => ({ kind: 'up', id: d.id }));
+    if (cat === 'clave') return D.keyItems.map((it) => ({ kind: 'key', id: it.id }));
+    if (cat === 'estilo') return D.shop.map((it) => ({ kind: 'life', id: it.id }));
+    if (cat === 'coleccion') return D.luck.golden.map((g) => ({ kind: 'gold', id: g.id }));
+    if (cat === 'mercados') return D.markets.map((m) => ({ kind: 'mkt', id: m.id }));
+    // Destacados: las ofertas del día (lo que ya se puede comprar; si no hay nada, lo más barato que falta)
+    const out = [];
+    const l = SN.Luck.today();
+    if (l && l.events.includes('ruleta') && !l.spun) out.push({ kind: 'ruleta', id: 'ruleta' });
+    for (const x of SN.ShopWatch.list()) {
+      if (out.length >= 4) break;
+      const [k, id] = x.key.split(':');
+      if (k === 'shop') out.push({ kind: 'life', id });
+      else if (k === 'gold') out.push({ kind: 'gold', id });
+      else if (k === 'up') out.push({ kind: 'up', id });
     }
-    body.appendChild(row);
+    for (const it of D.shop.filter((s) => !run.owned[s.id]).sort((a, b) => a.price - b.price)) {
+      if (out.length >= 4) break;
+      if (!out.some((o) => o.id === it.id)) out.push({ kind: 'life', id: it.id });
+    }
+    return out;
+  }
+
+  function buildShop(body) {
+    const run = S.run;
+    const cat = W.shopCat || 'destacados';
+    const list = shopList(cat);
+    const pend = SN.Unlocks.pendingItem();
+    // Lo elegido: si ya no está en la categoría, el destacado o la primera tarjeta
+    const inCat = (s) => s && (list.some((x) => x.kind === s.kind && x.id === s.id) || (cat === 'destacados' && s.kind === 'key'));
+    if (!inCat(W.shopSel)) W.shopSel = cat === 'destacados' && pend ? { kind: 'key', id: pend.id } : list[0] || null;
+    const box = U.el('div', 'sh');
+
+    // Cabecera: carrito, título y tu dinero
+    const head = U.el('div', 'sh-top');
+    head.appendChild(big('cart', 2));
+    head.insertAdjacentHTML('beforeend', `<div class="sh-ttl"><b>Tienda</b><span>Mejoras, objetos y caprichos que te acercan a la fortuna.</span></div>
+      <div class="sh-cash${W.shopFlash ? ' flash' : ''}">${U.money(run.capital)}</div>`);
+    W.shopFlash = false;
+    box.appendChild(head);
+
+    // Categorías
+    const nav = U.el('div', 'sh-nav');
+    for (const [id, label, ic] of SHOP_CATS) {
+      const b = U.el('button', 'sh-nb' + (cat === id ? ' on' : ''));
+      b.dataset.cat = id;
+      b.appendChild(big(ic, 1));
+      b.insertAdjacentHTML('beforeend', `<span>${label}</span>`);
+      b.addEventListener('click', (e) => { e.stopPropagation(); if (W.shopCat === id) return; W.shopCat = id; W.shopSel = null; W.shopAnim = true; SN.Audio.sfx('select'); W.refresh(); });
+      nav.appendChild(b);
+    }
+    box.appendChild(nav);
+
+    // Centro
+    const main = U.el('div', 'sh-main' + (W.shopAnim ? ' in' : ''));
+    W.shopAnim = false;
+    const card = (sel) => {
+      const p = shopProduct(sel);
+      if (!p) return null;
+      const on = W.shopSel && W.shopSel.kind === sel.kind && W.shopSel.id === sel.id;
+      const c = U.el('button', `sh-card ${p.state}${on ? ' sel' : ''}${on && W.shopBump ? ' bump' : ''}${p.gold ? ' gold' : ''}`);
+      c.dataset.kind = sel.kind; c.dataset.id = sel.id;
+      c.title = p.name;
+      c.appendChild(big(p.icon, 2));
+      if (p.state === 'locked') { const l = SN.Sprites.node('lock', 1); l.className = 'sh-lock'; c.appendChild(l); }
+      const tagTxt = sel.kind === 'mkt' ? (p.state === 'own' ? 'Abierto' : 'Cerrado') : p.state === 'own' ? 'Tuyo' : p.free ? 'Gratis' : p.price != null ? U.short(p.price) : '—';
+      c.insertAdjacentHTML('beforeend', `<span class="nm">${p.short || p.name}</span><b class="pr">${tagTxt}</b>`);
+      c.addEventListener('click', (e) => { e.stopPropagation(); W.shopSel = sel; W.shopBump = true; SN.Audio.sfx('select'); W.refresh(); });
+      return c;
+    };
+    if (cat === 'destacados') {
+      // Banner: el objeto clave que toca (su oferta de FUTURO.exe) o, si no, el siguiente que llegará
+      const next = pend || D.keyItems.find((it) => !run.owned[it.id]);
+      if (next) {
+        const p = shopProduct({ kind: 'key', id: next.id });
+        const ban = U.el('div', 'sh-ban' + (pend ? '' : ' wait'));
+        const art = U.el('div', 'sh-bart');
+        art.appendChild(big(p.icon, 3));
+        ban.appendChild(art);
+        ban.insertAdjacentHTML('beforeend', `<div class="sh-btxt"><b>${p.name}</b><span>${p.desc}</span>
+          <div class="sh-bpr"><s>${U.money(p.old)}</s><b>${U.money(p.price)}</b><em>−90%</em></div>
+          ${pend ? '' : `<small>${p.note}</small>`}</div>`);
+        if (pend) {
+          const b = U.el('button', 'btn btn-green sh-bbtn', 'Ver oferta');
+          b.disabled = !!run.position;
+          b.addEventListener('click', (e) => { e.stopPropagation(); W.offer(pend.id, 'shop'); });
+          ban.appendChild(b);
+        }
+        ban.addEventListener('click', (e) => { e.stopPropagation(); W.shopSel = { kind: 'key', id: next.id }; W.shopBump = true; SN.Audio.sfx('select'); W.refresh(); });
+        main.appendChild(ban);
+      } else main.appendChild(U.el('div', 'sh-ban done', '<div class="sh-btxt"><b>Lo tienes todo</b><span>Ya no quedan objetos clave. Por ahora.</span></div>'));
+      const off = SN.Luck.discount();
+      main.appendChild(U.el('div', 'sh-sec', off ? `Ofertas del día <em>· Don Siete rebaja un ${Math.round(off * 100)}%</em>` : 'Ofertas del día'));
+    } else if (cat === 'estilo' && SN.Luck.discount()) {
+      main.appendChild(U.el('div', 'sh-sec', `Estilo de vida <em>· Don Siete rebaja un ${Math.round(SN.Luck.discount() * 100)}%</em>`));
+    }
+    if (cat === 'mejoras') {
+      // Las mejoras van en filas: nivel y efecto a la vista
+      const rows = U.el('div', 'sh-rows');
+      for (const sel of list) {
+        const p = shopProduct(sel);
+        const on = W.shopSel && W.shopSel.kind === 'up' && W.shopSel.id === sel.id;
+        const r = U.el('button', `sh-row ${p.state}${on ? ' sel' : ''}${on && W.shopBump ? ' bump' : ''}`);
+        r.dataset.kind = 'up'; r.dataset.id = sel.id;
+        r.appendChild(big(p.icon, 2));
+        r.insertAdjacentHTML('beforeend', `<div class="sh-rt"><b>${p.name} <em>${p.state === 'locked' ? '' : p.level}</em></b><span>${p.state === 'locked' ? p.desc : p.effect}</span></div>
+          <b class="pr">${p.state === 'locked' ? '' : p.price != null ? U.short(p.price) : 'Máx.'}</b>`);
+        if (p.state === 'locked') { const l = SN.Sprites.node('lock', 1); l.className = 'sh-lock'; r.appendChild(l); }
+        r.addEventListener('click', (e) => { e.stopPropagation(); W.shopSel = sel; W.shopBump = true; SN.Audio.sfx('select'); W.refresh(); });
+        rows.appendChild(r);
+      }
+      main.appendChild(rows);
+    } else {
+      const grid = U.el('div', 'sh-grid');
+      for (const sel of list) { const c = card(sel); if (c) grid.appendChild(c); }
+      if (!grid.children.length) grid.appendChild(U.el('div', 'sh-empty', 'Nada por aquí. De momento.'));
+      main.appendChild(grid);
+    }
+    box.appendChild(main);
+
+    // Detalle del producto elegido
+    const det = U.el('div', 'sh-dt' + (W.shopBump ? ' bump' : ''));
+    W.shopBump = false;
+    const p = shopProduct(W.shopSel);
+    det.appendChild(U.el('div', 'sh-dh', 'Detalle'));
+    if (p) {
+      const ico = U.el('div', 'sh-dico');
+      ico.appendChild(big(p.icon, 2));
+      det.appendChild(ico);
+      det.insertAdjacentHTML('beforeend', `<b class="sh-dn">${p.name}</b>${p.level ? `<span class="sh-dl">${p.level}</span>` : ''}
+        <p class="sh-dd">${p.desc}</p>${p.effect ? `<div class="sh-de">${p.state === 'own' ? '' : 'Siguiente: '}${p.effect}</div>` : ''}
+        ${p.info ? `<div class="sh-de">${p.info}</div>` : ''}${p.sub ? `<div class="sh-de">${p.sub}</div>` : ''}
+        ${p.price != null && p.state !== 'own' && !p.free ? `<div class="sh-dp">${p.old ? `<s>${U.money(p.old)}</s>` : ''}<b class="${p.state === 'poor' ? 'poor' : ''}">${U.money(p.price)}</b></div>` : ''}
+        ${p.note ? `<div class="sh-dnote ${p.state}">${p.note}</div>` : ''}`);
+      if (p.action) {
+        const label = { buy: 'Comprar', up: 'Mejorar', offer: 'Ver oferta', ruleta: '¡Girar!' }[p.action];
+        const b = U.el('button', `btn ${p.action === 'offer' ? 'btn-cyan' : 'btn-green'} sh-buy`, label);
+        b.disabled = !!run.position || (p.action === 'buy' && p.state !== 'can') || (p.action === 'up' && p.state !== 'can');
+        b.addEventListener('click', (e) => { e.stopPropagation(); shopAct(p, b); });
+        det.appendChild(b);
+      }
+    }
+    box.appendChild(det);
+    body.appendChild(box);
+  }
+
+  // Comprar (o abrir la oferta, o girar la ruleta) con la misma lógica de siempre
+  function shopAct(p, btn) {
+    const run = S.run, sel = p.sel;
+    const cheer = (color) => {
+      const q = SN.UI.posIn(btn);
+      SN.FX.coins(q.x + q.w / 2, q.y, 10, 0.9);
+      SN.FX.ring(q.x + q.w / 2, q.y + 5, color, 40);
+      W.shopFlash = true;
+      W.refresh();
+    };
+    if (p.action === 'offer') { W.offer(sel.id, 'shop'); return; }
+    if (p.action === 'ruleta') { W.open('ruleta'); return; }
+    if (p.action === 'up') {
+      if (!SN.Upgrades.buy(sel.id)) { SN.Audio.sfx('error'); return; }
+      SN.Audio.sfx('unlock');
+      SN.Save.saveRun();
+      cheer(SN.PAL.green);
+      return;
+    }
+    // Estilo de vida y objetos dorados: igual que siempre (precio con la rebaja de Don Siete, sin quedarte a cero)
+    const price = p.price;
+    if (run.position || run.capital - price < D.sim.bankruptcyThreshold || !SN.Economy.spend(price, 'shop')) { SN.Audio.sfx('error'); return; }
+    run.owned[sel.id] = true;
+    SN.Desk.dirty();
+    SN.Audio.sfx(p.gold ? 'lucky' : 'pay');
+    SN.FX.confetti(30);
+    SN.Hands.celebrate();
+    SN.Save.saveRun();
+    cheer(SN.PAL.yellow);
   }
 
   // ---------- La Ruleta de la Fortuna (días de la suerte) ----------

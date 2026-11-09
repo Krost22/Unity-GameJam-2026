@@ -131,9 +131,39 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
     await ev('document.getElementById("nav-shop").click()');
     await b.sleep(500);
     await shot('p2-tienda');
-    await ev('[...document.querySelectorAll(".shop-row .btn")].slice(0, 2).forEach((x) => x.click()); true');
-    await b.sleep(300);
+    // La tienda rediseñada: categorías, tarjetas, detalle y compra (con la lógica de siempre)
+    const cats = ['destacados', 'mejoras', 'clave', 'estilo', 'coleccion', 'mercados'];
+    let catsOk = true;
+    for (const c of cats) {
+      await ev(`document.querySelector(".sh-nb[data-cat=${c}]").click(); true`);
+      await b.sleep(150);
+      if (!(await ev(`document.querySelector(".sh-nb.on").dataset.cat === "${c}" && document.querySelectorAll(".sh-card, .sh-row, .sh-ban").length > 0`))) catsOk = false;
+    }
+    ok(catsOk, 'la tienda se recorre por sus 6 categorías y cada una tiene productos');
+    await ev('document.querySelector(".sh-nb[data-cat=mercados]").click(); true');
+    await b.sleep(150);
+    ok(await ev('document.querySelectorAll(".sh-card").length') === 8, 'Mercados enseña los 8 mercados');
+    await ev('document.querySelector(".sh-nb[data-cat=estilo]").click(); true');
+    await b.sleep(150);
+    const cash0 = await ev('document.querySelector(".sh-cash").textContent');
+    for (const id of ['taza', 'planta']) {
+      await ev(`document.querySelector(".sh-card[data-id=${id}]").click(); true`);
+      await b.sleep(150);
+      ok(await ev(`document.querySelector(".sh-dt .sh-dn").textContent.length > 2 && document.querySelector(".sh-card.sel").dataset.id === "${id}"`), `elegir una tarjeta (${id}) actualiza el detalle`);
+      await ev('document.querySelector(".sh-buy").click(); true');
+      await b.sleep(250);
+    }
     ok(await ev('SN.State.run.owned.taza && SN.State.run.owned.planta'), 'se compran artículos de estilo de vida');
+    ok(await ev('document.querySelector(".sh-cash").textContent') !== cash0 && await ev('document.querySelector(".sh-card[data-id=taza]").classList.contains("own")'), 'el dinero de la cabecera baja y la tarjeta sale como tuya');
+    await ev('document.querySelector(".sh-nb[data-cat=mejoras]").click(); true');
+    await b.sleep(150);
+    await ev('document.querySelector(".sh-row[data-id=limite]").click(); true');
+    await b.sleep(150);
+    await ev('document.querySelector(".sh-buy").click(); true');
+    await b.sleep(250);
+    ok(await ev('SN.Upgrades.level("limite")') === 1, 'una mejora también se compra desde la tienda');
+    await ev('document.querySelector(".sh-nb[data-cat=estilo]").click(); true');
+    await b.sleep(200);
     await ev('SN.Windows.close(); true');
     await b.sleep(500);
     await shot('p3-escritorio-con-compras');
@@ -164,12 +194,23 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
     await b.sleep(400);
     await ev('document.querySelector(".up-tab.ac").click(); true');
     await b.sleep(300);
-    ok(await ev('document.querySelectorAll(".ac-node").length') === 12, 'la pestaña Academia enseña el árbol (12 nodos)');
-    await ev('document.querySelector(".ac-node[data-node=limonada]").click(); true');
+    ok(await ev('document.querySelectorAll(".ac-n").length') === 12 && await ev('SN.Windows.win.classList.contains("big")'), 'la pestaña Academia enseña el árbol (12 nodos) en grande');
+    let viewsOk = true;
+    for (const [v, n] of [['negocios', 5], ['trading', 4], ['contactos', 3], ['arbol', 12]]) {
+      await ev(`document.querySelector(".ac-nb[data-view=${v}]").click(); true`);
+      await b.sleep(150);
+      if (await ev('document.querySelectorAll(".ac-n").length') !== n) viewsOk = false;
+    }
+    ok(viewsOk, 'la navegación lateral filtra las ramas (Negocios, Trading, Contactos, Árbol)');
+    await ev('document.querySelector(".ac-n[data-node=tiburon]").click(); true');
+    await b.sleep(150);
+    ok(await ev('document.querySelector(".ac-dn").textContent.includes("tiburón")'), 'elegir un nodo actualiza el detalle');
+    await ev('document.querySelector(".ac-n[data-node=limonada]").click(); true');
     await b.sleep(200);
-    await ev('document.querySelector(".ac-det .btn").click(); true');
+    await ev('document.querySelector(".ac-buy").click(); true');
     await b.sleep(300);
     ok(await ev('SN.Academy.has("limonada")'), 'se compra el puesto de limonada en la Academia');
+    ok(await ev('document.querySelector(".ac-n[data-node=limonada]").classList.contains("own") && document.querySelector(".ac-prog em").textContent.trim() === "1 / 6"'), 'el nodo sale comprado y el progreso sube (1 / 6)');
     await shot('p6-academia');
     await ev('SN.Windows.close(); true');
     await b.sleep(300);
@@ -184,6 +225,7 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
     await ev('document.querySelector(".np-back").click(); true');
     await b.sleep(200);
     ok(await ev('!document.querySelector(".np-front") && !!document.querySelector(".np-hero")'), '"Volver" regresa al periódico');
+    ok(await ev('document.getElementById("screen").classList.contains("paper-open")'), 'con el periódico abierto no hay rayas de monitor sobre el papel');
     await ev('SN.Windows.close(); true');
 
     // --- Día de la suerte (el día 7): tarjeta dorada y Ruleta de la Fortuna ---
@@ -200,8 +242,12 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
     await ev('SN.State.run.luck.events = ["ruleta"]; SN.State.run.luck.spun = false; SN.UI.renderAll(); true');
     await ev('document.getElementById("nav-shop").click()');
     await b.sleep(400);
-    ok(await ev('!!document.querySelector(".shop-row.gold .btn")'), 'la tienda tiene la Ruleta de la Fortuna');
-    await ev('document.querySelector(".shop-row.gold .btn").click(); true');
+    await ev('document.querySelector(".sh-nb[data-cat=destacados]").click(); true');
+    await b.sleep(150);
+    ok(await ev('!!document.querySelector(".sh-card[data-kind=ruleta]")'), 'la tienda tiene la Ruleta de la Fortuna');
+    await ev('document.querySelector(".sh-card[data-kind=ruleta]").click(); true');
+    await b.sleep(150);
+    await ev('document.querySelector(".sh-buy").click(); true');
     await b.sleep(400);
     ok(await ev('SN.Windows.current') === 'ruleta', 'se abre la ruleta');
     await ev('document.querySelector(".rl-go").click(); true');
