@@ -1,6 +1,6 @@
-// Cinemática jugable: entrar a escondidas en el cuarto de Tommy (tu hermano pequeño) y coger su cerdito.
+// Cinemática jugable: entrar a escondidas en el cuarto de Timmy (tu hermano pequeño) y coger su cerdito.
 // Primera persona, como el resto del juego: solo se ve tu mano. Se avanza manteniendo pulsado
-// (clic, ESPACIO o ↑) y hay que soltar cuando Tommy se mueve: si te ve moverte, retrocedes.
+// (clic, ESPACIO o ↑) y hay que soltar cuando Timmy se mueve: si te ve moverte, retrocedes.
 // Al llegar a la estantería, un clic en el cerdito y se acabó: vuelves a tu cuarto con él.
 (function (SN) {
   'use strict';
@@ -8,6 +8,7 @@
   const R = (g, x, y, w, h, c) => Px.rect(g, x, y, w, h, c);
   const W = 160, H = 90;
   const PIG = { x: 131, y: 33 }; // el cerdito en la estantería
+  const DRAWING = { x: 44, y: 13, w: 15, h: 17 }; // el dibujo de Timmy: el encapuchado (y un símbolo)
   const KEYS = new Set(['Space', 'ArrowUp', 'KeyW', 'Enter']);
 
   // Mano derecha que avanza hacia la estantería (vista desde atrás, dedos hacia arriba)
@@ -39,8 +40,8 @@
       this.caught = 0;     // cuántas veces te ha visto moverte
       this.flash = 0;
       this.state = 'walk'; // walk -> reach -> grab -> out
-      this.tommy = { st: 'sleep', t: 0, next: U.rand(2.2, 3.4) };
-      this.say = 'Mantén pulsado para avanzar. Si Tommy se mueve, ¡quieto!';
+      this.timmy = { st: 'sleep', t: 0, next: U.rand(2.2, 3.4) };
+      this.say = 'Mantén pulsado para avanzar. Si Timmy se mueve, ¡quieto!';
       this.buf = Px.canvas(W, H);
       this.room = Px.canvas(W, H);
       this.hands = { idle: buildHand(false), open: buildHand(true) };
@@ -48,7 +49,12 @@
       this.g = Px.ctx(this.cv);
       this.cv.classList.remove('hidden');
       SN.Audio.setMood('silent');
-      const down = (e) => { if (e.button === 0 || e.pointerType === 'touch') this.press(true); };
+      const down = (e) => {
+        if (!(e.button === 0 || e.pointerType === 'touch')) return;
+        // ¿Clic en el dibujo de la pared? Es una pista del idioma secreto (y no das ningún paso)
+        if (this.onDrawing(e)) { if (SN.Cipher) SN.Cipher.discover('dibujo'); return; }
+        this.press(true);
+      };
       const up = () => this.press(false);
       const kd = (e) => { if (KEYS.has(e.code)) { e.preventDefault(); e.stopPropagation(); if (!e.repeat) this.press(true); } else if (e.code !== 'Escape') e.stopPropagation(); };
       const ku = (e) => { if (KEYS.has(e.code)) { e.preventDefault(); this.press(false); } };
@@ -73,6 +79,15 @@
       };
       requestAnimationFrame(loop);
       return new Promise((resolve) => { this.resolve = resolve; });
+    },
+
+    // ¿El clic cae sobre el dibujo de Timmy? (de la pantalla a las coordenadas del cuarto, con el zoom actual)
+    onDrawing(e) {
+      const v = this.view;
+      if (!v || this.state !== 'walk') return false;
+      const p = SN.Game.toStage(e.clientX, e.clientY);
+      const rx = v.sx + (p.x / 640) * v.sw, ry = v.sy + (p.y / 360) * v.sh;
+      return rx >= DRAWING.x && rx < DRAWING.x + DRAWING.w && ry >= DRAWING.y && ry < DRAWING.y + DRAWING.h;
     },
 
     press(on) {
@@ -109,9 +124,9 @@
     update(dt) {
       this.t += dt;
       this.flash = Math.max(0, this.flash - dt * 2);
-      const tm = this.tommy;
+      const tm = this.timmy;
       tm.t += dt;
-      // Tommy duerme, se remueve (aviso) y a veces mira hacia la puerta
+      // Timmy duerme, se remueve (aviso) y a veces mira hacia la puerta
       if (this.state === 'walk') {
         if (tm.st === 'sleep' && tm.t > tm.next) { tm.st = 'stir'; tm.t = 0; SN.Audio.sfx('heart'); }
         else if (tm.st === 'stir' && tm.t > 0.75) { tm.st = 'look'; tm.t = 0; }
@@ -126,7 +141,7 @@
             tm.st = 'sleep'; tm.t = 0; tm.next = U.rand(1.6, 2.6);
             SN.Audio.sfx('notifyBad');
             SN.FX.shake(3, 0.3);
-            this.say = this.caught === 1 ? 'Tommy: "...¿hermano?" — Vuelves a la puerta. Suelta cuando se mueva.' : 'Tommy: "mmh..." — Casi. Otra vez.';
+            this.say = this.caught === 1 ? 'Timmy: "...¿hermano?" — Vuelves a la puerta. Suelta cuando se mueva.' : 'Timmy: "mmh..." — Casi. Otra vez.';
           } else {
             this.p = Math.min(1, this.p + dt * 0.16);
             if (Math.floor(this.t * 3) !== Math.floor((this.t - dt) * 3)) SN.Audio.sfx('tick');
@@ -143,7 +158,7 @@
     },
 
     drawRoom(g) {
-      const tm = this.tommy;
+      const tm = this.timmy;
       // Pared y suelo
       R(g, 0, 0, W, 62, '#1C1A3C');
       for (let x = 4; x < W; x += 9) R(g, x, 0, 1, 62, '#221F46');
@@ -159,10 +174,17 @@
       // Póster de dinosaurio
       R(g, 22, 12, 18, 14, '#3A6E5A'); R(g, 23, 13, 16, 12, '#4E8C6E');
       R(g, 27, 17, 8, 4, '#2C5444'); R(g, 33, 15, 3, 3, '#2C5444'); R(g, 28, 21, 1, 2, '#2C5444'); R(g, 32, 21, 1, 2, '#2C5444');
+      // El dibujo de Timmy: el hombre de la capucha (todos los niños lo dibujan) y un símbolo raro
+      const d = DRAWING;
+      R(g, d.x, d.y, d.w, d.h, '#D8D2EE'); R(g, d.x, d.y, d.w, 1, '#F2EEFF');
+      R(g, d.x + 5, d.y + 3, 5, 2, '#2A2240'); R(g, d.x + 4, d.y + 5, 7, 7, '#2A2240'); R(g, d.x + 3, d.y + 12, 9, 3, '#2A2240');
+      R(g, d.x + 6, d.y + 7, 1, 1, '#FFD34E'); R(g, d.x + 8, d.y + 7, 1, 1, '#FFD34E');
+      for (const bx of [9, 11, 13]) R(g, d.x + bx, d.y + 1, 1, 5, '#C42A52'); // Ш
+      R(g, d.x + 9, d.y + 5, 5, 1, '#C42A52');
       // Lamparita de noche
       g.globalAlpha = 0.1; Px.ellipse(g, 60, 56, 9, 6, '#FFB84A'); g.globalAlpha = 0.12; Px.ellipse(g, 60, 56, 5, 4, '#FFD66B'); g.globalAlpha = 1;
       R(g, 58, 56, 4, 6, '#3A2A3A'); Px.ellipse(g, 60, 55, 2, 2, '#FFE08A');
-      // Cama y Tommy
+      // Cama y Timmy
       R(g, 4, 50, 54, 14, '#3A2848'); R(g, 4, 46, 6, 18, '#4A3258');
       R(g, 9, 47, 12, 6, '#C9C2E8');
       const lift = tm.st === 'look' ? -3 : tm.st === 'stir' ? (Math.sin(tm.t * 30) > 0 ? -1 : 0) : 0;
@@ -206,6 +228,7 @@
       const bob = this.hold ? Math.round(Math.sin(this.t * 9) * 1) : 0;
       const sw = W / zoom, sh = H / zoom;
       const sx = U.clamp(cx - sw / 2, 0, W - sw), sy = U.clamp(cy - sh / 2 + bob / zoom, 0, H - sh);
+      this.view = { sx, sy, sw, sh };
       b.clearRect(0, 0, W, H);
       b.imageSmoothingEnabled = false;
       b.drawImage(this.room, sx, sy, sw, sh, 0, 0, W, H);
@@ -218,7 +241,7 @@
       g.fillStyle = vg; g.fillRect(0, 0, 640, 360);
       if (this.flash > 0) { g.globalAlpha = this.flash * 0.35; R(g, 0, 0, 640, 360, P.coral); g.globalAlpha = 1; }
       // La mano: sube al alcanzar y se cierra al coger el cerdito
-      const tm = this.tommy;
+      const tm = this.timmy;
       let hx = 420, hy = 250 + (this.hold ? Math.round(Math.sin(this.t * 9) * 4) : 0), hand = this.hands.idle;
       if (this.state === 'reach') { hy = 210 + Math.round(Math.sin(this.t * 4) * 3); hand = this.hands.open; }
       if (this.state === 'grab') {

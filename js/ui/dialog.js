@@ -37,6 +37,9 @@
       el.querySelector('.name').textContent = opts.name || SN.Data.story.hoodedName;
       this.portrait = Px.canvas(40, 40);
       el.querySelector('.portrait').appendChild(this.portrait);
+      // Entre la interferencia, a veces se ve un símbolo en su cara: un clic justo entonces lo descubre
+      this.glyphT = 0;
+      el.querySelector('.portrait').addEventListener('pointerdown', () => { if (this.glyphT > 0 && SN.Cipher) SN.Cipher.discover('retrato'); });
       if (opts.demo) {
         this.demo = Px.canvas(56, 34);
         const d = U.el('div', 'demo');
@@ -108,6 +111,11 @@
       if (this.opts.portrait !== 'none') {
         g.drawImage(SN.Chars.hoodedCanvas(this.t, { look: Math.sin(this.t * 0.8) > 0.7 ? 1 : 0, smile: this.opts.smile }), 0, 0);
         if (this.opts.glitchy && Math.random() < 0.08) Px.rect(g, 0, U.randi(0, 38), 40, 2, U.pick([P.coral, P.cyan, P.creamL]));
+        if (this.opts.glitchy && SN.Data.cipher) {
+          this.glyphT = Math.max(0, this.glyphT - dt);
+          if (!this.glyphT && Math.random() < dt * 0.22) this.glyphT = 0.45;
+          if (this.glyphT > 0) Px.text(g, SN.Data.cipher.alphabet.L, 20, 30, P.coral, { align: 'center', size: 16 });
+        }
       }
       if (this.demo) drawDemo(this.opts.demo, Px.ctx(this.demo), this.t);
     },

@@ -22,7 +22,7 @@
     },
     loadRun() {
       const run = read(KEY_RUN);
-      return run && run.v === 2 && !run.over ? run : null;
+      return run && run.v === 3 && !run.over ? run : null; // las partidas de la 1.4 o antes no se cargan
     },
     hasRun() { return !!this.loadRun(); },
     clearRun() { try { localStorage.removeItem(KEY_RUN); } catch (_) { /* sin almacenamiento */ } },

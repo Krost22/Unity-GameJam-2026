@@ -330,6 +330,69 @@
       R(g, 30, 10, 3, 30, P.coal); R(g, 14, 6, 36, 10, P.coal); R(g, 15, 7, 34, 8, P.green);
       Px.text(g, '???', 32, 14, P.creamL, { align: 'center' });
     },
+    // ---------- 1.5: memes y suerte ----------
+    // Un señor trajeado delante de una flecha que sube ("stonks")
+    stonks(g) {
+      R(g, 0, 0, W, H, P.cyanDD); for (let y = 2; y < H; y += 5) R(g, 0, y, W, 1, P.cyanD);
+      Px.line(g, 4, 34, 22, 22, P.green, 3); Px.line(g, 22, 22, 30, 27, P.green, 3); Px.line(g, 30, 27, 54, 6, P.green, 3);
+      R(g, 50, 4, 9, 3, P.green); R(g, 56, 4, 3, 9, P.green);
+      Px.ellipse(g, 22, 15, 5, 6, P.skin); R(g, 18, 12, 9, 2, P.coal);
+      R(g, 13, 21, 18, 19, P.coal); R(g, 20, 21, 4, 8, P.creamL); R(g, 21, 22, 2, 7, P.coral);
+      R(g, 20, 15, 1, 1, P.coal); R(g, 24, 15, 1, 1, P.coal); R(g, 21, 18, 3, 1, P.skinD);
+    },
+    // Un perro tomando café en una habitación en llamas: "todo está bien"
+    perrollamas(g) {
+      R(g, 0, 0, W, H, P.orangeD);
+      for (let x = 0; x < W; x += 6) { const h = 10 + ((x * 7) % 13); R(g, x, H - h - 8, 4, h, P.orange); R(g, x + 1, H - h - 4, 2, h - 6, P.yellow); }
+      R(g, 0, 32, W, 8, P.woodD); R(g, 26, 26, 22, 3, P.wood); R(g, 28, 29, 2, 6, P.woodD); R(g, 44, 29, 2, 6, P.woodD);
+      Px.ellipse(g, 20, 20, 7, 7, P.yellowD); Px.ellipse(g, 20, 12, 6, 5, P.yellowD);
+      R(g, 13, 8, 3, 6, P.woodD); R(g, 24, 8, 3, 6, P.woodD);
+      R(g, 17, 11, 1, 1, P.coal); R(g, 22, 11, 1, 1, P.coal); R(g, 19, 14, 2, 1, P.coal);
+      R(g, 34, 22, 5, 4, P.creamL); R(g, 39, 23, 2, 2, P.creamL); Px.line(g, 36, 21, 37, 17, P.creamD);
+    },
+    // Dos botones y una mano que suda: SUBIRÁ o BAJARÁ
+    botones(g) {
+      R(g, 0, 0, W, H, P.creamM); R(g, 0, 28, W, 12, P.coalL);
+      R(g, 8, 18, 18, 10, P.coal); R(g, 9, 19, 16, 7, P.green); R(g, 38, 18, 18, 10, P.coal); R(g, 39, 19, 16, 7, P.coral);
+      Px.text(g, '▲', 13, 26, P.greenDD); Px.text(g, '▼', 43, 26, P.coralDD);
+      Px.ellipse(g, 32, 8, 6, 5, P.skin); R(g, 29, 12, 6, 6, P.skin);
+      for (const [x, y] of [[24, 4], [40, 6], [27, 13], [37, 14]]) { R(g, x, y, 1, 2, P.cyan); R(g, x, y + 2, 1, 1, P.cyanL); }
+    },
+    // Un cohete camino de la luna: "¡a la luna!"
+    luna(g) {
+      R(g, 0, 0, W, H, P.navyD);
+      for (let i = 0; i < 26; i++) R(g, (i * 29) % W, (i * 13) % H, 1, 1, P.creamL);
+      Px.ellipse(g, 50, 9, 8, 8, P.creamL); Px.ellipse(g, 47, 7, 2, 2, P.creamD); Px.ellipse(g, 53, 12, 2, 1, P.creamD);
+      Px.line(g, 10, 36, 30, 16, P.coal, 6); Px.line(g, 11, 35, 30, 16, P.creamL, 4);
+      R(g, 28, 15, 4, 4, P.coral); R(g, 7, 32, 5, 6, P.orange); R(g, 5, 36, 3, 3, P.yellow);
+      Px.ellipse(g, 20, 26, 2, 2, P.cyanD);
+    },
+    // Cuatro bailarines con un ataúd a hombros
+    ataud(g) {
+      R(g, 0, 0, W, H, P.creamD); ground(g, 33, P.coalL);
+      R(g, 6, 12, 52, 7, P.coal); R(g, 7, 13, 50, 5, P.woodD); R(g, 7, 13, 50, 1, P.wood);
+      for (let i = 0; i < 4; i++) {
+        const x = 8 + i * 13, up = i % 2;
+        R(g, x + 1, 20 - up, 4, 4, P.skinD); R(g, x, 24 - up, 6, 6, P.coal); R(g, x + 1, 18 - up, 4, 2, P.coal);
+        R(g, x + 1, 30 - up, 1, 3 + up, P.coal); R(g, x + 4, 30 - up, 1, 3 + up, P.coal);
+      }
+    },
+    // Lluvia de oro: monedas cayendo sobre la ciudad
+    oro(g) {
+      sky(g, P.yellowL, P.yellow);
+      skyline(g, 38, P.yellowDD, P.yellowL);
+      for (let i = 0; i < 16; i++) {
+        const x = (i * 17) % (W - 4) + 2, y = (i * 11) % 26 + 2;
+        Px.ellipse(g, x, y, 2, 2, P.coal); Px.ellipse(g, x, y, 1, 1, P.yellow);
+      }
+    },
+    // Trébol de cuatro hojas
+    trebol(g) {
+      R(g, 0, 0, W, H, P.greenL); for (let x = 0; x < W; x += 3) R(g, x, 32 + (x % 2), 1, 8, P.greenD);
+      for (const [x, y] of [[26, 12], [38, 12], [26, 23], [38, 23]]) { Px.ellipse(g, x, y, 6, 6, P.coal); Px.ellipse(g, x, y, 5, 5, P.green); R(g, x - 2, y - 2, 2, 2, P.greenL); }
+      Px.line(g, 32, 18, 42, 38, P.coal, 3); Px.line(g, 32, 18, 42, 38, P.greenD, 1);
+      Px.ellipse(g, 32, 18, 2, 2, P.greenDD);
+    },
   };
 
   // ---------- Impresión en semitono ----------

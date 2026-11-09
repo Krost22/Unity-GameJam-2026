@@ -67,46 +67,104 @@
     },
 
     // ---------- Hitos ----------
-    async onDebtPaid(auto) {
+    // Deuda pagada. La primera (la Pleyzeta) es una fiesta; las siguientes, un alivio corto.
+    async onDebtPaid(auto, debt) {
       const run = S.run;
       SN.Audio.sfx('pay');
       SN.Audio.sfx('cheer');
-      SN.FX.confetti(70);
       SN.FX.flash(P.yellowL, 0.3, 0.4);
       const cap = SN.UI.posIn(document.getElementById('hud-goal'));
       SN.FX.coins(cap.x + 60, cap.y + 14, 16, 1.5);
       SN.FX.ring(cap.x + 60, cap.y + 14, P.green, 120, 0.9);
       SN.Hands.celebrate();
       SN.Desk.dirty();
-      SN.Desk.windowEvent('fuegos');
-      await SN.UI.stamp('DEUDA SALDADA', 'green', auto ? 'Se cobró al vencer el plazo' : 'Eres libre (más o menos)', 2);
-      await SN.Cine.faceBeat('relieved', 'Uf... Libre. Por fin.', 2.2);
-      await this.hoodedScene(story().hoodedEvents.debtPaid);
-      SN.Economy.add(25, 'reward');
-      SN.FX.float('+$25 regalo', 210, 90, 'gold');
-      SN.Audio.sfx('unlock');
-      run.flags.debtPaid = true;
-      await SN.UI.stamp('OBJETIVO: $1,000', '', 'Nuevo objetivo · ×10 · tienda · límite', 2.2);
-      this.addNews({ title: 'Deuda saldada. Nuevo objetivo: $1,000', tone: 'pos', art: 'sello' });
-      S.checkpoint('la meta de $1,000');
-      SN.Events.emit('chat:flag', { flag: 'debtPaid' });
+      if (!debt || debt.id === 'pleyzeta') {
+        SN.FX.confetti(70);
+        SN.Desk.windowEvent('fuegos');
+        await SN.UI.stamp('DEUDA SALDADA', 'green', auto ? 'Se cobró al vencer el plazo' : 'Eres libre (más o menos)', 2);
+        await SN.Cine.faceBeat('relieved', 'Uf... Libre. Por fin.', 2.2);
+        run.flags.debtPaid = true;
+        this.addNews({ title: 'Deuda saldada: la Pleyzeta ya es tuya', tone: 'pos', art: 'sello' });
+        SN.Events.emit('chat:flag', { flag: 'debtPaid' });
+      } else {
+        SN.FX.confetti(35);
+        await SN.UI.stamp('DEUDA SALDADA', 'green', auto ? 'Se cobró al vencer el plazo' : `Pagaste ${debt.label}`, 1.6);
+        this.addNews({ title: `Deuda saldada: ${debt.label}`, tone: 'pos', art: 'sello' });
+        SN.Events.emit('chat:flag', { flag: 'paid-' + debt.id });
+      }
       SN.UI.renderAll();
+    },
+
+    // Cuenta en pantalla lo que devuelve SN.Unlocks.check() o la compra de un objeto clave
+    async onStep(ev) {
+      if (ev.type === 'gift') await this.onGift(ev.step);
+      else if (ev.type === 'goal') await this.onGoal(ev.step, ev.next);
+      else if (ev.type === 'item') await this.onItem(ev);
+      else if (ev.type === 'done') this.stepCheckpoint();
+      SN.UI.renderAll();
+    },
+
+    // Punto de control al empezar cada paso que empieza sin deuda (una meta o una compra).
+    // El regalo guarda el suyo al llegar, ya con su deuda.
+    stepCheckpoint() {
+      const st = SN.Unlocks.step();
+      if (!st || st.kind === 'gift') return;
+      S.checkpoint(this.stepLabel(st));
+    },
+    stepLabel(st) {
+      if (!st) return 'esta parte';
+      if (st.kind === 'debt') return st.label;
+      if (st.kind === 'gift') return `el regalo de ${SN.Upgrades.def(st.upgrade).name.toUpperCase()}`;
+      if (st.kind === 'item') return `la compra de ${D.keyItemById(st.item).short}`;
+      return `la meta de ${U.short(st.amount)}`;
+    },
+    fill(lines, vars) { return lines.map((l) => l.replace(/\{(\w+)\}/g, (_, k) => (vars[k] != null ? vars[k] : ''))); },
+
+    // "Regalo" del encapuchado: una mejora que ya se puede comprar... y una deuda
+    async onGift(st) {
+      const up = SN.Upgrades.def(st.upgrade);
+      const debt = U.money(st.debt), days = st.days;
+      const lines = this.fill(story().hoodedEvents[st.story] || [], { debt, days });
+      if (lines.length) await this.hoodedScene(lines, { smile: st.id !== 'regalo1' });
+      SN.Audio.sfx('unlock');
+      await SN.UI.stamp(`REGALO: ${up.name.toUpperCase()}`, 'coral', `Deuda: ${debt} · ${days} días`, 2.2);
+      this.addNews({ title: `Un "regalo": ${up.name}. Y una deuda de ${debt}`, tone: 'neg', art: 'documento' });
+      S.checkpoint(this.stepLabel(st));
+      SN.Events.emit('chat:flag', { flag: st.id });
     },
 
     async onGoal(g, next) {
       SN.Desk.windowEvent('fuegos');
       SN.Audio.sfx('cheer');
       SN.FX.confetti(60);
-      await SN.UI.stamp('¡OBJETIVO CUMPLIDO!', 'green', g.reward ? `Bono de la app: +${U.money(g.reward, { cents: false })}` : '', 1.8);
-      if (g.markets.length) SN.Audio.sfx('unlock');
+      await SN.UI.stamp('¡OBJETIVO CUMPLIDO!', 'green', g.reward ? `Bono de la app: +${U.money(g.reward)}` : '', 1.8);
+      if (g.markets.length) {
+        SN.Audio.sfx('unlock');
+        await SN.UI.stamp('MERCADO NUEVO', '', g.markets.map((id) => D.marketById(id).name).join(' · '), 1.4);
+      }
       const lines = story().hoodedEvents[g.story];
-      if (lines) await this.hoodedScene(lines, { smile: g.id !== 'g1000' });
+      if (lines) await this.hoodedScene(lines, { smile: true });
       if (g.id === 'g25000') await this.teaser();
-      if (next) await SN.UI.stamp(`OBJETIVO: ${U.short(next.amount)}`, '', 'Nueva meta desbloqueada', 1.6);
-      else await this.endDemo();
+      if (!next) await this.endDemo();
       this.addNews({ title: `Objetivo ${U.short(g.amount)} cumplido`, tone: 'pos', art: 'dinero' });
-      if (next) S.checkpoint(`la meta de ${U.short(next.amount)}`);
       SN.Events.emit('chat:flag', { flag: g.id });
+      if (next && next.kind !== 'gift') S.checkpoint(this.stepLabel(next));
+    },
+
+    // Objeto clave comprado con la oferta de FUTURO.exe: te endeudas y se abre un mercado negro
+    async onItem(ev) {
+      const it = ev.item, def = D.marketById(it.market);
+      SN.Audio.sfx('pay');
+      SN.Hands.celebrate();
+      SN.FX.confetti(30);
+      SN.Desk.dirty();
+      await SN.UI.stamp('¡ES TUYO!', '', `${it.name} · pagaste ${U.money(ev.offer.now)} · debes ${U.money(ev.offer.debt)}`, 1.8);
+      const lines = story().hoodedEvents[ev.step.story];
+      if (lines) await this.hoodedScene(lines, { smile: true });
+      SN.Audio.sfx('unlock');
+      await SN.UI.stamp('MERCADO NEGRO', 'coral', def.name, 1.8);
+      this.addNews({ title: 'Abre un mercado que no sale en ningún periódico', text: def.desc, tone: 'neg', market: it.market, art: 'cartel' });
+      SN.Events.emit('chat:flag', { flag: ev.step.id });
     },
 
     async teaser() {
@@ -136,6 +194,30 @@
       if (run.darkness >= 2 && Math.random() < 0.12) { SN.FX.glitch(0.2, 0.6); SN.Audio.sfx('static', { dur: 0.15 }); }
     },
 
+    // "Errata": una noticia escrita en el idioma secreto (js/data/cipher.js). Sin id, la siguiente sin publicar.
+    cipherNews(id) {
+      const run = S.run;
+      if (!run) return;
+      run.cipherNews = run.cipherNews || {};
+      const all = D.cipher.news;
+      const n = id ? all.find((c) => c.id === id) : all.find((c) => c.id !== 'tuto' && !run.cipherNews[c.id]);
+      if (!n || run.cipherNews[n.id]) return;
+      run.cipherNews[n.id] = true;
+      this.addNews({ title: SN.Cipher.text(n.text), cipher: n.id, tone: 'neu', art: n.art });
+    },
+
+    // Cada día nuevo, una noticia de la ciudad (sin repetir; las más oscuras solo cuando toca)
+    cityNews() {
+      const run = S.run, all = story().fillerNews;
+      if (!run) return;
+      run.cityUsed = run.cityUsed || {};
+      const pool = all.filter((n, i) => !run.cityUsed[i] && (!n.minDark || run.darkness >= n.minDark));
+      if (!pool.length) return;
+      const n = pool[Math.floor(Math.random() * pool.length)];
+      run.cityUsed[all.indexOf(n)] = true;
+      this.addNews({ title: n.title, text: n.text, tone: n.tone, art: n.art, city: true });
+    },
+
     // Noticia extraña vinculada al mercado donde acabas de ganar
     darkNews(market) {
       const run = S.run;
@@ -151,12 +233,15 @@
         art = arts.generic[gi % arts.generic.length];
         run.darkUsed.generic = gi + 1;
       }
-      run.darkness++;
-      this.addNews({ title: text, tone: 'neg', market, dark: true, art, text: `Momentos después de tu operación en ${D.marketById(market).short}` });
+      // En el mercado negro la ciudad lo paga el doble
+      run.darkness += D.marketById(market).black ? 2 : 1;
+      this.addNews({ title: text, tone: 'neg', market, dark: true, art, text: `Momentos después de tu operación en ${D.marketLabel(market)}` });
       SN.Desk.dirty();
       SN.Audio.setDarkness(run.darkness / 12);
       SN.Audio.sfx('notifyBad');
-      if (run.darkness === 3 && !run.storySeen.darkNews) {
+      // A veces, junto a la noticia extraña, sale una "errata" en el idioma secreto
+      if (Math.random() < 0.35) this.cipherNews();
+      if (run.darkness >= 3 && !run.storySeen.darkNews) {
         run.storySeen.darkNews = true;
         this.pending.push(() => this.hoodedScene(story().hoodedEvents.darkNews, { smile: true }));
       }
@@ -182,16 +267,36 @@
   SN.Events.on('market:event-resolved', (n) => {
     N.addNews({ title: n.text, tone: n.tone, market: n.market, art: n.art });
   });
-  SN.Events.on('debt:paid', ({ auto }) => {
-    N.pending.unshift(() => N.onDebtPaid(auto));
+  SN.Events.on('debt:paid', ({ auto, debt }) => {
+    N.pending.unshift(() => N.onDebtPaid(auto, debt));
   });
   SN.Events.on('debt:defaulted', () => N.addNews({ title: 'Plazo vencido. Embargo.', tone: 'neg', art: 'documento' }));
+  SN.Events.on('day:changed', () => N.cityNews());
+  // Día de la suerte: portada, y si llueve oro, se ve por la ventana
+  SN.Events.on('luck:day', (l) => {
+    const sp = D.luck.specials;
+    N.addNews({ title: D.luck.news.title + ' ' + '★'.repeat(l.k), text: `${D.luck.news.text} Hoy: ${l.events.map((e) => sp[e].name).join(', ')}.`, tone: 'pos', art: 'trebol' });
+    if (l.events.includes('lluvia')) {
+      N.addNews({ title: 'LLUEVE ORO SOBRE LA CIUDAD', text: sp.lluvia.text, tone: 'pos', art: 'oro' });
+      SN.after(2, () => SN.Desk.windowEvent('oro'));
+    }
+  });
+  // El encapuchado sabe de este idioma: con el primer símbolo te pide que no digas nada; con todos, otra cosa
+  SN.Events.on('cipher:found', ({ count, total, isNew }) => {
+    if (!S.run || !isNew) return;
+    if (count === 1) {
+      SN.Events.emit('chat:flag', { flag: 'cipher' });
+      N.pending.push(() => N.hoodedScene(D.cipher.hoodFirst));
+    }
+    if (count === total) N.pending.push(() => N.hoodedScene(D.cipher.hoodAll, { smile: true }));
+  });
   SN.Events.on('trade:closed', (r) => {
     const run = S.run;
-    if (!run.debt.paid || r.pnl <= 0) return;
+    if (!run.flags.debtPaid || r.pnl <= 0) return;
     N.profitableSinceDebt++;
-    // Cuanto más ganas (en proporción), más probable es que alguien lo pague
-    const chance = N.profitableSinceDebt === 2 ? 1 : U.clamp(0.2 + r.pnl / Math.max(50, run.capital) * 0.8, 0.2, 0.75);
+    // Cuanto más ganas (en proporción), más probable es que alguien lo pague. En el mercado negro, casi siempre.
+    const black = D.marketById(r.market).black;
+    const chance = black ? 0.85 : N.profitableSinceDebt === 2 ? 1 : U.clamp(0.2 + r.pnl / Math.max(50, run.capital) * 0.8, 0.2, 0.75);
     if (Math.random() < chance) N.darkNews(r.market);
   });
 

@@ -79,6 +79,7 @@
       $('nav-upgrades').addEventListener('click', () => this.openWindow('upgrades'));
       $('nav-news').addEventListener('click', () => this.openWindow('news'));
       $('nav-shop').addEventListener('click', () => this.openWindow('shop'));
+      $('btn-item').addEventListener('click', () => this.openWindow('shop'));
       $('events').addEventListener('click', () => this.openWindow('news'));
       $('btn-skip-turn').addEventListener('click', () => this.skip());
       $('btn-pay').addEventListener('click', () => { if (!this.busy && this.allowed('pay')) SN.Game.payDebt(); });
@@ -93,6 +94,12 @@
       stage.addEventListener('pointermove', (e) => {
         const p = SN.Game.toStage(e.clientX, e.clientY);
         SN.Hands.pointAt(p.x, p.y);
+      });
+      // Clic en la habitación (fuera del monitor): hay cosas escondidas (gato, cuervo, póster...)
+      stage.addEventListener('click', (e) => {
+        if (e.target.closest('#monitor') || SN.Cine.running || SN.Sneak.active) return;
+        const p = SN.Game.toStage(e.clientX, e.clientY);
+        if (SN.Desk.hotspot) SN.Desk.hotspot(p.x / 2, p.y / 2);
       });
       $('monitor').addEventListener('pointerdown', (e) => {
         SN.Audio.unlock();
@@ -126,6 +133,7 @@
         ArrowLeft: () => this.stepAmount(-1), ArrowRight: () => this.stepAmount(1),
         Digit1: lev(0), Digit2: lev(1), Digit3: lev(2), Digit4: lev(3),
         Tab: () => this.cycleMarket(e.shiftKey ? -1 : 1), KeyQ: () => this.cycleMarket(-1), KeyE: () => this.cycleMarket(1),
+        KeyX: () => this.toggleTab(),
         KeyP: () => this.skip(),
         KeyM: () => this.openWindow('upgrades'), KeyN: () => this.openWindow('news'), KeyT: () => this.openWindow('shop'),
       };
@@ -142,6 +150,8 @@
       });
       E.on('market:event-resolved', (n) => { if (n.market === S.run.selected) this.renderEvents(true); });
       E.on('market:unlocked', ({ market }) => {
+        // Se enseña la pestaña donde está el mercado nuevo (el primer negro hace aparecer la pestaña Negro)
+        this.tabSel = SN.Market.def(market).black ? 'negro' : 'legal';
         this.renderMarkets();
         const card = document.querySelector(`.mcard[data-id="${market}"]`);
         if (card) { card.classList.add('unlocking'); const p = this.posIn(card); SN.FX.burst(p.x + p.w / 2, p.y + p.h / 2, { n: 24, colors: [P.yellow, P.green, P.creamL] }); }
@@ -154,6 +164,8 @@
       E.on('trade:closed', (r) => this.onTradeClosed(r));
       E.on('trade:rejected', (r) => this.note(r.reason));
       E.on('window:closed', () => this.renderAll());
+      E.on('window:opened', () => this.renderHUD());
+      E.on('cipher:found', (d) => this.onCipher(d));
       E.on('turn:ready', () => this.afterTurnTips());
     },
 
@@ -173,44 +185,62 @@
       const run = S.run;
       let pips = '';
       for (let i = 0; i < D.sim.turnNames.length; i++) pips += `<i class="pip ${i < run.turn ? 'on' : i === run.turn ? 'now' : ''}"></i>`;
-      $('clock').innerHTML = `${SN.Time.turnName()} ${pips}`;
+      // Día de la suerte: estrellas en el reloj y FUTURO.exe se pone dorado
+      const luck = SN.Luck.today();
+      $('clock').innerHTML = `${luck ? `<b class="lk">${'★'.repeat(luck.k)}</b>` : ''}${SN.Time.turnName()} ${pips}`;
+      $('app').classList.toggle('lucky', !!luck);
       $('clock').title = 'Cada apuesta gasta un turno · 3 turnos = 1 día';
     },
 
+    // La meta de arriba: la deuda activa (amarilla), el objeto clave que toca comprar (cian) o la meta (verde)
     renderHUD() {
       const run = S.run;
       if (this.cap.t >= 1) this.setCapitalText(run.capital);
       const goal = SN.Unlocks.currentGoal();
       const fill = $('goal-fill');
       if (goal) {
-        $('goal-title').textContent = goal.type === 'debt' ? 'Deuda' : `Meta ${U.short(goal.amount)}`;
+        $('goal-title').textContent = goal.type === 'debt' ? `Deuda: ${goal.label}` : goal.type === 'item' ? `Compra: ${goal.label}` : `Meta ${U.short(goal.amount)}`;
         fill.style.width = (U.clamp(run.capital / goal.amount, 0, 1) * 100).toFixed(1) + '%';
         fill.classList.toggle('debt', goal.type === 'debt');
+        fill.classList.toggle('item', goal.type === 'item');
         $('goal-text').textContent = `${U.short(run.capital)} / ${U.short(goal.amount)}`;
       } else {
         $('goal-title').textContent = 'Sin límites';
         fill.style.width = '100%';
+        fill.classList.remove('debt', 'item');
         $('goal-text').textContent = '';
       }
-      const canPay = SN.Debt.canPay() && !this.busy;
+      $('hud-goal').title = goal && goal.type === 'item' ? `Siguiente paso: comprar ${goal.item.name} en la TIENDA (T)` : goal && goal.type === 'debt' ? `Debes ${U.money(goal.amount)} por ${goal.label}` : '';
+      // (con una ventana abierta no se enseñan: quedarían por encima de ella)
+      const canPay = SN.Debt.canPay() && !this.busy && !SN.Windows.current;
       $('btn-pay').classList.toggle('hidden', !canPay);
       $('btn-pay').classList.toggle('pulse', canPay);
+      // El objeto clave ya te llega: un botón que lleva a la tienda
+      const canItem = !canPay && goal && goal.type === 'item' && !this.busy && !SN.Windows.current && SN.Unlocks.canBuyItem(goal.item.id).ok;
+      $('btn-item').classList.toggle('hidden', !canItem);
+      $('btn-item').classList.toggle('pulse', !!canItem);
       this.renderDays();
     },
 
-    // Calendario del plazo: 7 casillas, la de hoy parpadea y la última es roja
+    // Calendario del plazo de la deuda activa (del día que empezó al último, como mucho 7 casillas):
+    // la de hoy parpadea y la última es roja. Sin deudas: "Libre".
     renderDays() {
-      const run = S.run, box = $('hud-days');
-      const key = `${run.day}|${run.debt.paid}|${run.debt.deadlineDay}`;
+      const run = S.run, box = $('hud-days'), d = run.debt;
+      const owing = SN.Debt.active();
+      const key = `${run.day}|${owing}|${d && d.id}|${d && d.deadlineDay}`;
       if (key === this.daysKey) return;
       this.daysKey = key;
-      if (run.debt.paid) { box.innerHTML = `<span class="free">Libre · día<b>${run.day}</b></span>`; return; }
+      if (!owing) {
+        box.innerHTML = SN.Luck.isLucky(run.day) ? `<span class="free lucky">★ Suerte · día<b>${run.day}</b></span>` : `<span class="free">Libre · día<b>${run.day}</b></span>`;
+        return;
+      }
       let html = '';
-      for (let d = 1; d <= run.debt.deadlineDay; d++) {
-        const cls = [d < run.day ? 'past' : '', d === run.day ? 'now' : '', d === run.debt.deadlineDay ? 'last' : ''].join(' ');
-        html += `<i class="${cls}">${d}</i>`;
+      for (let day = Math.max(d.start || 1, d.deadlineDay - 6); day <= d.deadlineDay; day++) {
+        const cls = [day < run.day ? 'past' : '', day === run.day ? 'now' : '', day === d.deadlineDay ? 'last' : '', SN.Luck.isLucky(day) ? 'lucky' : ''].join(' ');
+        html += `<i class="${cls}">${day}</i>`;
       }
       box.innerHTML = html;
+      box.classList.toggle('wide', d.deadlineDay >= 10);
     },
 
     setCapitalText(v) {
@@ -234,21 +264,52 @@
       if (!S.run.position) this.renderForm();
     },
 
+    // Pestaña de la barra lateral: 'legal' o 'negro' (la de Negro aparece con el primer mercado negro)
+    tab() {
+      if (!SN.Unlocks.anyBlack()) return 'legal';
+      if (!this.tabSel) this.tabSel = SN.Market.def(S.run.selected).black ? 'negro' : 'legal';
+      return this.tabSel;
+    },
+    toggleTab(to) {
+      if (!SN.Unlocks.anyBlack() || !this.allowed('market')) { SN.Audio.sfx('error'); return; }
+      const t = to || (this.tab() === 'negro' ? 'legal' : 'negro');
+      if (t === this.tab()) return;
+      this.tabSel = t;
+      SN.Audio.sfx('whoosh');
+      this.renderMarkets();
+    },
+
     renderMarkets() {
       const box = $('markets');
       box.innerHTML = '';
+      const tab = this.tab(), hasBlack = SN.Unlocks.anyBlack();
+      $('sidebar').classList.toggle('tabbed', hasBlack);
+      if (hasBlack) {
+        const tabs = U.el('div', 'mtabs');
+        for (const [t, name] of [['legal', 'Legal'], ['negro', 'Negro']]) {
+          const b = U.el('button', 'mtab mtab-' + t + (t === tab ? ' on' : ''), name);
+          b.title = t === 'negro' ? 'Mercado negro (X)' : 'Mercados legales (X)';
+          const alert = D.markets.some((d) => !!d.black === (t === 'negro') && d.id !== S.run.selected && S.run.markets[d.id].unlocked && S.run.markets[d.id].newEvents);
+          if (alert && t !== tab) b.insertAdjacentHTML('beforeend', '<b class="alert">!</b>');
+          b.addEventListener('click', () => this.toggleTab(t));
+          tabs.appendChild(b);
+        }
+        tabs.insertAdjacentHTML('beforeend', '<kbd>X</kbd>');
+        box.appendChild(tabs);
+      }
       for (const def of D.markets) {
+        if (!!def.black !== (tab === 'negro')) continue;
         const m = S.run.markets[def.id];
-        const card = U.el('div', 'mcard');
+        const card = U.el('div', 'mcard' + (def.black ? ' black' : ''));
         card.dataset.id = def.id;
-        card.title = `${def.name}: ${def.desc}`;
+        card.title = `${def.name}: ${def.desc} · Tope por apuesta: ±${U.money(def.cap)}`;
         const ico = SN.Sprites.node(def.icon, 1);
         ico.className = 'ico';
         card.appendChild(ico);
         if (!m.unlocked) {
           card.classList.add('locked');
-          card.title = `Se abre al llegar a ${def.unlock.label}`;
-          card.insertAdjacentHTML('beforeend', `<span class="nm">${def.short}</span><span class="hint">${def.unlock.label || ''}</span>`);
+          card.title = def.black ? `${def.unlock.label} en la TIENDA para abrirlo` : `Se abre al llegar a ${def.unlock.label}`;
+          card.insertAdjacentHTML('beforeend', `<span class="nm">${def.short}</span><span class="hint">${def.black ? 'Tienda' : def.unlock.label || ''}</span>`);
           const lock = SN.Sprites.node('lock', 1);
           lock.className = 'lock';
           card.appendChild(lock);
@@ -262,6 +323,14 @@
           card.insertAdjacentHTML('beforeend', `<span class="nm">${def.short}</span>${hint}`);
           if (!live) card.appendChild(sparkline(m.history.slice(-20)));
           if (def.id === S.run.selected) card.classList.add('sel');
+          // ESTRELLA DE LA SUERTE: hoy este mercado vale más (y la estrella esconde un símbolo)
+          const luck = SN.Luck.today();
+          if (luck && luck.star === def.id) {
+            const star = U.el('b', 'star', '★');
+            star.title = `Estrella de la Suerte: hoy sus ganancias valen ×${D.luck.starMul}`;
+            star.addEventListener('click', (e) => { e.stopPropagation(); SN.Cipher.discover('estrella'); });
+            card.appendChild(star);
+          }
           if (m.newEvents && def.id !== S.run.selected) card.insertAdjacentHTML('beforeend', '<b class="alert">!</b>');
           card.addEventListener('click', () => this.selectMarket(def.id));
         }
@@ -276,11 +345,39 @@
       app.style.setProperty('--mk2', def.colors.alt === P.coal ? P.creamM : def.colors.alt);
       app.style.setProperty('--mkD', def.colors.dark);
       app.style.setProperty('--mkInk', def.colors.ink);
+      // En el mercado negro, toda la app se oscurece
+      app.classList.toggle('black', !!def.black);
       const price = SN.Chart.anim && SN.Chart.market === def.id ? SN.Chart.livePrice : SN.Market.state(def.id).price;
       const head = $('mkt-head');
-      head.title = `${def.name} · ${def.tag}`;
-      head.innerHTML = `<div class="ico-box"></div><span class="nm">${def.short}</span><span class="px-price">${fmt(price)}</span>`;
-      head.querySelector('.ico-box').appendChild(SN.Sprites.node(def.icon, 1));
+      head.title = `${def.name} · ${def.tag} · Tope por apuesta: ±${U.money(def.cap)}`;
+      head.innerHTML = `<div class="ico-box"></div><span class="nm">${def.short}${def.black ? '<em class="blk">· NEGRO</em>' : ''}<em class="cap">±${U.short(def.cap)}</em></span><span class="px-price">${fmt(price)}</span>`;
+      const box = head.querySelector('.ico-box');
+      box.appendChild(SN.Sprites.node(def.icon, 1));
+      // La calavera del mercado negro: tres golpes y habla
+      if (def.black) {
+        box.classList.add('skull');
+        box.addEventListener('click', () => {
+          this.skullHits = (this.skullHits || 0) + 1;
+          SN.Audio.sfx('tick');
+          box.classList.remove('knock'); void box.offsetWidth; box.classList.add('knock');
+          if (this.skullHits >= 3) { this.skullHits = 0; SN.Cipher.discover('calavera'); }
+        });
+      }
+    },
+
+    // Una letra del idioma secreto: mucho ruido, y todo lo que hay en pantalla se traduce un poco más
+    onCipher(d) {
+      SN.Audio.sfx('cipher');
+      SN.FX.glitch(0.6, 1.4);
+      SN.FX.flash(P.cyan, 0.25, 0.35);
+      SN.Desk.led = 'alert';
+      SN.after(1.2, () => { if (SN.Desk.led === 'alert') SN.Desk.led = 'idle'; });
+      this.freshLetter = d.letter;
+      SN.after(1.6, () => { this.freshLetter = null; });
+      if (SN.Windows.current) SN.Windows.refresh();
+      SN.Desktop.onCipher(d);
+      const html = `<small>Símbolo descifrado · ${d.count}/${d.total}</small><span class="cx-pair"><b class="cx">${d.glyph}</b> = <b class="cx-k">${d.letter}</b></span><small>${d.clue.where}</small>`;
+      return this.card(html, 'stamp cx-stamp', 2.6);
     },
 
     // Bajo la gráfica: la noticia activa del mercado (o la última que hubo), con su foto
@@ -317,7 +414,7 @@
       amt.textContent = U.money(f.amount);
       amt.classList.toggle('small', U.money(f.amount).length > 9);
       const lim = SN.Trading.limit();
-      $('bet-box').title = `Máximo por apuesta: ${U.money(lim, { cents: false })} · mínimo: ${U.money(D.sim.minInvestment, { cents: false })}`;
+      $('bet-box').title = `Máximo por apuesta: ${U.money(lim)} · mínimo: ${U.money(D.sim.minInvestment)} · este mercado gana o pierde como mucho ${U.money(SN.Trading.cap(run.selected))}`;
       const k = max > 0 ? U.clamp(f.amount / max, 0, 1) : 0;
       $('slider-fill').style.width = (k * 100) + '%';
       $('slider-knob').style.left = (k * 100) + '%';
@@ -347,9 +444,10 @@
       const badge = $('news-badge');
       badge.textContent = unread > 9 ? '9+' : unread;
       badge.classList.toggle('hidden', unread <= 0);
+      // La tienda se puede mirar siempre (los objetos clave solo se compran cuando toca)
       const shop = $('nav-shop');
-      shop.disabled = !run.debt.paid;
-      shop.title = run.debt.paid ? 'Tienda de estilo de vida' : 'Se abre al pagar la deuda';
+      shop.disabled = false;
+      shop.title = 'Tienda: objetos clave y estilo de vida';
       $('btn-skip-turn').disabled = this.busy || !!run.position || !this.allowed('skip');
       $('btn-skip-turn').title = 'No apostar: pasa el turno y el mercado sigue';
     },
@@ -403,6 +501,7 @@
       if (!SN.Unlocks.isUnlocked(id)) { SN.Audio.sfx('error'); return; }
       if (S.run.selected === id) return;
       S.run.selected = id;
+      this.tabSel = SN.Market.def(id).black ? 'negro' : 'legal';
       S.run.markets[id].newEvents = false;
       SN.Chart.setMarket(id);
       SN.Audio.sfx('whoosh');
@@ -410,15 +509,17 @@
       this.renderAll();
     },
 
+    // TAB: siguiente mercado abierto de la pestaña que se ve (Legal o Negro)
     cycleMarket(dir) {
-      const ids = D.markets.filter((d) => SN.Unlocks.isUnlocked(d.id)).map((d) => d.id);
+      const black = this.tab() === 'negro';
+      const ids = D.markets.filter((d) => !!d.black === black && SN.Unlocks.isUnlocked(d.id)).map((d) => d.id);
+      if (!ids.length) return;
       const i = ids.indexOf(S.run.selected);
-      this.selectMarket(ids[(i + dir + ids.length) % ids.length]);
+      this.selectMarket(ids[i < 0 ? 0 : (i + dir + ids.length) % ids.length]);
     },
 
     openWindow(kind) {
       if (this.busy || !this.allowed('window')) return;
-      if (kind === 'shop' && !S.run.debt.paid) { SN.Audio.sfx('error'); return; }
       SN.Windows.open(kind);
     },
 
@@ -507,11 +608,22 @@
       const pe = $('live-pnl');
       pe.textContent = U.money(pnl, { sign: true });
       pe.className = 'pnl ' + (pnl >= 0 ? 'up' : 'down');
+      // TOPE del mercado: la operación no puede dar (ni quitar) más
+      const p = S.run.position;
+      const capped = !!p && !!p.cap && Math.abs(pnl) >= p.cap - 0.5;
+      pe.classList.toggle('capped', capped);
+      if (capped && !lv.capWarned) {
+        lv.capWarned = true;
+        const cp = this.posIn($('live-pnl'));
+        SN.FX.float(pnl > 0 ? '¡TOPE DEL MERCADO!' : 'TOPE: NO PIERDES MÁS', cp.x + cp.w / 2, cp.y - 6, 'gold small');
+        SN.Audio.sfx('tick');
+      }
       const close = $('btn-close');
       if (close.classList.contains('done')) return;
       $('close-lbl').textContent = pnl >= 0 ? 'Cobrar' : 'Salir';
       $('close-amt').textContent = U.money(pnl, { sign: true });
       close.classList.toggle('losing', pnl < 0);
+      close.classList.toggle('capped', capped && pnl > 0);
     },
 
     setLiveNote(text, cls = '') {
@@ -681,7 +793,10 @@
     resultCard(r) {
       const win = r.pnl > 0, even = r.pnl === 0;
       const label = r.liquidated ? 'Liquidado' : even ? 'Te quedas igual' : win ? 'Ganaste' : 'Perdiste';
-      const html = `<span class="rc-l">${label}</span><b class="rc-v">${U.money(r.pnl, { sign: win })}</b><span class="rc-t">Ahora tienes ${U.money(S.run.capital)}</span><kbd>clic</kbd>`;
+      const extra = (r.capped ? '<span class="rc-cap">Tope del mercado</span>' : '') +
+        (r.luckBonus ? `<span class="rc-luck">★ Suerte: +${U.money(r.luckBonus)}</span>` : '') +
+        (r.shielded ? '<span class="rc-luck">Seguro de la ruleta: no pierdes nada</span>' : '');
+      const html = `<span class="rc-l">${label}</span><b class="rc-v">${U.money(r.pnl, { sign: win })}</b>${extra}<span class="rc-t">Ahora tienes ${U.money(S.run.capital)}</span><kbd>clic</kbd>`;
       const p = this.posIn($('chart-wrap'));
       return new Promise((resolve) => {
         const el = U.el('button', 'result-card ' + (win ? 'rc-win' : even ? 'rc-even' : 'rc-lose'), html);
@@ -701,6 +816,15 @@
         SN.after(0.5, () => document.addEventListener('keydown', onKey, true));
         SN.after(2.6, finish);
       });
+    },
+    // Día de la suerte: tarjeta dorada con sus sietes y lo que trae
+    luckyCard(l) {
+      SN.Audio.sfx('lucky');
+      const cap = this.posIn($('hud-capital'));
+      SN.FX.coins(cap.x + 60, cap.y + 14, 7 * l.k, 1.6);
+      const stars = '★'.repeat(l.k);
+      const evs = l.events.map((e) => D.luck.specials[e].name).join(' · ');
+      return this.card(`<div class="d1">${stars} ¡DÍA DE LA SUERTE! ${stars}</div><div class="d2">${evs}</div><div class="d3">Los mercados crecen · +${7 * l.k}% en cada ganancia</div>`, 'daycard lucky', 3.2);
     },
     dayCard(day, sub, warn) { return this.card(`<div class="d1">DÍA ${day}</div><div class="d2${warn ? ' warn' : ''}">${sub}</div>`, 'daycard', 1.3); },
     stamp(text, cls = '', sub = '', time = 1.6) { return this.card(`${text}${sub ? `<small>${sub}</small>` : ''}`, 'stamp ' + cls, time); },

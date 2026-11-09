@@ -1,33 +1,56 @@
-// DebtManager: importe de la deuda, plazo, pago anticipado y vencimiento.
+// DebtManager: la deuda activa (solo hay una a la vez), su plazo, el pago y el vencimiento.
+// La primera es la Pleyzeta; después llegan los "regalos" del encapuchado y las ofertas de FUTURO.exe
+// (ver js/data/progression.js). Todas funcionan igual: si vence el plazo y no te alcanza, embargo.
 (function (SN) {
   'use strict';
   const S = SN.State, D = SN.Data;
 
   SN.Debt = {
-    get amount() { return S.run.debt.amount; },
-    get paid() { return S.run.debt.paid; },
-    daysLeft() { return Math.max(0, S.run.debt.deadlineDay - S.run.day + 1); },
-    canPay() { return !this.paid && !S.run.position && S.run.capital >= this.amount; },
+    get current() { return S.run.debt; },
+    // ¿Hay una deuda sin pagar?
+    active() { const d = S.run && S.run.debt; return !!d && !d.paid; },
+    get amount() { return this.active() ? S.run.debt.amount : 0; },
+    daysLeft() { return this.active() ? Math.max(0, S.run.debt.deadlineDay - S.run.day + 1) : 0; },
+    canPay() { return this.active() && !S.run.position && S.run.capital >= S.run.debt.amount; },
 
     // Turnos que quedan para operar antes de que venza el plazo
     turnsLeft() {
       const run = S.run;
+      if (!this.active()) return 0;
       return Math.max(0, (run.debt.deadlineDay - run.day) * D.sim.turnNames.length + D.sim.turnNames.length - run.turn);
     },
 
-    // Ya no hay forma de llegar: ni multiplicando el capital al máximo en cada turno que queda se alcanza la deuda
+    // Ya no hay forma de llegar: ni multiplicando el capital al máximo en cada turno que queda se alcanza.
+    // Cada mercado tiene un tope por apuesta: un turno no puede dar más que el mejor tope abierto.
     hopeless() {
+      const run = S.run, d = run.debt;
+      if (!this.active() || d.defaulted || run.position) return false;
+      const cap = SN.Trading.bestCap();
+      let c = run.capital;
+      for (let n = this.turnsLeft(); n > 0 && c < d.amount; n--) c += Math.min(c * (D.sim.maxTurnGrowth - 1), cap);
+      return c < d.amount;
+    },
+
+    // Abre una deuda nueva: { id, kind, label, amount, days }. "N días" cuenta el de hoy, como la Pleyzeta.
+    open(o) {
       const run = S.run;
-      if (this.paid || run.debt.defaulted || run.position) return false;
-      return run.capital * Math.pow(D.sim.maxTurnGrowth, this.turnsLeft()) < this.amount;
+      if (run.debt) run.debts.push(run.debt);
+      run.debt = {
+        id: o.id, kind: o.kind, label: o.label, amount: Math.round(o.amount),
+        start: run.day, deadlineDay: run.day + o.days - 1, paid: false, defaulted: false,
+      };
+      SN.Events.emit('debt:opened', { debt: run.debt });
+      return run.debt;
     },
 
     pay(auto) {
       if (!this.canPay()) return false;
-      SN.Economy.spend(this.amount, 'debt');
-      S.run.debt.paid = true;
-      S.run.flags.debtPaid = true;
-      SN.Events.emit('debt:paid', { auto: !!auto, amount: this.amount });
+      const d = S.run.debt;
+      SN.Economy.spend(d.amount, 'debt');
+      d.paid = true;
+      d.paidDay = S.run.day;
+      if (d.id === 'pleyzeta') S.run.flags.debtPaid = true;
+      SN.Events.emit('debt:paid', { auto: !!auto, amount: d.amount, debt: d });
       return true;
     },
   };
@@ -35,11 +58,11 @@
   // Al empezar un día después del plazo: si te alcanza se cobra sola; si no, embargo
   SN.Events.on('day:changed', ({ day }) => {
     const debt = S.run.debt;
-    if (debt.paid || debt.defaulted || day <= debt.deadlineDay) return;
+    if (!debt || debt.paid || debt.defaulted || day <= debt.deadlineDay) return;
     if (S.run.capital >= debt.amount) SN.Debt.pay(true);
     else {
       debt.defaulted = true;
-      SN.Events.emit('debt:defaulted', { amount: debt.amount, seized: S.run.capital });
+      SN.Events.emit('debt:defaulted', { amount: debt.amount, seized: S.run.capital, debt });
     }
   });
 })(window.SN);

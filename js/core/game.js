@@ -290,10 +290,10 @@
     },
 
     async startRun({ tutorial = false, greeting = false, loaded = false } = {}) {
-      if (!loaded) { S.newRun(); S.checkpoint('la deuda de $250'); }
+      if (!loaded) { S.newRun(); S.checkpoint('la deuda de la Pleyzeta'); }
       const run = S.run;
-      // Partidas de versiones anteriores: sin punto de control ni cerdito
-      if (!run.checkpoint) S.checkpoint(run.debt.paid ? 'esta meta' : 'la deuda de $250');
+      // Partida sin punto de control (por si acaso): se guarda uno ahora
+      if (!run.checkpoint) S.checkpoint(SN.Narrative.stepLabel(SN.Unlocks.step()));
       if (run.piggy == null) run.piggy = 'ready';
       SN.Desktop.reset();
       SN.Sneak.abort();
@@ -317,6 +317,7 @@
       screen.classList.remove('poweron', 'off'); void screen.offsetWidth; screen.classList.add('poweron');
       this.setState('GAMEPLAY');
       SN.UI.busy = false;
+      SN.UI.tabSel = null;
       SN.UI.endTrade();
       SN.UI.renderSound();
       this.camTo({ x: 320, y: 180, zoom: 1 }, 0.6);
@@ -350,9 +351,9 @@
     },
 
     // ¿Se ha perdido? (plazo vencido, sin dinero para la apuesta mínima o ya imposible pagar a tiempo)
-    lost() { return !!S.run && (S.run.debt.defaulted || SN.Bankruptcy.shouldTrigger() || SN.Debt.hopeless()); },
+    lost() { return !!S.run && ((S.run.debt && S.run.debt.defaulted) || SN.Bankruptcy.shouldTrigger() || SN.Debt.hopeless()); },
     async checkLoss() {
-      if (S.run.debt.defaulted) return SN.Bankruptcy.embargo();
+      if (S.run.debt && S.run.debt.defaulted) return SN.Bankruptcy.embargo();
       // Sin dinero para la apuesta mínima: se acaba en el momento, sin esperar al último día
       if (SN.Bankruptcy.shouldTrigger()) return SN.Bankruptcy.broke();
       // Ya es imposible llegar a la deuda a tiempo: el cobrador se adelanta
@@ -419,15 +420,17 @@
       if (this.dayChanged) {
         this.dayChanged = false;
         SN.Audio.sfx('day');
-        const left = SN.Debt.daysLeft();
-        const sub = run.debt.paid ? (run.darkness >= 4 ? 'La ciudad está más silenciosa' : 'Otro día, otra oportunidad')
+        const left = SN.Debt.daysLeft(), owing = SN.Debt.active();
+        const sub = !owing ? (run.darkness >= 4 ? 'La ciudad está más silenciosa' : 'Otro día, otra oportunidad')
           : left <= 1 ? '¡Último día para pagar!' : `Faltan ${left} días para pagar`;
-        await UI.dayCard(run.day, sub, !run.debt.paid && left <= 2);
+        await UI.dayCard(run.day, sub, owing && left <= 2);
+        // ¿El día lleva un 7? Día de la suerte
+        const luck = SN.Luck.today();
+        if (luck) await UI.luckyCard(luck);
       }
       await SN.Narrative.afterTurn();
-      let g;
-      while ((g = SN.Unlocks.check())) await SN.Narrative.onGoal(g, D.goals[run.goalIndex]);
-      if (!run.debt.paid && SN.Debt.canPay() && !run.flags.payHintShown && !SN.Tutorial.active) {
+      await this.advanceSteps();
+      if (!run.flags.debtPaid && SN.Debt.canPay() && !run.flags.payHintShown && !SN.Tutorial.active) {
         run.flags.payHintShown = true;
         // El botón se ve (busy = false) pero no se puede pulsar hasta cerrar el aviso (allow vacío)
         UI.busy = false;
@@ -451,16 +454,45 @@
       SN.UI.clearSpot();
       SN.Debt.pay(false);
       await SN.Narrative.afterTurn();
-      let g;
-      while ((g = SN.Unlocks.check())) await SN.Narrative.onGoal(g, D.goals[S.run.goalIndex]);
+      await this.advanceSteps();
       SN.Save.saveRun();
       SN.UI.setBusy(false);
     },
 
-    // ?debug: atajos para probar (F8 bancarrota, F9 +$1,000, F10 día siguiente)
+    // La escalera avanza todo lo que pueda (paso completado, regalo, meta) y la narrativa lo cuenta
+    async advanceSteps() {
+      let ev;
+      while ((ev = SN.Unlocks.check())) await SN.Narrative.onStep(ev);
+    },
+
+    // Comprar un objeto clave con la oferta de FUTURO.exe (desde la tienda)
+    async buyKeyItem(id) {
+      if (SN.UI.busy) return false;
+      const ev = SN.Unlocks.acceptOffer(id);
+      if (!ev) return false;
+      SN.UI.setBusy(true);
+      SN.Windows.close(true);
+      SN.Save.saveRun();
+      await SN.Narrative.onStep(ev);
+      SN.Save.saveRun();
+      SN.UI.setBusy(false);
+      return true;
+    },
+
+    // ?debug: atajos para probar (F6 descubre un símbolo, F7 salta al siguiente día de la suerte,
+    // F8 bancarrota, F9 +$1,000, F10 día siguiente)
     debugKeys() {
       document.addEventListener('keydown', (e) => {
         if (!S.run || this.state !== 'GAMEPLAY' || SN.UI.busy) return;
+        if (e.code === 'F6') { e.preventDefault(); SN.Cipher.wildcard(); }
+        if (e.code === 'F7') {
+          e.preventDefault();
+          for (let i = 0; i < 300 && !SN.Luck.isLucky(S.run.day + 1); i++) S.run.day++;
+          S.run.turn = 2;
+          SN.Trading.skipTurn();
+          SN.UI.setBusy(true);
+          this.afterTurn(null);
+        }
         if (e.code === 'F8') { e.preventDefault(); SN.Economy.spend(S.run.capital, 'debug'); SN.UI.setBusy(true); this.afterTurn(null); }
         if (e.code === 'F9') { e.preventDefault(); SN.Economy.add(1000, 'debug'); }
         if (e.code === 'F10') { e.preventDefault(); for (let i = 0; i < 3; i++) SN.Trading.skipTurn(); SN.UI.setBusy(true); this.afterTurn(null); }

@@ -13,7 +13,7 @@ fs.mkdirSync(OUT, { recursive: true });
 let failed = 0, passed = 0;
 const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:', m); } };
 const URL = 'file:///' + path.join(__dirname, '..', '..', 'index.html').replace(/\\/g, '/') + '?debug';
-const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV: 2, runs: 0, bestCapital: 0, settings: { music: false, sfx: false } });
+const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV: 3, runs: 0, bestCapital: 0, settings: { music: false, sfx: false } });
 
 (async () => {
   const b = await launch(URL, { width: 1280, height: 720, port: 9345 });
@@ -26,12 +26,12 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
     return false;
   };
 
-  // Cuarto de Tommy: mantener ESPACIO mientras duerme, soltar cuando se mueve; al final, clic en el cerdito
+  // Cuarto de Timmy: mantener ESPACIO mientras duerme, soltar cuando se mueve; al final, clic en el cerdito
   const playSneak = async () => {
     const t0 = Date.now();
     let holding = false;
     while (Date.now() - t0 < 45000) {
-      const o = JSON.parse(await ev('JSON.stringify({ st: SN.Sneak.tommy.st, s: SN.Sneak.state })'));
+      const o = JSON.parse(await ev('JSON.stringify({ st: SN.Sneak.timmy.st, s: SN.Sneak.state })'));
       if (o.s !== 'walk') break;
       const want = o.st === 'sleep';
       if (want && !holding) { await b.cdp('Input.dispatchKeyEvent', { type: 'keyDown', code: 'Space', key: ' ' }); holding = true; }
@@ -127,7 +127,7 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
     await ev('document.getElementById("btn-pay").click(); true');
     await b.sleep(300);
     await drain(120);
-    ok(await ev('SN.State.run.debt.paid'), 'deuda pagada');
+    ok(await ev('SN.State.run.flags.debtPaid'), 'deuda pagada');
     await ev('document.getElementById("nav-shop").click()');
     await b.sleep(500);
     await shot('p2-tienda');
@@ -147,6 +147,30 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
     await shot('p4-noticias-extranas');
     await ev('SN.Windows.close(); true');
 
+    // --- Día de la suerte (el día 7): tarjeta dorada y Ruleta de la Fortuna ---
+    await ev('SN.Game.toMenu(); true');
+    await b.sleep(400);
+    await fresh();
+    await ev('Object.assign(SN.State.run, { day: 6, turn: 2 }); SN.State.run.flags.payHintShown = true; SN.Economy.add(400, "test"); SN.UI.renderAll(); true');
+    await ev('document.getElementById("btn-skip-turn").click(); true');
+    ok(await waitFor('!!document.querySelector(".daycard.lucky")', 8000), 'el día 7 es día de la suerte: tarjeta dorada');
+    await b.sleep(300);
+    await shot('p4b-dia-de-la-suerte');
+    await waitFor('!SN.UI.busy', 10000);
+    ok(await ev('!!SN.Luck.today() && SN.Luck.k() === 1 && document.getElementById("app").classList.contains("lucky")'), 'el 7 cuenta como un siete y FUTURO.exe se pone dorado');
+    await ev('SN.State.run.luck.events = ["ruleta"]; SN.State.run.luck.spun = false; SN.UI.renderAll(); true');
+    await ev('document.getElementById("nav-shop").click()');
+    await b.sleep(400);
+    ok(await ev('!!document.querySelector(".shop-row.gold .btn")'), 'la tienda tiene la Ruleta de la Fortuna');
+    await ev('document.querySelector(".shop-row.gold .btn").click(); true');
+    await b.sleep(400);
+    ok(await ev('SN.Windows.current') === 'ruleta', 'se abre la ruleta');
+    await ev('document.querySelector(".rl-go").click(); true');
+    ok(await waitFor('document.querySelector(".rl-res").textContent.length > 3', 8000) && await ev('SN.State.run.luck.spun'), 'la ruleta gira y da un premio (una vez al día)');
+    await shot('p4c-ruleta');
+    await ev('SN.Windows.close(); true');
+    await b.sleep(300);
+
     // --- Fin de partida 1: sin dinero ni para la apuesta mínima ---
     await ev('SN.Game.toMenu(); true');
     await b.sleep(400);
@@ -157,13 +181,13 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
     await waitFor('!!document.querySelector(".stamp")', 6000);
     await shot('p5-sin-fondos');
     ok(await ev('document.querySelector(".stamp").textContent.includes("SIN FONDOS")'), 'fin de partida inmediato: SIN FONDOS');
-    ok(await waitFor('SN.Sneak.active', 8000) && await ev('SN.State.run.day') === 1, 'el cerdito de Tommy llega el mismo día, sin pasar turnos');
-    // Si Tommy te ve moverte, retrocedes
-    await ev('SN.Sneak.p = 0.5; SN.Sneak.tommy.st = "look"; SN.Sneak.tommy.t = 0; true');
+    ok(await waitFor('SN.Sneak.active', 8000) && await ev('SN.State.run.day') === 1, 'el cerdito de Timmy llega el mismo día, sin pasar turnos');
+    // Si Timmy te ve moverte, retrocedes
+    await ev('SN.Sneak.p = 0.5; SN.Sneak.timmy.st = "look"; SN.Sneak.timmy.t = 0; true');
     await b.cdp('Input.dispatchKeyEvent', { type: 'keyDown', code: 'Space', key: ' ' });
     await b.sleep(150);
     await b.cdp('Input.dispatchKeyEvent', { type: 'keyUp', code: 'Space', key: ' ' });
-    ok(await ev('SN.Sneak.caught') === 1 && await ev('SN.Sneak.p') < 0.5, 'si Tommy te ve moverte, retrocedes');
+    ok(await ev('SN.Sneak.caught') === 1 && await ev('SN.Sneak.p') < 0.5, 'si Timmy te ve moverte, retrocedes');
     await shot('p5b-pillado');
     await ev('SN.Game.toMenu(); true');
     await b.sleep(400);

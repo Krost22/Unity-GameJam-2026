@@ -353,7 +353,7 @@
         const danger = SN.Chart.anim && SN.Chart.anim.revealed >= run.position.total - SN.Data.sim.dangerCandles;
         return { expr: danger ? 'nervous' : 'focus', pose: danger ? 'head' : 'desk' };
       }
-      if (run && run.debt.paid) return { expr: 'calm', pose: 'chin' };
+      if (run && !SN.Debt.active()) return { expr: 'calm', pose: 'chin' };
       return { expr: 'worried', pose: 'chin' };
     },
 
@@ -404,6 +404,14 @@
       // Celebrar: la mano del teclado salta; perder: respingo
       const lift = md.expr === 'star' || md.expr === 'happy' ? -2 : 0;
       g.drawImage(keyHand, kx - 21 + sx, ky - 14 + by + lift);
+      // El reloj RÓLEZ (objeto clave): en la muñeca izquierda, brillando
+      const run = SN.State.run;
+      if (run && run.owned.reloj) {
+        const wx = kx - 21 + sx + 17, wy = ky - 14 + by + lift + 31;
+        SN.Px.line(g, wx - 3, wy - 2, wx + 4, wy + 2, P.yellowD, 2);
+        SN.Px.rect(g, wx, wy - 1, 2, 2, P.yellowL);
+        if (Math.sin(this.t * 3) > 0.7) SN.Px.rect(g, wx + 1, wy - 2, 1, 1, P.white);
+      }
       g.drawImage(mouseHand, Math.round(mx + this.mouse.x) - 24 + sx, Math.round(my + this.mouse.y) - 13 + by);
     },
 

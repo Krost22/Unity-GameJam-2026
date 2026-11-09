@@ -37,12 +37,12 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
   // Avanza diálogos y subtítulos abiertos (clic en el escritorio, lejos del texto)
   const advance = async () => { if (await ev('SN.Dialog.active || !!SN.Cine.say_')) await b.click(90, 640); };
 
-  // Cuarto de Tommy: mantener ESPACIO mientras duerme, soltar cuando se mueve; al final, clic en el cerdito
+  // Cuarto de Timmy: mantener ESPACIO mientras duerme, soltar cuando se mueve; al final, clic en el cerdito
   const playSneak = async () => {
     const t0 = Date.now();
     let holding = false;
     while (Date.now() - t0 < 45000) {
-      const o = JSON.parse(await ev('JSON.stringify({ st: SN.Sneak.tommy.st, s: SN.Sneak.state })'));
+      const o = JSON.parse(await ev('JSON.stringify({ st: SN.Sneak.timmy.st, s: SN.Sneak.state })'));
       if (o.s !== 'walk') break;
       const want = o.st === 'sleep';
       if (want && !holding) { await b.cdp('Input.dispatchKeyEvent', { type: 'keyDown', code: 'Space', key: ' ' }); holding = true; }
@@ -81,11 +81,15 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
     ok(await ev('SN.Game.state') === 'TUTORIAL', 'tras la intro empieza el tutorial');
 
     // --- Tutorial, solo con el ratón ---
-    let sawCone = false, sawBuy = false, sawCash = false, sawDrama = false;
+    let sawCone = false, sawBuy = false, sawCash = false, sawDrama = false, sawErrata = false;
     for (let i = 0; i < 300 && await ev('SN.Tutorial.active'); i++) {
       const st = await ev('({ allow: SN.UI.allow, spot: SN.UI.spotSel, dlg: SN.Dialog.active, drama: SN.Drama.active })');
       if (st.spot === '#chart-wrap' && !sawCone) { sawCone = true; await b.sleep(700); await shot('04-tutorial-pista'); }
       if (st.drama && !sawDrama) { sawDrama = true; await b.sleep(300); await shot('07-tutorial-susto'); }
+      if (!sawErrata && await ev('!!document.querySelector(".np-hero.cipher") && SN.UI.spotSel === ".np-hero.cipher"')) {
+        sawErrata = await ev('/[ЖДФЯИЛШБЭЦГЮЩПЧ]/.test(document.querySelector(".np-hero.cipher .h").textContent)');
+        await b.sleep(300); await shot('07b-tutorial-errata');
+      }
       if (st.dlg) { await b.sleep(200); await advance(); await b.sleep(120); continue; }
       if (st.allow && st.allow.includes('buy')) {
         if (!sawBuy) { sawBuy = true; await shot('05-tutorial-sube'); }
@@ -103,6 +107,7 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
     }
     ok(sawCone && sawBuy && sawCash, 'el tutorial enseña la pista, SUBE y COBRAR');
     ok(sawDrama, 'el tutorial enseña el susto de las últimas velas (cámara lenta)');
+    ok(sawErrata, 'el tutorial enseña las noticias con una "errata" en el idioma secreto');
     ok(!await ev('SN.Tutorial.active') && await ev('SN.Game.state') === 'GAMEPLAY', 'el tutorial termina');
     ok(await ev('SN.State.run.capital') > 100, 'cobrar en el tutorial deja ganancias');
     ok(await ev('SN.State.run.turn') === 1, 'la operación del tutorial consume un turno');
@@ -163,14 +168,12 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
     ok(await ev('SN.Game.timeScale === 1 && SN.Game.focus.k === 0 && !SN.Drama.active'), 'todo vuelve a la normalidad tras el golpe');
     await ev('SN.Data.markets[0].twist.chance = 0.26; true');
 
-    // --- Mejoras ---
+    // --- Mejoras: al empezar no hay ninguna (llegan como "regalo" del encapuchado) ---
     await mouse('#nav-upgrades');
     await b.sleep(500);
     await shot('13-mejoras');
-    const lvBefore = await ev('SN.Upgrades.level("suerte")');
-    await mouse('.up-row .btn');
-    await b.sleep(400);
-    ok(await ev('SN.Upgrades.level("suerte")') === lvBefore + 1, 'se compra la mejora de Suerte');
+    ok(await ev('document.querySelectorAll(".up-row").length === 4 && document.querySelectorAll(".up-row.locked").length === 4 && !document.querySelector(".up-row .btn")'),
+      'al empezar las 4 mejoras están bloqueadas');
     await mouse('.win-x');
     await b.sleep(300);
 
@@ -200,36 +203,78 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
       await advance();
       await b.sleep(300);
     }
-    ok(await ev('SN.State.run.debt.paid'), 'deuda pagada');
+    ok(await ev('SN.State.run.flags.debtPaid'), 'deuda de la Pleyzeta pagada');
     ok(await ev('SN.Trading.leverageAvailable(10)'), 'tras pagar se desbloquea x10');
-    ok(await ev('SN.Unlocks.currentGoal().amount') === 1000, 'nuevo objetivo: $1,000');
+    ok(sawHood && await ev('SN.Debt.active() && SN.State.run.debt.id === "regalo1" && SN.Upgrades.isUnlocked("limite") && SN.Upgrades.level("limite") === 0'),
+      'el "regalo" del encapuchado: LÍMITE para comprar... y una deuda nueva');
     await b.sleep(500);
-    await shot('18-tras-pagar');
-
-    // --- Meta $1,000: desbloquea Tecnología ---
-    await ev('SN.Economy.add(1200, "test"); true');
+    await shot('18-regalo');
+    // El regalo solo desbloquea: LÍMITE se compra con dinero
     await waitFor('!SN.UI.busy', 10000);
-    await mouse('#btn-skip-turn');
+    await ev('SN.Economy.add(200, "test"); true');
+    await mouse('#nav-upgrades');
+    await b.sleep(400);
+    await mouse('.up-row .btn');
+    await b.sleep(400);
+    ok(await ev('SN.Upgrades.level("limite")') === 1, 'tras el regalo, LÍMITE se compra en MEJORAS');
+    await mouse('.win-x');
+    await b.sleep(300);
+
+    // --- Pagar el regalo y comprar la tele: FUTURO.exe se mete con una oferta ---
+    await waitFor('!SN.UI.busy', 10000);
+    await ev('SN.Economy.add(800, "test"); SN.UI.renderAll(); true');
+    await b.sleep(300);
+    await mouse('#btn-pay');
+    for (let i = 0; i < 60 && await ev('SN.UI.busy'); i++) { await advance(); await b.sleep(250); }
+    ok(await ev('!SN.Debt.active() && SN.Unlocks.step().id === "tele"'), 'pagado el regalo: toca comprar la tele');
+    ok(await ev('!document.getElementById("btn-item").classList.contains("hidden")'), 'el HUD avisa de que ya te llega la tele');
+    await mouse('#btn-item');
+    await b.sleep(500);
+    ok(await ev('SN.Windows.current') === 'shop', 'el aviso lleva a la tienda');
+    await mouse('.shop-row[data-item="tele"] .btn');
+    await b.sleep(400);
+    ok(await ev('!!document.querySelector(".offer")'), 'FUTURO.exe se mete en la compra con una oferta');
+    await shot('19-oferta');
+    await mouse('.offer .of-no');
+    await b.sleep(300);
+    ok(await ev('!document.querySelector(".offer") && !SN.State.run.owned.tele && !SN.Debt.active()'), '"No, gracias" cancela la compra');
+    await mouse('.shop-row[data-item="tele"] .btn');
+    await b.sleep(400);
+    await mouse('.offer .of-yes');
     for (let i = 0; i < 80 && await ev('SN.UI.busy'); i++) { await advance(); await b.sleep(300); }
-    ok(await ev('SN.Unlocks.isUnlocked("tecno")'), 'la meta de $1,000 desbloquea Tecnología');
+    ok(await ev('SN.State.run.owned.tele && SN.Debt.active() && SN.Unlocks.isUnlocked("salud_negro")'), 'aceptar: la tele es tuya, debes el resto y se abre Salud negro');
+    ok(await ev('!!document.querySelector(".mtab-negro")'), 'aparece la pestaña del mercado negro');
+    await mouse('.mcard[data-id="salud_negro"]');
+    await b.sleep(600);
+    ok(await ev('SN.State.run.selected === "salud_negro" && document.getElementById("app").classList.contains("black")'), 'en el mercado negro FUTURO.exe se oscurece');
+    await shot('20-mercado-negro');
+
+    // --- Pagar la tele y Meta $1,000: desbloquea Tecnología (y el siguiente regalo) ---
+    await ev('SN.Economy.add(1500, "test"); SN.UI.renderAll(); true');
+    await b.sleep(300);
+    await mouse('#btn-pay');
+    for (let i = 0; i < 120 && await ev('SN.UI.busy'); i++) { await advance(); await b.sleep(300); }
+    ok(await ev('SN.Unlocks.isUnlocked("tecno") && SN.State.run.debt.id === "regalo2"'), 'la meta de $1,000 desbloquea Tecnología y trae el regalo de ANÁLISIS');
+    await mouse('.mtab-legal');
+    await b.sleep(300);
     await mouse('.mcard[data-id="tecno"]');
     await b.sleep(700);
     ok(await ev('SN.State.run.selected') === 'tecno', 'se cambia de mercado con un clic');
-    await shot('19-tecnologia');
+    await shot('21-tecnologia');
 
-    // --- Sin dinero: el cerdito de Tommy es una vida extra ---
+    // --- Sin dinero: el cerdito de Timmy es una vida extra ---
     const cp = await ev('SN.State.run.checkpoint.capital');
     await ev('SN.Economy.spend(SN.State.run.capital - 4, "test"); SN.UI.setBusy(true); SN.Game.afterTurn(null); true');
     await waitFor('!!document.querySelector(".stamp")', 6000);
     ok(await ev('document.querySelector(".stamp").textContent.includes("SIN FONDOS")'), 'con menos de la apuesta mínima: SIN FONDOS');
-    ok(await waitFor('SN.Sneak.active', 10000), 'vida extra: te cuelas en el cuarto de Tommy');
+    ok(await waitFor('SN.Sneak.active', 10000), 'vida extra: te cuelas en el cuarto de Timmy');
     await b.sleep(400);
-    await shot('20-cuarto-tommy');
+    await shot('22-cuarto-timmy');
     ok(await playSneak(), 'avanzando a escondidas se llega a la estantería');
     ok(await breakPig(), 'en tu mesa rompes el cerdito a golpes');
     await b.sleep(800);
-    await shot('21-tommy');
-    ok(await ev('document.querySelector(".piggy-ui").textContent.toUpperCase().includes("TOMMY")'), 'aparece el mensaje de Tommy');
+    await shot('23-timmy');
+    ok(await ev('document.querySelector(".piggy-ui").textContent.toUpperCase().includes("TIMMY")'), 'aparece el mensaje de Timmy');
     const coins = await ev('SN.Bankruptcy.pig.coins');
     await mouse('#bk-continue');
     await b.sleep(900);
@@ -239,14 +284,14 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
     await ev('SN.Economy.spend(SN.State.run.capital - 3, "test"); SN.UI.setBusy(true); SN.Game.afterTurn(null); true');
     ok(await waitFor('!!document.querySelector(".final-loss")', 9000), 'sin cerdito: se acaba de verdad');
     await b.sleep(400);
-    await shot('22-final');
-    ok(await ev('document.querySelector(".final-loss").textContent.includes("inicio de")'), 'dice a qué meta vuelves y con cuánto');
+    await shot('24-final');
+    ok(await ev('document.querySelector(".final-loss").textContent.includes("inicio de")'), 'dice a qué paso vuelves y con cuánto');
     await mouse('#bk-retry');
     await b.sleep(1500);
     for (let i = 0; i < 20 && await ev('SN.Dialog.active || SN.UI.busy'); i++) { await advance(); await b.sleep(300); }
     ok(await ev('SN.Game.state') === 'GAMEPLAY' && await ev('SN.State.run.capital') === cp && await ev('SN.Unlocks.isUnlocked("tecno")'), `vuelves al inicio de la meta con ${cp} y lo desbloqueado`);
-    ok(await ev('SN.State.run.piggy') === 'ready', 'Tommy ha vuelto a llenar el cerdito');
-    await shot('23-vuelta-a-la-meta');
+    ok(await ev('SN.State.run.piggy') === 'ready', 'Timmy ha vuelto a llenar el cerdito');
+    await shot('25-vuelta-al-punto-de-control');
   } catch (e) {
     failed++;
     console.log('  ERROR:', e.message);

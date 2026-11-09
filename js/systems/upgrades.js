@@ -19,6 +19,7 @@
     isUnlocked(id) {
       const u = this.def(id).unlock;
       if (u.type === 'start') return true;
+      if (u.type === 'gift') return !!(S.run.gifts && S.run.gifts[id]); // llegó como "regalo" del encapuchado
       if (u.type === 'flag') return !!S.run.flags[u.flag];
       if (u.type === 'goal') return SN.Unlocks.goalReached(u.goal);
       return false; // 'future': preparado para próximas versiones

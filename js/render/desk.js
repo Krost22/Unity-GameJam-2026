@@ -25,7 +25,7 @@
     3: ['###', '..#', '.##', '..#', '###'], 4: ['#.#', '#.#', '###', '..#', '..#'], 5: ['###', '#..', '###', '..#', '###'],
     6: ['###', '#..', '###', '#.#', '###'], 7: ['###', '..#', '.#.', '.#.', '.#.'], 8: ['###', '#.#', '###', '#.#', '###'],
     9: ['###', '#.#', '###', '..#', '###'], $: ['.##', '##.', '.#.', '.##', '##.'], '!': ['#', '#', '#', '.', '#'], '/': ['..#', '..#', '.#.', '#..', '#..'],
-    P: ['##.', '#.#', '##.', '#..', '#..'],
+    P: ['##.', '#.#', '##.', '#..', '#..'], K: ['#.#', '##.', '#..', '##.', '#.#'],
   };
   function mini(g, text, x, y, c, s = 1) {
     let cx = x;
@@ -70,7 +70,7 @@
   // Cosas que pasan al otro lado de la ventana (ver Desk.windowEvent)
   const winEvents = [];
   let blindLift = 0;
-  const WIN_DUR = { ambulancia: 6, apagon: 7, fuegos: 4.5, encapuchado: 7, dron: 6, camion: 7, lluvia: 22, cuervo: 8, temblor: 2.5 };
+  const WIN_DUR = { ambulancia: 6, apagon: 7, fuegos: 4.5, encapuchado: 7, dron: 6, camion: 7, lluvia: 22, cuervo: 8, temblor: 2.5, oro: 14 };
   let room = null, rg = null;
   const motes = Array.from({ length: 12 }, (_, i) => ({ x: 4 + (i * 37) % 44, y: 30 + (i * 53) % 110, s: 0.3 + (i % 5) * 0.12, ph: i }));
 
@@ -101,16 +101,39 @@
     },
     get windowEvents() { return winEvents.map((e) => e.kind); },
 
+    // Clic en la habitación (coordenadas de 320x180): hay símbolos del idioma secreto escondidos
+    hotspot(x, y) {
+      const run = SN.State.run;
+      if (!run || !SN.Cipher || SN.Game.state !== 'GAMEPLAY') return;
+      const inside = (r) => x >= r[0] && x < r[0] + r[2] && y >= r[1] && y < r[1] + r[3];
+      const win = [WIN.x - 2, WIN.y - 2, WIN.w + 4, WIN.h + 8];
+      const ev = this.windowEvents;
+      // El cuervo del alféizar y el encapuchado de la azotea: solo mientras se ven
+      if (inside(win) && ev.includes('cuervo')) { SN.Audio.sfx('tick'); return SN.Cipher.discover('cuervo'); }
+      if (inside(win) && ev.includes('encapuchado')) return SN.Cipher.discover('azotea');
+      // El gato: solo despierto se le ve el collar
+      if (inside([2, 142, 64, 34])) {
+        if (SN.Hero.cat.state === 'sleep') { SN.Audio.sfx('tick'); return null; }
+        return SN.Cipher.discover('gato');
+      }
+      // El póster, cuando la ciudad ya se ha apagado un poco
+      if (inside([280, 52, 32, 30]) && run.owned.poster && run.darkness >= 3) return SN.Cipher.discover('poster');
+      return null;
+    },
+
     state() {
       const run = SN.State.run;
       return {
         phase: this.phaseOverride || (run ? SN.Time.phase() : 'evening'),
         day: run ? run.day : 1,
-        paid: run ? run.debt.paid : false,
+        // Sin deuda activa = "libre" (el calendario se tacha con un check)
+        paid: run ? !SN.Debt.active() : false,
         owned: run ? run.owned : {},
         dark: run ? run.darkness : 0,
-        deadline: run ? run.debt.deadlineDay : 7,
-        defaulted: run ? run.debt.defaulted : false,
+        start: run && run.debt ? run.debt.start || 1 : 1,
+        deadline: run && run.debt ? run.debt.deadlineDay : 7,
+        defaulted: run && run.debt ? run.debt.defaulted : false,
+        owe: run && SN.Debt.active() ? run.debt.amount : 0,
       };
     },
 
@@ -152,14 +175,61 @@
     drawRamen(g);
     if (!st.paid) drawBills(g, st);
     if (st.owned.cascos) drawHeadphones(g);
+    drawKeyItems(g, st);
     return c;
+  }
+
+  // Objetos clave de la tienda (los de la "oferta" de FUTURO.exe)
+  function drawKeyItems(g, st) {
+    if (st.owned.tele) {
+      // La tele de 98" sin desembalar, apoyada bajo la ventana: no cabe en ningún otro sitio
+      const x = 2, y = 94, w = 44, h = 34;
+      R(g, x + 1, y + 1, w, h, P.coalD);
+      R(g, x, y, w, h, P.creamD); R(g, x, y, w, 2, P.creamL); R(g, x, y, 2, h, P.creamL);
+      R(g, x + 5, y + 6, 26, 15, P.coal); R(g, x + 6, y + 7, 24, 13, P.cyanDD); Px.line(g, x + 8, y + 18, x + 26, y + 9, P.cyanD);
+      mini(g, '98', x + 33, y + 8, P.coralD); R(g, x + 41, y + 8, 1, 2, P.coralD);
+      R(g, x + 5, y + 25, 30, 2, P.coralD); R(g, x + 5, y + 29, 20, 1, P.creamDD);
+    }
+    if (st.owned.movil) {
+      // El móvil nuevo sobre la mesa: siempre con notificaciones
+      const x = 226, y = 133;
+      R(g, x, y, 9, 13, P.coalD); R(g, x + 1, y + 1, 7, 11, P.navyM);
+      R(g, x + 2, y + 2, 5, 2, P.cyan); R(g, x + 2, y + 5, 4, 1, P.creamD); R(g, x + 2, y + 7, 5, 1, P.creamD); R(g, x + 6, y + 1, 1, 1, P.coral);
+    }
+    // Objetos dorados de Don Siete (días de la suerte), en fila sobre la mesa
+    if (st.owned.maneki) {
+      const x = 92, y = 134;
+      R(g, x + 1, y + 4, 7, 7, P.creamL); R(g, x + 1, y, 6, 5, P.creamL); R(g, x + 1, y - 1, 1, 1, P.creamL); R(g, x + 6, y - 1, 1, 1, P.creamL);
+      R(g, x + 2, y + 2, 1, 1, P.coal); R(g, x + 5, y + 2, 1, 1, P.coal); R(g, x + 1, y + 5, 6, 1, P.coral); R(g, x + 3, y + 6, 2, 1, P.yellow);
+      R(g, x, y + 1, 1, 3, P.creamL); // la pata que saluda
+    }
+    if (st.owned.trebol4) {
+      const x = 106, y = 137;
+      R(g, x, y, 9, 9, P.yellowD); R(g, x + 1, y + 1, 7, 7, P.creamL);
+      for (const [dx, dy] of [[2, 2], [5, 2], [2, 5], [5, 5]]) R(g, x + dx, y + dy, 2, 2, P.green);
+    }
+    if (st.owned.herradura) {
+      const x = 120, y = 138;
+      R(g, x, y, 2, 7, P.yellow); R(g, x + 6, y, 2, 7, P.yellow); R(g, x + 1, y + 6, 6, 2, P.yellow); R(g, x, y, 1, 1, P.yellowL);
+    }
+    if (st.owned.billete7) {
+      const x = 184, y = 141;
+      R(g, x, y, 13, 7, P.greenD); R(g, x + 1, y + 1, 11, 5, P.green); mini(g, 7, x + 5, y + 1, P.greenDD);
+    }
+    if (st.owned.moto) {
+      // El casco de la moto (la moto no cabe en el cuarto)
+      const sp = new PK.Sprite(22, 16);
+      sp.part(sp.mask().ellipse(11, 9, 10, 7.5), [P.coralDD, P.coralD, P.coral, P.coralL], { light: [1, -1] });
+      sp.rect(9, 6, 12, 4, P.navyDD).rect(10, 6, 9, 1, P.cyanD).rect(2, 14, 18, 2, P.coalD);
+      g.drawImage(sp.c, 36, 114);
+    }
   }
 
   // Capa delantera (fondo transparente): persianas, planta y pósit, por delante de la ventana animada
   function buildFront(st) {
     const c = Px.canvas(RW, RH), g = Px.ctx(c);
     drawPlant(g, st);
-    drawPostit(g);
+    drawPostit(g, st);
     if (st.owned.lampara) drawLamp(g);
     return c;
   }
@@ -236,10 +306,12 @@
     }
   }
 
-  // Pósit en la esquina del monitor (por delante de la ventana y de la cortina)
-  function drawPostit(g) {
+  // Pósit en la esquina del monitor (por delante de la ventana y de la cortina): lo que debes ahora
+  function drawPostit(g, st) {
     R(g, 41, 4, 13, 13, P.yellowD); R(g, 40, 3, 13, 13, P.yellow); R(g, 40, 3, 13, 3, P.yellowL);
-    mini(g, '250', 41, 7, P.coralD);
+    if (!st.owe) { Px.line(g, 43, 9, 45, 11, P.greenD); Px.line(g, 45, 11, 50, 6, P.greenD); return; }
+    const txt = st.owe >= 1000 ? Math.round(st.owe / 1000) + 'K' : String(st.owe);
+    mini(g, txt, 40 + Math.max(0, Math.floor((13 - (txt.length * 4 - 1)) / 2)), 7, P.coralD);
     mini(g, '! !', 44, 11, P.coralD);
   }
 
@@ -265,6 +337,8 @@
       R(g, 280, 52, 32, 30, P.coalD); R(g, 281, 53, 30, 28, P.yellow);
       Px.line(g, 284, 76, 291, 68, P.greenD, 1); Px.line(g, 291, 68, 295, 71, P.greenD, 1); Px.line(g, 295, 71, 307, 58, P.greenD, 1);
       R(g, 304, 57, 4, 1, P.greenD); R(g, 307, 57, 1, 4, P.greenD);
+      // Cuando la ciudad se apaga, alguien escribe en el póster (un símbolo del idioma secreto: Щ)
+      if (st.dark >= 3) { for (const cx of [284, 286, 288]) R(g, cx, 56, 1, 5, P.coralD); R(g, 284, 60, 5, 1, P.coralD); R(g, 288, 61, 1, 1, P.coralD); }
     }
     // Estantería
     R(g, 271, 88, 49, 3, P.woodM); R(g, 271, 88, 49, 1, P.wood); R(g, 271, 91, 49, 1, P.woodDD);
@@ -274,7 +348,7 @@
     drawPlush(g, 293, 74);
   }
 
-  // Calendario de pared: los 7 días del plazo, hoy en amarillo, el último marcado
+  // Calendario de pared: los días del plazo de la deuda activa (hasta 8), hoy en amarillo, el último marcado
   function drawCalendar(g, st, x, y) {
     const w = 38, h = 36;
     R(g, x + 1, y + 1, w, h, P.coalD);
@@ -285,11 +359,12 @@
       Px.line(g, x + 12, y + 20, x + 17, y + 25, P.greenD, 2); Px.line(g, x + 17, y + 25, x + 27, y + 14, P.greenD, 2);
       return;
     }
-    for (let d = 1; d <= 7; d++) {
-      const i = d - 1, cx = x + 2 + (i % 4) * 9, cy = y + 9 + Math.floor(i / 4) * 13;
+    const first = Math.max(st.start, st.deadline - 7);
+    for (let d = first; d <= st.deadline; d++) {
+      const i = d - first, cx = x + 2 + (i % 4) * 9, cy = y + 9 + Math.floor(i / 4) * 13;
       const today = d === st.day, past = d < st.day;
       R(g, cx, cy, 8, 11, today ? P.yellow : P.cream);
-      mini(g, d, cx + 3, cy + 3, today ? P.coal : P.creamDD);
+      mini(g, d, cx + (d >= 10 ? 1 : 3), cy + 3, today ? P.coal : P.creamDD);
       if (past) { Px.line(g, cx, cy + 1, cx + 7, cy + 10, P.coral); Px.line(g, cx + 7, cy + 1, cx, cy + 10, P.coral); }
       if (d === st.deadline) { R(g, cx, cy, 8, 1, P.coralD); R(g, cx, cy + 10, 8, 1, P.coralD); R(g, cx, cy, 1, 11, P.coralD); R(g, cx + 7, cy, 1, 11, P.coralD); }
     }
@@ -564,6 +639,15 @@
         R(g, vx, base - 8, 12, 7, '#6A6A82'); R(g, vx - 4, base - 6, 4, 5, '#4E4E66'); R(g, vx - 3, base - 5, 2, 2, '#9FB6FF');
         R(g, vx + 4, base - 6, 3, 3, P.coral); R(g, vx + 5, base - 5, 1, 1, P.creamL);
         R(g, vx - 2, base - 1, 2, 1, P.coalD); R(g, vx + 8, base - 1, 2, 1, P.coalD);
+      } else if (e.kind === 'oro') {
+        // LLUVIA DE ORO (día de la suerte): monedas que caen y brillan
+        g.globalAlpha = 0.22 * fade; R(g, x, y, w, h, P.yellowD); g.globalAlpha = fade;
+        for (let n = 0; n < 14; n++) {
+          const rx = x + ((n * 11 + e.seed) % (w - 2)), ry = y + ((n * 23 + a * 40) % h);
+          const flip = Math.floor(a * 8 + n) % 4;
+          R(g, Math.round(rx), Math.round(ry), flip === 1 ? 1 : 2, 2, flip === 3 ? P.yellowL : P.yellow);
+        }
+        g.globalAlpha = 1;
       } else if (e.kind === 'lluvia') {
         g.globalAlpha = 0.18 * fade; R(g, x, y, w, h, '#1A2050'); g.globalAlpha = 0.55 * fade;
         for (let n = 0; n < 26; n++) {

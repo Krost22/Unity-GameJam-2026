@@ -125,6 +125,19 @@
       [72, 79, 84, 88, 91, 96].forEach((n, i) => tone({ type: 'triangle', f0: note(n), dur: 0.18, vol: 0.08, at: i * 0.05 }));
       noise({ dur: 0.4, vol: 0.05, filter: 'highpass', f0: 6000, at: 0.1 });
     },
+    // Símbolo descifrado: un acorde que baja, como algo que no debería oírse, y estática
+    cipher: () => {
+      noise({ dur: 0.5, vol: 0.12, filter: 'bandpass', f0: 2400, f1: 300, q: 3 });
+      [86, 81, 77, 74].forEach((n, i) => tone({ type: 'triangle', f0: note(n), f1: note(n - 1), dur: 0.35, vol: 0.07, at: 0.08 + i * 0.09, detune: i * 7 }));
+      tone({ type: 'sine', f0: 55, f1: 41, dur: 0.9, vol: 0.3, at: 0.1 });
+    },
+    // Día de la suerte: siete notas que suben
+    lucky: () => {
+      [72, 74, 76, 79, 81, 84, 91].forEach((n, i) => { tone({ type: 'square', f0: note(n), dur: 0.1, vol: 0.05, at: i * 0.07 }); tone({ type: 'triangle', f0: note(n + 12), dur: 0.08, vol: 0.03, at: i * 0.07 }); });
+      for (let i = 0; i < 7; i++) SFX.coinAt(0.5 + i * 0.05);
+    },
+    // Ruleta: un clic por casilla
+    wheel: () => { tone({ type: 'square', f0: 2100, f1: 1500, dur: 0.025, vol: 0.04 }); },
     pay: () => {
       noise({ dur: 0.05, vol: 0.15, filter: 'highpass', f0: 2500 });
       tone({ type: 'square', f0: note(84), dur: 0.08, vol: 0.07, at: 0.06 });

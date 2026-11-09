@@ -20,7 +20,7 @@ const ok = (c, msg) => { if (c) pass++; else fail++; console.log(`  ${c ? 'ok   
   const clickSel = async (sel) => { const p = await center(sel); if (!p) return false; await b.click(p.x, p.y); return true; };
   try {
     await wait('SN.Game && SN.Game.state === "MENU"');
-    await ev(`localStorage.setItem('saldonegro.profile.v1', JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV: 2, runs: 0, bestCapital: 0, settings: { music: false, sfx: false } })); SN.Save.loadProfile(); true`);
+    await ev(`localStorage.setItem('saldonegro.profile.v1', JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV: 3, runs: 0, bestCapital: 0, settings: { music: false, sfx: false } })); SN.Save.loadProfile(); true`);
     await clickSel('#btn-new');
     await wait('SN.Game.state === "GAMEPLAY" && !SN.UI.busy');
 
@@ -73,6 +73,40 @@ const ok = (c, msg) => { if (c) pass++; else fail++; console.log(`  ${c ? 'ok   
     ok(await wait('SN.Desktop.open', 2000), 'la tecla D minimiza FUTURO.exe');
     await clickSel('.dt-icon[data-app="futuro"]');
     ok(await wait('!SN.Desktop.open', 2000), 'el icono de FUTURO.exe la restaura');
+    // --- El idioma secreto: LOS PAGADOS escriben y una pista traduce lo que dicen ---
+    await ev('SN.Desktop.ser().i = 0; SN.State.run.day = 2; SN.State.run.turn = 1; SN.Desktop.serCheck(); true');
+    ok(await wait('SN.Desktop.ser().log.length > 0', 4000), 'LOS PAGADOS escriben en el idioma secreto');
+    await b.key('KeyD', 'd');
+    await wait('SN.Desktop.open', 2000);
+    await clickSel('.dt-icon[data-app="chat"]');
+    await wait('!!document.querySelector(".ch-tabs:not(.hidden) .ch-tab.ser")', 2000);
+    await clickSel('.ch-tab.ser');
+    await b.sleep(200);
+    const ser0 = await ev('document.querySelector(".ch-log").textContent');
+    ok(/[ЖДФЯИЛШБЭЦГЮЩПЧ]/.test(ser0) && !/E/.test(ser0), `sus mensajes salen en cirílico (${ser0.trim()})`);
+    ok(await ev('document.querySelector(".ch-box").textContent.includes("No puedes responder")'), 'a LOS PAGADOS no se les puede contestar');
+    await b.screenshot(path.join(OUT, '6-los-pagados.png'));
+    // La Papelera esconde una pista desde el día 3: la E
+    await ev('SN.State.run.day = 3; true');
+    await clickSel('.dt-icon[data-app="trash"]');
+    await b.sleep(300);
+    await ev('[...document.querySelectorAll(".tr-file")].find((x) => x.textContent.includes("no_abrir")).click(); true');
+    ok(await wait('SN.Cipher.knows("E")', 2000), 'no_abrir.txt (Papelera) esconde una letra: la E');
+    ok(await wait('!!document.querySelector(".cx-stamp")', 2000), 'encontrar un símbolo se nota: sello en pantalla');
+    await b.screenshot(path.join(OUT, '7-simbolo.png'));
+    await clickSel('.dt-icon[data-app="chat"]');
+    await clickSel('.ch-tab.ser');
+    await b.sleep(200);
+    const ser1 = await ev('document.querySelector(".ch-log").textContent');
+    ok(ser1 !== ser0 && /E/.test(ser1), `el mensaje se traduce un poco (${ser1.trim()})`);
+    ok(await ev('!document.querySelector(\'.dt-icon[data-app="symbols"]\').classList.contains("hidden")'), 'aparece la app Símbolos');
+    await clickSel('.dt-icon[data-app="symbols"]');
+    ok(await wait('document.querySelectorAll(".sy-cell.on").length === 1', 2000), 'Símbolos enseña la letra descubierta');
+    await b.screenshot(path.join(OUT, '8-simbolos.png'));
+    ok(await ev('JSON.parse(localStorage.getItem("saldonegro.profile.v1")).cipher.known.E === true'), 'la letra se guarda en el perfil (para siempre)');
+    for (let i = 0; i < 8 && await ev('SN.Desktop.open'); i++) await b.key('Escape');
+    await wait('!SN.Desktop.open', 2000);
+
     // Durante una operación no se puede minimizar
     await b.sleep(400);
     await clickSel('#btn-buy');

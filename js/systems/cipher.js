@@ -1,0 +1,64 @@
+// CipherManager: el idioma secreto. Traduce los textos según las letras que ya conoces y registra las
+// pistas encontradas. Todo lo descubierto se guarda en el PERFIL: se conserva entre partidas.
+// No toca la interfaz: avisa con 'cipher:found' y la interfaz hace el ruido (js/ui/ui.js).
+(function (SN) {
+  'use strict';
+  const S = SN.State, D = SN.Data;
+  const A = () => D.cipher.alphabet;
+  // Mayúsculas y sin tildes (la Ñ queda en N): así cuenta para el cifrado
+  const norm = (t) => String(t).normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+  const esc = (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] || c);
+
+  const Ci = SN.Cipher = {
+    state() {
+      const p = S.profile;
+      if (!p.cipher) p.cipher = { known: {}, found: {} };
+      return p.cipher;
+    },
+    knows(letter) { return !!this.state().known[letter]; },
+    count() { return Object.keys(this.state().known).length; },
+    total() { return Object.keys(A()).length; },
+    complete() { return this.count() >= this.total(); },
+    found(clueId) { return !!this.state().found[clueId]; },
+    clue(id) { return D.cipher.clues.find((c) => c.id === id); },
+
+    // Letras del texto que forman parte del cifrado (para comprobar que todas tienen pista)
+    letters(text) { return [...norm(text)].filter((ch) => /[A-Z]/.test(ch)); },
+
+    // Texto como se ve ahora, sin HTML: lo conocido en latín, lo demás en cirílico
+    text(t) { return [...norm(t)].map((ch) => (A()[ch] && !this.knows(ch) ? A()[ch] : ch)).join(''); },
+
+    // HTML: cada letra en su <span> (cx = sin descifrar, cx-k = descifrada; cx-new = la que acabas de encontrar)
+    html(t, fresh) {
+      let out = '';
+      for (const ch of norm(t)) {
+        const g = A()[ch];
+        if (!g) { out += esc(ch); continue; }
+        if (this.knows(ch)) out += `<span class="cx-k${ch === fresh ? ' cx-new' : ''}">${ch}</span>`;
+        else out += `<span class="cx">${g}</span>`;
+      }
+      return out;
+    },
+
+    // Encuentra la pista: su letra queda descifrada para siempre. Devuelve la pista si es nueva.
+    discover(clueId) {
+      const st = this.state(), clue = this.clue(clueId);
+      if (!clue || st.found[clueId]) return null;
+      st.found[clueId] = true;
+      const isNew = !st.known[clue.letter];
+      st.known[clue.letter] = true;
+      if (SN.Save) SN.Save.saveProfile();
+      SN.Events.emit('cipher:found', { clue, letter: clue.letter, glyph: A()[clue.letter], isNew, count: this.count(), total: this.total() });
+      return clue;
+    },
+
+    // Comodín (la ruleta de la suerte): una letra que todavía no conoces
+    wildcard(rng) {
+      const missing = D.cipher.clues.filter((c) => !this.knows(c.letter) && !this.found(c.id));
+      if (!missing.length) return null;
+      const r = rng ? rng.next() : Math.random();
+      return this.discover(missing[Math.floor(r * missing.length)].id);
+    },
+  };
+  void Ci;
+})(window.SN);

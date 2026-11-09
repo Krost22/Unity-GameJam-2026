@@ -24,7 +24,8 @@ El teclado es un atajo y cada botón muestra su tecla:
 | `← →` | apuesta (en pasos de 5%) |
 | `1-4` | multiplicador ×1 ×2 ×5 ×10 |
 | `P` | ESPERAR (pasar el turno sin apostar) |
-| `Tab` | cambiar de mercado |
+| `Tab` | cambiar de mercado (de la pestaña que se ve) |
+| `X` | pestañas Legal / Negro (cuando tienes un mercado negro) |
 | `M` `N` `T` | mejoras, noticias, tienda |
 | `D` | minimizar FUTURO.exe y ver el escritorio |
 | cualquier tecla | escribir en Mensajín (`Enter` envía) |
@@ -41,14 +42,59 @@ El teclado es un atajo y cada botón muestra su tecla:
   faltan se siguen mostrando en gris: lo que te ahorraste... o lo que te perdiste.
 - **Zona de peligro:** las últimas velas (rayadas en naranja) pueden traer un **giro inesperado**. Cuando llega, el
   tiempo se frena, la cámara se acerca, late un corazón y la vela se arrastra antes del latigazo: aún puedes cobrar.
-- **Cada apuesta o ESPERAR gasta un turno.** 3 turnos = 1 día. La deuda vence al final del día 7.
+- **Topes:** cada mercado gana o pierde como mucho una cantidad por apuesta (Salud $300, Tecnología $1,500,
+  Negocios $7,500, Minería $30,000). Al llegar al tope el marcador se pone dorado: para ganar más hay que subir de mercado.
+- **Cada apuesta o ESPERAR gasta un turno.** 3 turnos = 1 día. La deuda vence al final de su último día (la primera, el día 7).
+- **Una escalera de deudas:** la partida es una lista de pasos en orden (nada se desbloquea antes que lo anterior) y
+  solo hay una deuda a la vez:
+  1. **La Pleyzeta:** $250 en 7 días.
+  2. **Los "regalos" del encapuchado:** al pagarla (y en cada meta) te "regala" una mejora... que solo queda
+     desbloqueada para comprarla, y trae una deuda nueva con su plazo. Así llegan LÍMITE, ANÁLISIS, SUERTE y RESISTENCIA.
+  3. **Los objetos clave de la tienda** (Tele SAMSONG 98", Móvil iFON 17 Pro Max Plus, Moto YAMAJA, Reloj RÓLEZ):
+     la tienda se mira siempre, pero cada objeto se compra en orden y solo cuando te llega el precio completo. Al ir a
+     pagar, FUTURO.exe se mete con una oferta "mucho más barata" (un 10% hoy; la letra pequeña dice el resto). "No,
+     gracias" cancela; aceptarla te endeuda... y el encapuchado te abre un **mercado negro**.
+  4. **Las metas** ($1,000, $5,000, $25,000) abren Tecnología, Negocios y Minería. La última, $100,000.
+- **Mercado negro:** cada mercado tiene su versión negra (pestaña Negro, logo con calavera, FUTURO.exe se oscurece).
+  Paga más que su versión normal y un 20% menos que el siguiente mercado normal (Salud negro, $1,200 = 0.8 × Tecnología).
+  Ganar ahí casi siempre trae una noticia extraña.
+- **Días de la suerte:** los días cuyo número lleva un 7 (7, 17, 27... del 70 al 79; el 77 vale doble). Los mercados
+  crecen, cada ganancia trae un 7% extra por siete y sale algo especial: Lluvia de Oro, Mercado Dorado de Don Siete,
+  Ruleta de la Fortuna (en la tienda), Estrella de la Suerte (un mercado vale ×1.77) o Bendición de la Fortuna.
 - **Perder:** si no te alcanza para la apuesta mínima ($10), si vence el plazo, o si ya es matemáticamente imposible
   pagar a tiempo, se pierde en ese momento (nada de pasar turnos esperando lo inevitable). Pero no se pierde todo:
-  - **Vida extra: el cerdito de Tommy.** Te cuelas en el cuarto de tu hermano pequeño (mantén pulsado para avanzar y
+  - **Vida extra: el cerdito de Timmy.** Te cuelas en el cuarto de tu hermano pequeño (mantén pulsado para avanzar y
     suelta cuando se mueva), coges su cerdito y lo rompes tú mismo en tu mesa. Su dinero es tuyo y la partida sigue
-    (si era por el plazo, el cobrador te da 2 días más). Hay un cerdito por meta.
-  - **Sin cerdito:** vuelves al inicio de la meta en la que ibas (la deuda, $1,000, $5,000, $25,000...) con el dinero,
-    las mejoras y los mercados que tenías al empezarla. Si ibas por los $25,000, te quedas en los $25,000.
+    (si era por el plazo, el cobrador te da 2 días más). Hay un cerdito por paso.
+  - **Sin cerdito:** vuelves al inicio del paso en el que ibas (una deuda, un regalo, una compra, una meta) con el
+    dinero, las mejoras y los mercados que tenías al empezarlo.
+
+## El idioma secreto (no lo leas si quieres descubrirlo tú)
+
+Algunas cosas están escritas con letras que parecen rusas: "erratas" del periódico (la primera la ves en el tutorial,
+y el encapuchado dice que no es relevante) y los mensajes de **LOS PAGADOS**, alguien que te escribe por Mensajín y a
+quien no se puede contestar. Es una sustitución de letras: cada símbolo escondido que encuentras (en el escritorio, en
+la habitación, en las ventanas de la app...) se traduce para siempre, en todos los textos y en todas las partidas.
+La app **Símbolos** aparece al encontrar el primero, con una pista vaga más cada día de la suerte.
+El encapuchado sabe leerlo. No le gusta que lo leas.
+
+## Qué hay en la versión 1.5: deudas, mercado negro, idioma secreto y días de la suerte
+
+| Cambio | Detalle |
+|---|---|
+| Escalera de deudas | La partida es una lista de pasos en orden: la Pleyzeta, cuatro "regalos" del encapuchado (cada mejora llega desbloqueada... con una deuda), cuatro objetos clave y cuatro metas. Una deuda a la vez; HUD, calendario de la pared y pósit siguen la deuda activa |
+| Topes por mercado | Cada mercado da o quita como mucho una cantidad por apuesta, cada vez más grande. Aviso dorado al llegar al tope |
+| Tienda abierta siempre | Se mira desde el primer día. Objetos clave en orden y solo cuando te llega el precio; la oferta de FUTURO.exe con letra pequeña |
+| Mercado negro | Cuatro mercados nuevos con su logo, pestaña Legal/Negro (`X`), tema oscuro y noticias propias |
+| Resistencia | Ya funciona: menos giros en las últimas velas |
+| Timmy | El hermano pequeño ahora se llama Timmy |
+| Noticias y memes | Unas 30 noticias nuevas (STONKS, "todo está bien", ¡a la luna!, simios juntos fuertes, dos botones...), 7 fotos nuevas y una noticia de la ciudad cada día |
+| Idioma secreto | 15 símbolos escondidos, erratas en el periódico, LOS PAGADOS en Mensajín y la app Símbolos. La fuente pixel tiene ahora letras cirílicas |
+| Días de la suerte | Los días con un 7: mercados al alza, bonificación, ruleta, Mercado Dorado con objetos que se ven en tu cuarto, lluvia de oro por la ventana |
+| En tu cuarto | La caja de la tele bajo la ventana, el móvil en la mesa, el casco de la moto, el reloj en la muñeca y los objetos dorados |
+
+Las partidas guardadas de la 1.4 no se cargan (cambió el formato); el perfil se conserva y el tutorial se ve una vez más
+(tiene un paso nuevo: las noticias).
 
 ## Qué hay en la versión 1.4: el cerdito, Kevo y la ventana
 
@@ -56,7 +102,7 @@ El teclado es un atajo y cada botón muestra su tecla:
 |---|---|
 | Resultado sin prisa | Al terminar cada apuesta sale una tarjeta grande con lo que ganaste o perdiste y lo que tienes ahora. Se queda 2.6 s (clic o tecla para seguir antes) |
 | Perder no reinicia | Punto de control al empezar cada meta: al perder del todo vuelves ahí con los fondos que tenías, no al día 1 |
-| El cerdito de Tommy | Ya no es un fin de partida: es una vida extra. Cinemática jugable a escondidas en el cuarto de Tommy (si te ve moverte, retrocedes) y después lo rompes a golpes en tu mesa |
+| El cerdito de Timmy | Ya no es un fin de partida: es una vida extra. Cinemática jugable a escondidas en el cuarto de Timmy (si te ve moverte, retrocedes) y después lo rompes a golpes en tu mesa |
 | Kevo dura toda la partida | Sus conversaciones siguen tus hitos: pagar la deuda, cada meta, romper el cerdito, una gran pérdida o volver a un punto de control. Empieza eufórico, deja de dormir, olvida el nombre de su perro, el encapuchado le visita... y al final te escribe su madre desde su cuenta |
 | Más noticias | 9 noticias nuevas (noche de ambulancias, apagón, drones de reparto, ola de embargos, temblor, lluvia que huele a monedas...) |
 | La ventana | Lo que pasa en la ciudad se ve por la ventana y las persianas se suben solas para mirarlo: ambulancias, apagones, fuegos artificiales (también al ganar mucho o cumplir una meta), drones, el camión de embargos, lluvia, un cuervo en el alféizar, temblores... y, cuanto más oscura es la historia, el encapuchado en una azotea |
@@ -102,7 +148,7 @@ Cambia el acabado, inspirado en un cuarto lo-fi de noche: violetas, luz cálida 
 | Efectos de la gráfica | Cada vela suena más aguda cuanto mejor te va, golpecitos y chispas en velas fuertes, ganancias que saltan, fondo verde/rojo según el resultado |
 | Fallos corregidos | El resaltado del tutorial se comía los clics; clic a mitad de frase cortaba el texto; el pósit quedaba detrás de la ventana; sin dinero había que pasar turnos hasta el final |
 
-Los finales A/B y los mercados ilegales quedan para futuras fases (hay un adelanto al llegar a $25,000).
+Los finales A/B quedan para futuras fases (hay un adelanto al llegar a $25,000).
 Las partidas guardadas de la versión 1.0 no se cargan (cambió el formato); el perfil (intro vista, ajustes) se conserva
 y quien hizo el tutorial antiguo ve el nuevo una vez.
 
@@ -115,15 +161,16 @@ index.html            escenario 640x360 y la interfaz del monitor
 css/style.css         estilos (paleta oficial en variables CSS)
 css/font.css          fuente pixel propia, generada (no editar a mano)
 js/core/              sn.js (utilidades, RNG con semilla), events.js, state.js, game.js (GameManager, bucle, tiempo y cámara)
-js/data/              los "ScriptableObjects": mercados, eventos, simulación/mejoras/objetivos/tienda, historia,
-                      chat.js (las conversaciones con Kevo)
-js/systems/           economy, debt, time, market-sim (+ PISTA), trading (+ COBRAR y giros), drama (cámara lenta),
-                      unlocks, upgrades, save, audio, tutorial, narrative, bankruptcy
+js/data/              los "ScriptableObjects": mercados (también los negros), eventos, simulación/mejoras/tienda,
+                      progression.js (la escalera de deudas y los objetos clave), luck.js (días de la suerte),
+                      cipher.js (el idioma secreto), historia, chat.js (las conversaciones con Kevo)
+js/systems/           economy, debt, time, market-sim (+ PISTA), trading (+ COBRAR, giros y topes), drama (cámara lenta),
+                      unlocks (la escalera), upgrades, save, cipher, luck, audio, tutorial, narrative, bankruptcy
 js/render/            pixel.js, pixkit.js (kit de pixel art procedural), sprites.js, desk.js (habitación y ventana), hero.js (manos,
                       gato y primeros planos), hands.js, chart.js, fx.js, news-art.js, characters.js, cinematic.js,
-                      sneak.js (el cuarto de Tommy)
-js/ui/                ui.js (UIManager), dialog.js, windows.js (mejoras, periódico, tienda, ajustes),
-                      desktop.js (escritorio del PC y Mensajín)
+                      sneak.js (el cuarto de Timmy)
+js/ui/                ui.js (UIManager), dialog.js, windows.js (mejoras, periódico, tienda, ruleta, ajustes),
+                      desktop.js (escritorio del PC, Mensajín y Símbolos)
 tools/                build-font.js y pruebas
 ```
 
@@ -132,14 +179,21 @@ tools/                build-font.js y pruebas
 | GameManager | `js/core/game.js` |
 | EconomyManager · DebtManager | `js/systems/economy.js` · `debt.js` |
 | MarketSimulator · TradingManager | `js/systems/market-sim.js` · `trading.js` |
-| MarketUnlockManager · UpgradeManager | `js/systems/unlocks.js` · `upgrades.js` |
+| MarketUnlockManager (escalera) · UpgradeManager | `js/systems/unlocks.js` · `upgrades.js` |
+| CipherManager · LuckManager | `js/systems/cipher.js` · `luck.js` |
 | TutorialManager · NarrativeManager · BankruptcyManager | `js/systems/tutorial.js` · `narrative.js` · `bankruptcy.js` |
 | DeskInteractionController | `js/render/hands.js` |
 | UIManager · SaveManager | `js/ui/ui.js` · `js/systems/save.js` |
 | ScriptableObjects | `js/data/*.js` |
 
-**Añadir un mercado:** una entrada en `js/data/markets.js` (volatilidad, deriva, fases, velas por operación y giros)
-y su lista de eventos en `js/data/events.js` (cada evento con su foto `art`).
+**Añadir un mercado:** una entrada en `js/data/markets.js` (volatilidad, deriva, fases, velas por operación, giros y
+tope) y su lista de eventos en `js/data/events.js` (cada evento con su foto `art`). Su versión negra se crea sola.
+
+**Cambiar la escalera:** pasos, importes de las deudas, plazos y objetos clave en `js/data/progression.js`; la prueba
+de lógica juega partidas enteras con un bot y dice cuánto se tarda en cada paso.
+
+**El idioma secreto:** alfabeto, pistas, mensajes de LOS PAGADOS y erratas en `js/data/cipher.js`. Los textos cifrados
+solo pueden usar las 15 letras del alfabeto (la prueba de lógica lo comprueba).
 Apuesta mínima, velas de la zona de peligro, error de la pista y la operación del tutorial están en `js/data/simulation.js`.
 
 **Arte:** todo el pixel art es propio y está dibujado por código (sin imágenes externas ni marcadores de posición).
@@ -158,10 +212,11 @@ Kevo, la respuesta del protagonista y lo que Kevo contesta.
 ## Pruebas
 
 ```
-node tools/test/logic.test.js       # fórmulas, COBRAR, giros, fiabilidad de la pista, plazo, fin de partida y equilibrio
-node tools/test/e2e.test.js         # partida completa en Chrome sin ventana, con clics REALES de ratón y capturas
-node tools/test/e2e-paths.test.js   # continuar (también tras cobrar), repetir tutorial, tienda, los 3 finales y pantallas pequeñas
-node tools/test/e2e-desktop.test.js # minimizar, Mensajín (escribir con teclas; el clic no escribe), la historia de Kevo por hitos, Notas, Papelera
+node tools/test/logic.test.js       # fórmulas, COBRAR, giros, pista, topes, escalera, deudas, idioma secreto, suerte y equilibrio (con un bot que juega la partida entera)
+node tools/test/e2e.test.js         # partida completa en Chrome/Edge sin ventana: tutorial (con la errata), regalo, tienda, oferta, mercado negro, cerdito
+node tools/test/e2e-paths.test.js   # continuar (también tras cobrar), repetir tutorial, tienda, día de la suerte y ruleta, los 3 finales y pantallas pequeñas
+node tools/test/e2e-desktop.test.js # minimizar, Mensajín, la historia de Kevo, LOS PAGADOS, una pista que traduce sus mensajes, Símbolos
 ```
 
-Abre `index.html?debug` para atajos de prueba: `F8` bancarrota, `F9` +$1,000, `F10` pasar un día.
+Abre `index.html?debug` para atajos de prueba: `F6` descubre un símbolo, `F7` salta al siguiente día de la suerte,
+`F8` bancarrota, `F9` +$1,000, `F10` pasar un día.

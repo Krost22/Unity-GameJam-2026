@@ -1,6 +1,6 @@
 // BankruptcyManager: qué pasa al perder. Se pierde sin dinero ni para la apuesta mínima (nunca por tener
 // dinero comprometido en una operación), cuando vence el plazo sin pagar, o cuando ya es imposible pagar a tiempo.
-// 1) VIDA EXTRA: el cerdito de Tommy (tu hermano pequeño). Te cuelas en su cuarto a escondidas (SN.Sneak),
+// 1) VIDA EXTRA: el cerdito de Timmy (tu hermano pequeño). Te cuelas en su cuarto a escondidas (SN.Sneak),
 //    lo traes a tu mesa y lo rompes tú mismo a golpes: su dinero es tuyo y la partida sigue
 //    (si el problema era el plazo, con eso convences al cobrador: 2 días más). Uno por meta.
 // 2) SIN CERDITO: pierdes de verdad y vuelves al inicio de la meta en la que ibas, con los fondos que
@@ -41,7 +41,8 @@
       SN.Game.resetTime();
       SN.Audio.setMood('tense');
       SN.Desk.led = 'alert';
-      const [a, b, c] = early ? D.story.embargoEarly : D.story.embargo;
+      const [a, b0, c] = early ? D.story.embargoEarly : D.story.embargo;
+      const b = b0.replace('{amount}', U.money(S.run.debt ? S.run.debt.amount : D.sim.startDebt));
       SN.Audio.sfx('notifyBad');
       SN.FX.shake(4, 0.6);
       const last = S.run.piggy === 'ready' ? D.story.embargoPiggy : `${c}: ${U.money(S.run.capital)}`;
@@ -61,7 +62,7 @@
       return this.finalLoss();
     },
 
-    // Vida extra: colarse en el cuarto de Tommy y romper su cerdito en tu mesa
+    // Vida extra: colarse en el cuarto de Timmy y romper su cerdito en tu mesa
     async extraLife() {
       const st = D.story.piggyLife;
       SN.Audio.setMood('tense');
@@ -80,7 +81,7 @@
       S.restoreCheckpoint();
       SN.Save.saveRun();
       SN.Save.saveProfile();
-      const where = cp ? cp.label : 'la deuda de $250';
+      const where = cp ? cp.label : 'la deuda de la Pleyzeta';
       const money = U.money(cp ? cp.capital : D.sim.startCapital);
       const el = U.el('div', 'overlay-panel final-loss');
       el.innerHTML = `<div class="t1">${st.title}</div><div class="t2">${st.message}</div>

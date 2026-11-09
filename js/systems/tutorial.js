@@ -1,7 +1,7 @@
 // TutorialManager: se aprende haciendo, con frases cortas. Obligatorio en la primera partida y
 // repetible desde AJUSTES (al repetirlo, la partida se restaura tal y como estaba).
 // 1. La PISTA de la gráfica.  2. SUBE.  3. COBRAR a tiempo.  4. Ver el susto de las últimas velas
-// desde fuera.  5. Apuesta y multiplicador.  6. La meta.
+// desde fuera.  5. Apuesta y multiplicador.  6. Las noticias (y una "errata" que "no es relevante").  7. La meta.
 (function (SN) {
   'use strict';
   const S = SN.State, D = SN.Data, U = SN.Util;
@@ -21,7 +21,7 @@
   }
 
   const T = SN.Tutorial = {
-    VERSION: 2, // si cambia, los jugadores que hicieron el tutorial antiguo ven el nuevo
+    VERSION: 3, // si cambia, los jugadores que hicieron el tutorial antiguo ven el nuevo (3: las noticias y la "errata")
     active: false,
     controlledTrade: false,
 
@@ -114,6 +114,18 @@
       if (st.wait === 'trade') {
         await until('turn:ready');
         this.controlledTrade = false;
+        return;
+      }
+      if (st.news) {
+        // El periódico, con una noticia normal y otra que nadie sabe leer: la "errata" (el idioma secreto)
+        SN.Narrative.addNews({ title: 'Vacuna en fase final', text: 'Las autoridades deciden si aprueban la nueva vacuna.', tone: 'pos', market: 'salud', art: 'vacuna' });
+        SN.Narrative.cipherNews('tuto');
+        SN.Windows.open('news');
+        await SN.wait(0.35);
+        const spots = st.spots || [];
+        await SN.Dialog.show(st.lines, { pos: { v: 'bottom', h: 'center' }, onLine: (i) => { if (spots[i]) UI.spot(spots[i]); } });
+        UI.clearSpot();
+        SN.Windows.close();
         return;
       }
       const rect = st.target ? UI.spot(st.target) : null;

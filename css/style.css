@@ -668,3 +668,140 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 /* Fin de verdad (sin cerdito): fondo oscuro sobre la app */
 .final-loss { z-index: 8; background: rgba(7, 5, 18, .9); animation: dayin .4s steps(6) both; }
 .final-loss .t1 { font-size: 24px; line-height: 24px; color: var(--coral); }
+
+/* ---------- 1.5: escalera de deudas, topes y mercado negro ---------- */
+/* La meta de arriba: deuda (amarilla), objeto clave (cian), meta (verde) */
+#hud-goal .bar i.item { background: var(--cyan); box-shadow: inset 0 2px 0 0 var(--cyanL), inset 0 -1px 0 0 var(--cyanD); }
+#btn-item { position: absolute; inset: 2px 3px 3px 3px; text-align: center; line-height: 16px; padding: 0; z-index: 2; }
+#btn-item kbd { margin-left: 3px; }
+#goal-title { white-space: nowrap; overflow: hidden; text-overflow: clip; max-width: 120px; }
+#hud-days.wide { gap: 1px; }
+#hud-days.wide i { width: 12px; letter-spacing: -1px; }
+
+/* Pestañas Legal | Negro de la barra lateral */
+.mtabs { position: relative; display: flex; gap: 2px; height: 11px; }
+.mtab { position: relative; flex: 1; height: 11px; line-height: 10px; padding-top: 1px; text-align: center; background: var(--navyD); color: var(--ink3); }
+.mtab.on { background: var(--panel2); color: var(--ink); box-shadow: inset 0 -2px 0 0 var(--violetL); }
+.mtab-negro.on { background: #1A0A16; color: var(--magentaL); box-shadow: inset 0 -2px 0 0 var(--magenta); }
+.mtab:hover:not(.on) { background: var(--panel); color: var(--ink2); }
+.mtab .alert { position: absolute; right: -1px; top: -3px; background: var(--orange); color: var(--navyD); padding: 0 2px; line-height: 8px; height: 8px; animation: pulse .9s steps(2) infinite; }
+.mtabs kbd { position: absolute; right: -2px; top: 12px; display: none; }
+.mcard.black { background: #160A15; box-shadow: inset 0 0 0 1px #3A1030; }
+.mcard.black:hover:not(.locked) { background: #24101F; }
+.mcard.black.sel { background: #24101F; }
+.mcard.black .nm { color: var(--magentaL); }
+.mcard.black.locked { background: #0E0610; color: #6A4A66; }
+
+/* FUTURO.exe en el mercado negro: todo más oscuro, con rojo y magenta */
+#app.black { --bg: #0A0610; --panel: #140A14; --panel2: #1E0F1C; --panel3: #2C1428; --line: #4A1A3E; }
+#app.black #titlebar { background: #050208; box-shadow: inset 0 -1px 0 0 var(--magenta); }
+#app.black .app-name { color: var(--magentaL); }
+#app.black #hud { background: #08040B; }
+#mkt-head .blk { font-style: normal; color: var(--magentaL); margin-left: 3px; }
+#mkt-head .cap { font-style: normal; color: var(--ink3); margin-left: 5px; }
+
+/* El tope del mercado */
+#live-pnl.capped, #btn-close.capped #close-amt { color: var(--yellow); animation: pulse .8s steps(2) infinite; }
+.result-card .rc-cap { color: var(--yellow); }
+
+/* Tienda: objetos clave en orden */
+.sec-title { color: var(--yellow); margin: 5px 1px 3px; line-height: 10px; }
+.shop-row.key { box-shadow: inset 2px 0 0 0 var(--cyan); }
+.shop-row.key.locked { background: var(--navyD); color: var(--ink3); }
+.shop-row.key.locked .t { color: var(--ink3); }
+.shop-row.key.locked .ico { opacity: .35; }
+
+/* La oferta de FUTURO.exe se mete en medio de la compra */
+@keyframes offerin { 0% { transform: translate(-50%, -50%) scale(.7, .4); opacity: 0; } 100% { transform: translate(-50%, -50%); opacity: 1; } }
+.offer { position: absolute; left: 50%; top: 50%; z-index: 5; width: 230px; transform: translate(-50%, -50%); padding: 0 0 6px;
+  background: var(--navyD); color: var(--ink); text-align: center; animation: offerin .16s steps(3);
+  box-shadow: 0 0 0 1px var(--yellow), 0 0 0 2px var(--navyDD), 0 0 0 3px var(--magenta), 4px 5px 0 3px rgba(7, 5, 18, .6); }
+.offer .of-head { display: flex; align-items: center; gap: 3px; height: 11px; padding: 1px 4px 0; background: var(--navyDD); color: var(--yellow); text-align: left; letter-spacing: 1px; }
+.offer .of-head span { margin-left: auto; color: var(--ink3); letter-spacing: 0; }
+.offer .of-ico { width: 8px; height: 8px; background-size: 8px 8px; image-rendering: pixelated; }
+.offer .of-title { margin-top: 5px; font-size: 16px; line-height: 16px; color: var(--yellow); }
+.offer .of-line { margin: 3px 8px 0; line-height: 10px; }
+.offer .of-price { margin-top: 4px; display: flex; justify-content: center; align-items: baseline; gap: 6px; }
+.offer .of-price s { color: var(--ink3); }
+.offer .of-price b { font-family: 'SaldoNum', 'SaldoPixel', monospace; font-weight: normal; font-size: 16px; line-height: 16px; color: var(--green); }
+.offer .of-price em { font-style: normal; color: var(--navyD); background: var(--coral); padding: 1px 2px 0; }
+.offer .of-later { margin-top: 3px; color: var(--ink2); }
+.offer .of-small { margin-top: 3px; font-size: 8px; color: var(--ink3); text-decoration: underline; }
+.offer .of-small:hover { color: var(--ink2); }
+.offer .of-fine { margin: 2px 10px 0; padding: 2px 3px; line-height: 9px; color: var(--creamDD); background: var(--navyDD); text-align: left; }
+.offer .of-row { margin-top: 6px; display: flex; justify-content: center; gap: 8px; }
+.offer .of-row .btn { padding: 3px 8px 2px; }
+
+/* ---------- 1.5: el idioma secreto ---------- */
+/* Letras sin descifrar (cirílico) y descifradas (cian); la recién encontrada parpadea */
+.cx, .cx-k { font-weight: normal; }
+.cx-k { color: var(--cyan); }
+.paper .cx-k, .ch-log .cx-k, .nt .cx-k, .tr-note .cx-k { color: var(--cyanD); }
+.cx-new { animation: cxnew .45s steps(2) 4; }
+@keyframes cxnew { 0% { color: var(--yellow); } 50% { color: var(--creamL); background: var(--magentaD); } }
+.stamp.cx-stamp { display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--cyan); text-transform: none;
+  box-shadow: 0 0 0 2px var(--navyDD), 0 0 0 4px var(--cyan), 0 0 0 6px var(--navyDD), 0 8px 0 0 rgba(0, 0, 0, .4); }
+.stamp.cx-stamp small { margin: 0; }
+.stamp.cx-stamp .cx-pair { font-size: 32px; line-height: 32px; color: var(--creamL); }
+.stamp.cx-stamp .cx-pair .cx { color: var(--magentaL); }
+/* La calavera del mercado negro (tres golpes) */
+#mkt-head .ico-box.skull { cursor: pointer; }
+.knock { animation: knock .18s steps(3); }
+@keyframes knock { 50% { transform: translate(1px, 1px) scale(.9); } }
+
+/* Escritorio: el logo responde a los clics, Símbolos.txt y LOS PAGADOS */
+.dt-logo { z-index: 1; cursor: default; }
+.dt-symbols { left: 96px; top: 14px; width: 220px; height: 176px; }
+.dt-symbols .dt-body { padding: 4px; overflow-y: auto; }
+.sy-head { color: var(--ink2); margin-bottom: 3px; }
+.sy-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
+.sy-cell { display: flex; align-items: center; justify-content: center; gap: 2px; height: 14px; background: var(--navyD); color: var(--ink3); }
+.sy-cell .cx { color: var(--magentaL); }
+.sy-cell i { font-style: normal; }
+.sy-cell .q { font-weight: normal; color: var(--ink3); }
+.sy-cell.on { background: var(--panel3); color: var(--ink); }
+.sy-cell.fresh { animation: cxnew .45s steps(2) 4; }
+.sy-hints { margin-top: 5px; color: var(--ink2); line-height: 10px; }
+.sy-hints b { font-weight: normal; color: var(--yellow); }
+.sy-hints p { margin: 2px 0 0; }
+.ch-tabs { flex: none; display: flex; gap: 2px; padding: 2px 3px 0; background: var(--panel); }
+.ch-tab { position: relative; height: 11px; line-height: 10px; padding: 1px 6px 0; background: var(--navyD); color: var(--ink3); }
+.ch-tab.on { background: var(--panel2); color: var(--ink); }
+.ch-tab.ser .cx-k { color: var(--cyan); }
+.ch-tab .badge { position: static; display: inline-block; margin-left: 3px; vertical-align: 1px; }
+.ch-ava.ser { background: var(--coalDD); cursor: pointer; }
+.ch-msg.ser { color: var(--coal); letter-spacing: 1px; }
+.ch-msg.ser b:first-child, .ch-msg.hood b:first-child { color: var(--magentaD); letter-spacing: 0; }
+.ch-msg.hood { color: var(--coralD); }
+/* De noche, una línea que nadie escribió */
+.nt-ghost { color: var(--coal); opacity: .14; cursor: default; }
+.nt-ghost:hover { opacity: .35; }
+.nt-ghost.read { opacity: .6; }
+.tr-file.odd span { color: var(--magentaL); }
+.tr-note .cx, .tr-note .cx-k { letter-spacing: 1px; }
+
+/* ---------- 1.5: días de la suerte ---------- */
+#app.lucky #titlebar { box-shadow: inset 0 -1px 0 0 var(--yellow); }
+#clock .lk { font-weight: normal; color: var(--yellow); margin-right: 3px; animation: pulse 1.2s steps(2) infinite; }
+.daycard.lucky { box-shadow: 0 0 0 2px var(--navyDD), 0 0 0 4px var(--yellow), 0 0 0 6px var(--navyDD); }
+.daycard.lucky .d1 { color: var(--yellow); }
+.daycard.lucky .d3 { color: var(--ink2); margin-top: 3px; }
+#hud-days .free.lucky { color: var(--yellow); }
+#hud-days i.lucky:not(.now) { box-shadow: inset 0 2px 0 0 var(--yellow); }
+.mcard .star { position: absolute; right: 2px; top: 1px; color: var(--yellow); font-weight: normal; cursor: pointer; animation: pulse .9s steps(2) infinite; }
+.result-card .rc-luck { color: var(--yellow); }
+.sec-title.gold { color: var(--yellowL); }
+.shop-row.gold { box-shadow: inset 2px 0 0 0 var(--yellow); background: #2A2210; }
+.btn s { opacity: .6; }
+/* La ruleta */
+.rl { display: flex; gap: 10px; align-items: flex-start; padding: 4px 6px; }
+.rl-wheel { position: relative; flex: none; width: 96px; height: 96px; margin-top: 8px; }
+.rl-wheel canvas { width: 96px; height: 96px; image-rendering: auto; }
+.rl-arrow { position: absolute; left: 44px; top: -9px; color: var(--yellow); font-weight: normal; z-index: 1; }
+.rl-side { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.rl-now { color: var(--yellow); }
+.rl-list { margin: 0; padding-left: 14px; color: var(--ink2); line-height: 10px; }
+.rl-list li.on { color: var(--ink); }
+.rl-go { align-self: flex-start; padding: 3px 10px 2px; }
+.rl-res { min-height: 20px; color: var(--ink); line-height: 10px; }
+.rl-res b { color: var(--yellow); font-weight: normal; }

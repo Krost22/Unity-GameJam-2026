@@ -19,19 +19,23 @@
       const seed = (Math.random() * 2 ** 31) >>> 0;
       this.rng = new SN.RNG(seed);
       const run = {
-        v: 2,
+        v: 3,
         seed,
         rngState: 0,
         capital: D.sim.startCapital,
         committed: 0,
-        debt: { amount: D.sim.startDebt, paid: false, deadlineDay: D.sim.deadlineDays, defaulted: false },
+        // Deuda activa (solo hay una a la vez). Las pagadas pasan a `debts`.
+        debt: { id: 'pleyzeta', kind: 'debt', label: 'la Pleyzeta', amount: D.sim.startDebt, start: 1, deadlineDay: D.sim.deadlineDays, paid: false, defaulted: false },
+        debts: [],
         day: 1,
         turn: 0,
         totalTurns: 0,
         stats: { trades: 0, wins: 0, losses: 0, best: 0, worst: 0, earned: 0 },
         markets: {},
         upgrades: { suerte: 0, limite: 0, analisis: 0, resistencia: 0 },
-        goalIndex: 0,
+        gifts: {},       // mejoras que ya llegaron como "regalo" (se pueden comprar)
+        step: 0,         // paso actual de la escalera de progresión (js/data/progression.js)
+        stepOpen: true,  // el paso actual ya abrió su deuda (la Pleyzeta, desde el principio)
         flags: { debtPaid: false, payHintShown: false, endDemo: false },
         news: [],
         darkness: 0,
@@ -63,12 +67,16 @@
 
     nextUid() { return this.run.uid++; },
 
-    // Punto de control: al empezar cada meta (la deuda, $1,000, $5,000...) se guarda la partida tal cual.
-    // Si pierdes del todo, vuelves aquí con los fondos que tenías entonces. Tommy rellena su cerdito.
+    // Punto de control: al empezar cada paso de la escalera (la deuda, cada regalo, cada compra, cada meta)
+    // se guarda la partida tal cual. Si pierdes del todo, vuelves aquí con los fondos que tenías entonces.
+    // Timmy rellena su cerdito. Los chats no se rebobinan: lo hablado, hablado está.
     checkpoint(label) {
       const run = this.run;
+      // Nunca se guarda un punto de control sin dinero para apostar (volver ahí sería perder otra vez):
+      // si acabas de pagar y te has quedado sin nada, sigue valiendo el anterior.
+      if (run.checkpoint && run.capital + run.committed < D.sim.bankruptcyThreshold) return false;
       this.sync();
-      const copy = Object.assign({}, run, { checkpoint: null, chat: null });
+      const copy = Object.assign({}, run, { checkpoint: null, chat: null, chatSer: null });
       run.checkpoint = { label, capital: run.capital, data: JSON.stringify(copy) };
       run.piggy = 'ready';
     },
@@ -78,6 +86,7 @@
       const run = JSON.parse(cp.data);
       run.checkpoint = cp;
       run.chat = old.chat;
+      run.chatSer = old.chatSer;
       run.piggy = 'ready';
       run.retries = (old.retries || 0) + 1;
       run.chatFlags = Object.assign({}, run.chatFlags || {}, old.chatFlags || {});
@@ -85,11 +94,11 @@
       this.adopt(run);
       return true;
     },
-    // Lo que da el cerdito: para la deuda, $60; en metas grandes, una parte de lo que tenías al empezarla
+    // Lo que da el cerdito: para la Pleyzeta, $60; después, una parte de lo que tenías al empezar el paso
     piggyAmount() {
       const cp = this.run.checkpoint;
       const base = cp ? cp.capital : 100;
-      return this.run.debt.paid ? U.clamp(Math.round(base * 0.2), 60, 5000) : 60;
+      return this.run.flags.debtPaid ? U.clamp(Math.round(base * 0.2), 60, 5000) : 60;
     },
   };
 })(window.SN);

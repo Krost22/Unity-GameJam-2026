@@ -2,6 +2,7 @@
 //   marketChange = (exit - entry) / entry
 //   tradeReturn  = marketChange * direction * leverage   (direction: 1 sube, -1 baja)
 //   profitLoss   = investment * tradeReturn, nunca menor que -investment (pérdida máxima = lo comprometido)
+//                  y siempre dentro del TOPE del mercado: entre -cap y +cap (el primero da poco, el último mucho)
 // Las velas de la operación se simulan al abrirla y la interfaz las va mostrando. El jugador puede CERRAR
 // en cualquier momento: cobra al precio que ve, y el mercado sigue su curso sin él.
 (function (SN) {
@@ -14,6 +15,22 @@
     get position() { return S.run.position; },
 
     limit() { return SN.Upgrades.value('limite') || D.sim.baseInvestLimit; },
+
+    // Tope por apuesta de un mercado (lo máximo que se gana o se pierde en una operación)
+    cap(id) { const d = SN.Market.def(id); return (d && d.cap) || Infinity; },
+    // El mejor tope entre los mercados abiertos (para saber si todavía se llega a pagar)
+    bestCap() {
+      let best = 0;
+      for (const d of D.markets) if (S.run.markets[d.id] && S.run.markets[d.id].unlocked) best = Math.max(best, this.cap(d.id));
+      return best || Infinity;
+    },
+    // Resultado dentro de los límites: nunca más pérdida que lo apostado, y siempre dentro del tope.
+    // La ESTRELLA DE LA SUERTE multiplica las ganancias (y el tope) de su mercado ese día.
+    clampPnl(p, v) {
+      const cap = p.cap || Infinity;
+      if (v > 0 && p.star > 1) v *= p.star;
+      return Math.max(-Math.min(p.amount, cap), Math.min(cap, v));
+    },
     maxAmount() { return Math.max(0, Math.floor(Math.min(S.run.capital, this.limit()))); },
 
     leverageAvailable(v) {
@@ -42,7 +59,9 @@
     // Índice de la vela con giro inesperado de esta operación (o -1): solo en la zona de peligro
     planTwist(def, n, tutorial) {
       if (tutorial) return D.sim.tutorial.twistAt;
-      if (S.rng.next() >= def.twist.chance) return -1;
+      // RESISTENCIA: menos giros en "las cosas que todavía no han pasado"
+      const chance = def.twist.chance * Math.max(0, 1 - SN.Upgrades.level('resistencia') * D.sim.resistPerLevel);
+      if (S.rng.next() >= chance) return -1;
       return n - 1 - S.rng.int(0, D.sim.dangerCandles - 1);
     },
 
@@ -80,7 +99,8 @@
       const entry = m.price;
       const tutorial = !!opts.tutorial;
       const n = tutorial ? D.sim.tutorial.candles : def.candles;
-      const ctx = { direction, luck: SN.Upgrades.value('suerte'), tutorial };
+      // SUERTE (y la Bendición de la Fortuna, un nivel más ese día)
+      const ctx = { direction, luck: SN.Upgrades.value('suerte') + (SN.Luck && !tutorial ? SN.Luck.luckBoost() : 0), tutorial };
       const twistAt = this.planTwist(def, n, tutorial);
 
       const candles = [];
@@ -102,6 +122,8 @@
       // Primero la posición y luego el dinero: así nadie recalcula la apuesta a mitad de camino
       run.position = {
         market: id, direction, amount, leverage: lev,
+        star: SN.Luck && !tutorial ? SN.Luck.starMul(id) : 1,
+        cap: this.cap(id) * (SN.Luck && !tutorial ? SN.Luck.starMul(id) : 1),
         entry, exit, liquidated, candles: candles.length, total: n, tutorial,
         climax: this.findClimax(candles, def, liquidated),
         day: run.day, turn: run.turn,
@@ -117,13 +139,13 @@
       const p = S.run.position;
       if (!p) return 0;
       const ret = (price - p.entry) / p.entry * p.direction * p.leverage;
-      return Math.max(-p.amount, p.amount * ret);
+      return this.clampPnl(p, p.amount * ret);
     },
 
     // Lo que dejaría la operación si llegase hasta el final
     finalPnl(p) {
-      if (p.liquidated) return -p.amount;
-      return round2(Math.max(-p.amount, p.amount * (p.exit - p.entry) / p.entry * p.direction * p.leverage));
+      if (p.liquidated) return this.clampPnl(p, -p.amount);
+      return round2(this.clampPnl(p, p.amount * (p.exit - p.entry) / p.entry * p.direction * p.leverage));
     },
 
     // CERRAR: cobras al precio que ves. Las velas restantes se siguen mostrando: es lo que te ahorraste (o te perdiste)
@@ -145,8 +167,13 @@
       const run = S.run, p = run.position;
       if (!p || p.settled) return null;
       const marketChange = (p.exit - p.entry) / p.entry;
-      const pnl = this.finalPnl(p);
+      let pnl = this.finalPnl(p), shielded = false;
+      // SEGURO de la ruleta: la próxima pérdida no cuenta
+      if (pnl < 0 && run.shield && !p.tutorial) { pnl = 0; shielded = true; run.shield = false; }
       SN.Economy.settle(p.amount, pnl);
+      // Día de la suerte: bonificación por cada operación ganadora
+      const luckBonus = SN.Luck && !p.tutorial ? SN.Luck.bonus(pnl) : 0;
+      if (luckBonus) SN.Economy.add(luckBonus, 'luck');
       const st = run.stats;
       st.trades++;
       if (pnl >= 0) st.wins++; else st.losses++;
@@ -154,7 +181,8 @@
       st.worst = Math.min(st.worst, pnl);
       if (pnl > 0) st.earned += pnl;
       p.settled = true;
-      p.result = Object.assign({}, p, { pnl, ret: pnl / p.amount, marketChange });
+      const capped = !!p.cap && p.cap !== Infinity && Math.abs(pnl) >= p.cap;
+      p.result = Object.assign({}, p, { pnl, ret: pnl / p.amount, marketChange, capped, luckBonus, shielded });
       delete p.result.result;
       SN.Events.emit('trade:closed', p.result);
       return p.result;

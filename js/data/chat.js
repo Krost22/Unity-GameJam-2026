@@ -4,12 +4,13 @@
 //
 // convos = la historia principal, en orden. Cada una llega cuando se cumple su condición:
 //   day/turn  -> a partir de ese día y turno
-//   when      -> cuando pasa algo ('debtPaid', 'g1000', 'g5000', 'g25000', 'g100000'), y delay turnos después
+//   when      -> cuando pasa algo ('debtPaid', un paso de la escalera: 'regalo1', 'tele', 'g1000'... y delay turnos después)
 //   skipIf    -> se salta si ya pasó eso (p. ej. no preguntar por el plazo si ya pagaste)
 // side = conversaciones que solo llegan si pasa algo concreto ('piggy', 'bigLoss', 'rewind').
 // msgs = lo que escribe Kevo · reply = lo que escribe el protagonista (el jugador solo pulsa teclas)
 // after = la respuesta de Kevo. Líneas especiales: '!zumbido' sacude la ventana · '*texto' aviso del
-// sistema · '>ventana' hace que pase algo al otro lado de la ventana (ver SN.Desk.windowEvent).
+// sistema · '>ventana' hace que pase algo al otro lado de la ventana (ver SN.Desk.windowEvent) ·
+// '#pista' un símbolo del idioma secreto con su letra (queda descubierto, ver js/data/cipher.js).
 (function (SN) {
   'use strict';
 
@@ -52,7 +53,7 @@
       {
         id: 'hermano', day: 5, turn: 0,
         msgs: ['mi hermana dice que estoy raro', 'que hablo dormido. de velas', '¿tú tienes hermanos?'],
-        reply: 'Tengo a Tommy. Tiene 8 años y ahorra para su operación.',
+        reply: 'Tengo a Timmy. Tiene 8 años y ahorra para su operación.',
         after: ['qué bonito', 'cuídalo', 'en serio, bro. cuídalo'],
       },
       {
@@ -81,6 +82,13 @@
         reply: 'Toby. Se llamaba Toby. ¿Estás bien?',
         after: ['Toby', 'lo tenía en la punta de la lengua', 'es como si alguien se lo hubiera llevado'],
       },
+      // ---------- La oferta de la tele: el mercado negro ----------
+      {
+        id: 'oferta', when: 'tele', delay: 1,
+        msgs: ['¿a ti también te salió?', 'lo de la oferta', 'iba a comprarme una tele normal y FUTURO.exe me la dejó en 60 pavos', 'luego leí la letra pequeña'],
+        reply: 'A mí igual. Y ahora tengo un mercado nuevo. Uno... negro.',
+        after: ['el mío se llama igual', 'paga mejor', 'pero cada vez que gano ahí, en las noticias sale algo raro'],
+      },
       // ---------- $1,000: Tecnología ----------
       {
         id: 'farolas', when: 'g1000', delay: 1,
@@ -94,6 +102,12 @@
         reply: 'Para, Kevo. Cierra el programa. Te paso algo si lo necesitas.',
         after: ['no puedo cerrarlo', 'no tiene botón de cerrar', '¿el tuyo sí?'],
         nick: 'Kevo',
+      },
+      {
+        id: 'iphon', when: 'movil', delay: 2,
+        msgs: ['me he comprado el iFON 17', 'tres cámaras más', 'no sé para qué. no tengo a quién hacer fotos'],
+        reply: '¿Y tu familia? ¿Tu hermana?',
+        after: ['¿qué hermana?', '...', 'ah. sí. mi hermana. claro'],
       },
       // ---------- $5,000: Negocios ----------
       {
@@ -121,7 +135,7 @@
       },
       {
         id: 'madre', when: 'g25000', delay: 4,
-        msgs: ['*Kevo se ha conectado.', 'hola. soy la madre de Kevo', 'estoy usando su ordenador', 'Kevo no vuelve a casa desde hace cuatro días', 'en su pantalla solo hay un programa abierto. FUTURO.exe', 'dice que tú también lo tienes'],
+        msgs: ['*Kevo se ha conectado.', 'hola. soy la madre de Kevo', 'estoy usando su ordenador', 'Kevo no vuelve a casa desde hace cuatro días', 'en su pantalla solo hay un programa abierto. FUTURO.exe', 'y en la mesa, un papel con esto', '#madre', 'dice que tú también lo tienes'],
         reply: 'Señora, no sé dónde está. Pero voy a averiguarlo.',
         after: ['gracias', 'si lo ves, dile que su perro se llamaba Toby', 'él siempre se olvidaba', '*Kevo se ha desconectado.'],
         nick: 'Kevo',
@@ -140,7 +154,7 @@
       {
         id: 'piggy', when: 'piggy', delay: 1,
         msgs: ['bro', 'no contestas desde ayer', '¿estás bien?'],
-        reply: 'Rompí el cerdito de Tommy. El dinero de su operación.',
+        reply: 'Rompí el cerdito de Timmy. El dinero de su operación.',
         after: ['...', 'yo rompí la hucha de mi abuela', 'no se lo digas a nadie', 'ella ya no se acuerda de que tenía una'],
       },
       {

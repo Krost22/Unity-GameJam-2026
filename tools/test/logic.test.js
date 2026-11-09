@@ -9,10 +9,12 @@ const vm = require('vm');
 const ROOT = path.join(__dirname, '..', '..');
 const FILES = [
   'js/core/sn.js', 'js/core/events.js',
-  'js/data/markets.js', 'js/data/events.js', 'js/data/simulation.js', 'js/data/story.js',
+  'js/data/markets.js', 'js/data/events.js', 'js/data/simulation.js', 'js/data/progression.js', 'js/data/luck.js',
+  'js/data/cipher.js', 'js/data/story.js',
   'js/core/state.js',
   'js/systems/economy.js', 'js/systems/time.js', 'js/systems/debt.js', 'js/systems/market-sim.js',
   'js/systems/trading.js', 'js/systems/unlocks.js', 'js/systems/upgrades.js', 'js/systems/save.js',
+  'js/systems/cipher.js', 'js/systems/luck.js',
 ];
 const SCRIPTS = FILES.map((f) => new vm.Script(fs.readFileSync(path.join(ROOT, f), 'utf8'), { filename: f }));
 
@@ -26,6 +28,7 @@ function load() {
   ctx.window = ctx;
   vm.createContext(ctx);
   for (const s of SCRIPTS) s.runInContext(ctx);
+  ctx.SN.__store = store; // para comprobar lo que se guarda
   return ctx.SN;
 }
 
@@ -103,6 +106,7 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
 // 4) COBRAR: el dinero entra al momento, al precio que se ve, y el mercado sigue sin ti
 {
   const SN = load();
+  SN.Luck.today = () => null; // sin días de la suerte: aquí se comprueba el dinero exacto
   SN.State.newRun();
   const run = SN.State.run;
   let allGood = true, compared = 0;
@@ -195,10 +199,13 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
   ok(!SN3.Debt.hopeless(), 'día 7, noche, con $90: todavía hay una última oportunidad');
   r3.capital = 260;
   ok(SN3.Debt.pay() && r3.debt.paid && r3.capital === 10 && !SN3.Debt.hopeless(), 'pago anticipado de la deuda');
-  r3.capital = 1200;
-  const g = SN3.Unlocks.check();
-  ok(g && g.id === 'g1000' && SN3.Unlocks.isUnlocked('tecno') && r3.capital === 1300, 'meta $1,000: desbloquea Tecnología y da bono');
-  ok(SN3.Upgrades.isUnlocked('analisis') && SN3.Upgrades.isUnlocked('limite'), 'mejoras desbloqueadas progresivamente');
+  // La escalera: Pleyzeta pagada -> paso completado -> primer regalo (LÍMITE + una deuda)
+  let ev = SN3.Unlocks.check();
+  ok(ev && ev.type === 'done' && ev.step.id === 'pleyzeta', 'pagar la Pleyzeta completa el primer paso');
+  ev = SN3.Unlocks.check();
+  ok(ev && ev.type === 'gift' && SN3.Upgrades.isUnlocked('limite') && SN3.Upgrades.level('limite') === 0 && SN3.Debt.active() && r3.debt.amount === 150,
+    'el regalo desbloquea LÍMITE (sin darte ningún nivel) y trae una deuda');
+  ok(SN3.Unlocks.check() === null, 'con una deuda pendiente la escalera no avanza');
 }
 
 // 8) Mejoras y eventos
@@ -206,19 +213,139 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
   const SN = load();
   SN.State.newRun();
   const run = SN.State.run;
-  ok(SN.Upgrades.buy('suerte') && run.capital === 75 && SN.Upgrades.value('suerte') === 1, 'comprar Suerte nivel 1 ($25)');
-  ok(!SN.Upgrades.buy('limite'), 'Límite bloqueado hasta pagar la deuda');
+  ok(!SN.Upgrades.isUnlocked('suerte') && !SN.Upgrades.buy('suerte'), 'al empezar no hay mejoras: llegan como "regalo"');
+  run.gifts.suerte = true;
+  run.capital = 500;
+  ok(SN.Upgrades.buy('suerte') && run.capital === 100 && SN.Upgrades.value('suerte') === 1, 'tras el regalo, Suerte nivel 1 se compra ($400)');
+  ok(!SN.Upgrades.buy('limite'), 'Límite bloqueado hasta su regalo');
   ok(SN.Trading.limit() === 250, 'límite base de inversión: $250');
   run.capital = 30;
   ok(!SN.Upgrades.canBuy('suerte').ok, 'una mejora no te puede dejar por debajo de la apuesta mínima');
   run.capital = 75;
   const m = run.markets.salud;
-  SN.Market.addEvent(m, SN.Data.marketEvents.salud[1]); // shock
+  const shock = SN.Market.addEvent(m, SN.Data.marketEvents.salud[1]); // shock
   ok(SN.Market.hint('salud').move > SN.Market.forecast('salud').move - 1, 'la pista incluye los eventos conocidos');
   let resolved = 0;
   SN.Events.on('market:event-resolved', (n) => { resolved++; if (!n.art) resolved = -99; });
   SN.Trading.skipTurn();
-  ok(resolved >= 1 && !m.events.some((e) => e.id === 'medicamento'), 'los shocks se aplican y se publican (con su foto) en las velas siguientes');
+  // (por su uid: al acabar el turno puede salir otra vez la misma noticia, y es otro evento)
+  ok(resolved >= 1 && !m.events.includes(shock), 'los shocks se aplican y se publican (con su foto) en las velas siguientes');
+}
+
+// 11) Escalera de progresión: lineal, una deuda a la vez, objetos clave con la oferta de FUTURO.exe
+{
+  const SN = load();
+  SN.State.newRun();
+  const run = SN.State.run, U = SN.Unlocks;
+  const drain = () => { const out = []; let e; while ((e = U.check())) out.push(e.type); return out.join(); };
+  run.capital = 5000; // con dinero de sobra tampoco se salta ningún paso
+  ok(drain() === '', 'con la Pleyzeta sin pagar no avanza nada (aunque tengas $5,000)');
+  ok(!U.canBuyItem('tele').ok && U.canBuyItem('tele').locked, 'la tele no se puede comprar antes de su paso');
+  SN.Debt.pay();
+  ok(drain() === 'done,gift', 'tras la Pleyzeta llega el primer regalo');
+  ok(!U.done('g1000') && !U.isUnlocked('tecno'), 'la meta de $1,000 no salta antes de su paso, aunque tengas el dinero');
+  SN.Debt.pay();
+  ok(drain() === 'done' && U.step().id === 'tele', 'pagado el regalo, el siguiente paso es comprar la tele');
+  ok(!U.canBuyItem('movil').ok && U.canBuyItem('movil').locked, 'los objetos clave van en orden');
+  // "No, gracias" solo cierra la ventana: comprobar si se puede comprar no cambia nada
+  const before = JSON.stringify([run.capital, run.owned, run.debt, run.step]);
+  ok(U.canBuyItem('tele').ok && before === JSON.stringify([run.capital, run.owned, run.debt, run.step]), 'mirar (o rechazar) la oferta no cambia nada');
+  const o = U.offer('tele'), cap0 = run.capital;
+  ok(o.now === 60 && o.debt === 900, `la oferta: $60 hoy y $900 después (${o.now} / ${o.debt})`);
+  ok(U.acceptOffer('tele') && run.owned.tele && run.capital === cap0 - o.now && SN.Debt.active() && run.debt.amount === o.debt && U.isUnlocked('salud_negro'),
+    'aceptar la oferta: pagas la entrada, debes el resto y se abre Salud negro');
+  ok(U.acceptOffer('tele') === null, 'no se puede comprar dos veces');
+  SN.Debt.pay();
+  ok(drain() === 'done,goal,gift' && U.isUnlocked('tecno') && SN.Upgrades.isUnlocked('analisis'), 'pagada la tele: meta $1,000 (Tecnología) y el regalo de ANÁLISIS');
+  // El resto de la escalera con dinero de sobra: termina en la meta final con los 8 mercados abiertos
+  run.capital = 1e7;
+  for (let i = 0; i < 80 && U.step(); i++) {
+    drain();
+    const st = U.step();
+    if (!st) break;
+    if (SN.Debt.active()) SN.Debt.pay();
+    else if (st.kind === 'item') U.acceptOffer(st.item);
+  }
+  drain();
+  ok(!U.step() && SN.Data.markets.every((d) => U.isUnlocked(d.id)), 'la escalera se completa y abre los 8 mercados');
+  ok(['limite', 'analisis', 'suerte', 'resistencia'].every((id) => SN.Upgrades.isUnlocked(id)), 'las 4 mejoras llegan como regalo');
+  ok(run.debts.length === 8 && run.debts.every((d) => d.paid), `9 deudas en total, todas pagadas (${run.debts.length + 1})`);
+}
+
+// 12) Topes por mercado: ninguna operación gana ni pierde más que su tope; el negro es 0.8 × el siguiente normal
+{
+  const SN = load();
+  SN.State.newRun();
+  const run = SN.State.run;
+  const normal = SN.Data.markets.filter((d) => !d.black);
+  let ladder = true;
+  normal.forEach((d, i) => {
+    const b = SN.Data.marketById(d.id + '_negro'), next = normal[i + 1];
+    if (!b || b.cap !== Math.round((next ? next.cap : d.cap * 4) * 0.8) || b.cap <= d.cap || (next && b.cap >= next.cap)) ladder = false;
+  });
+  ok(ladder, 'cada mercado negro: mejor que el suyo y un 20% peor que el siguiente normal');
+  ok(normal.every((d, i) => !i || d.cap > normal[i - 1].cap), 'cada mercado normal da más que el anterior');
+  ok(SN.Data.markets.every((d) => (SN.Data.marketEvents[d.id] || []).length >= 5), 'todos los mercados (también los negros) tienen sus noticias');
+  run.flags.debtPaid = true; run.debt.paid = true; // sin deuda: que no se cobre sola a mitad de la prueba
+  SN.Luck.today = () => null; // ni bonificaciones de la suerte
+  run.gifts.limite = true; run.upgrades.limite = 3; // apuestas de hasta $25,000
+  let within = true, hit = 0;
+  for (let i = 0; i < 300; i++) {
+    run.capital = 100000; run.position = null; run.committed = 0;
+    run.form = { amount: 5000, leverage: 10 };
+    SN.Trading.open(i % 2 ? 1 : -1);
+    const r = SN.Trading.close();
+    if (Math.abs(r.pnl) > 300 || run.capital < 100000 - 300 || run.capital > 100000 + 300) within = false;
+    if (r.capped) hit++;
+  }
+  ok(within, 'en Salud ninguna operación gana ni pierde más de $300');
+  ok(hit > 50, `con apuestas grandes se llega al tope a menudo (${hit}/300)`);
+}
+
+// 13) Deudas posteriores: plazo, pago automático y embargo como la primera; "ya no llegas" cuenta los topes
+{
+  const SN = load();
+  SN.State.newRun();
+  const run = SN.State.run;
+  run.capital = 300; SN.Debt.pay(); SN.Unlocks.check(); SN.Unlocks.check();
+  ok(run.debt.id === 'regalo1' && run.debt.start === 1 && run.debt.deadlineDay === 5, `el regalo vence en 5 días contando hoy (día ${run.debt.deadlineDay})`);
+  let defaulted = null;
+  SN.Events.on('debt:defaulted', (d) => { defaulted = d; });
+  run.capital = 40;
+  for (let i = 0; i < 15 && !defaulted; i++) SN.Trading.skipTurn();
+  ok(defaulted && run.debt.defaulted && run.day === 6, 'si no pagas el regalo a tiempo: embargo');
+
+  const SN2 = load();
+  SN2.State.newRun();
+  const r2 = SN2.State.run;
+  Object.assign(r2, { capital: 2000, day: 7, turn: 1 });
+  r2.debt.amount = 5000;
+  ok(SN2.Debt.hopeless(), 'con el tope de Salud, $2,000 no llegan a $5,000 en dos turnos');
+  r2.markets.mineria.unlocked = true;
+  ok(!SN2.Debt.hopeless(), 'con un mercado de tope mayor, todavía se puede');
+
+  const SN3 = load();
+  SN3.State.newRun();
+  const r3 = SN3.State.run;
+  r3.capital = 300; SN3.Debt.pay(); SN3.Unlocks.check(); SN3.Unlocks.check();
+  r3.capital = 500;
+  let paid = null;
+  SN3.Events.on('debt:paid', (d) => { paid = d; });
+  for (let i = 0; i < 15 && !paid; i++) SN3.Trading.skipTurn();
+  ok(paid && paid.auto && paid.debt.id === 'regalo1' && r3.capital === 350, 'si al vencer te alcanza, el regalo se cobra solo');
+}
+
+// 14) RESISTENCIA: menos giros en las últimas velas
+{
+  const SN = load();
+  SN.State.newRun();
+  const run = SN.State.run, def = SN.Data.markets[0];
+  def.twist.chance = 0.5;
+  const count = () => { let n = 0; for (let i = 0; i < 600; i++) if (SN.Trading.planTwist(def, 12, false) >= 0) n++; return n; };
+  const base = count();
+  run.upgrades.resistencia = 3;
+  const res = count();
+  ok(res < base * 0.6, `RESISTENCIA 3 quita giros (${base} -> ${res} de 600)`);
 }
 
 // 9) Tutorial: la primera operación enseña a cobrar y luego enseña el susto desde fuera
@@ -275,8 +402,166 @@ const sized = strategy('apuesta según la fuerza de la pista', (SN) => {
   return h.power ? { dir: h.dir, frac: [0, 0.3, 0.6, 1][h.power], lev: [1, 2, 2, 5][h.power] } : null;
 });
 ok(coin < 0.2, 'jugar al azar casi nunca basta');
-ok(follow > 0.55, 'seguir la pista con la apuesta por defecto suele bastar');
+ok(follow > 0.55 && follow < 0.9, 'seguir la pista con la apuesta por defecto suele bastar (sin regalarlo)');
 ok(sized > follow, 'leer la fuerza de la pista y ajustar la apuesta da aún más ventaja');
+
+// 15) La partida entera: un bot sensato (sigue la pista, opera en el mercado abierto de mayor tope, paga en
+// cuanto puede, compra los objetos clave con la oferta y alguna mejora). Al perder hace lo mismo que el
+// juego: rompe el cerdito (una vez por paso) o vuelve al punto de control. Sirve para ajustar la escalera.
+function fullRun(maxDays) {
+  const SN = load();
+  SN.State.newRun();
+  const S = SN.State, U = SN.Unlocks, T = SN.Trading;
+  let run = S.run, last = -1, rewinds = 0, piggies = 0;
+  const stepDay = {};
+  const mark = () => { if (run.step !== last) { last = run.step; stepDay[run.step] = run.day; S.checkpoint('x'); } };
+  mark();
+  for (let guard = 0; guard < 20000 && U.step() && run.day <= maxDays; guard++) {
+    if (SN.Debt.canPay()) SN.Debt.pay();
+    while (U.check()) mark();
+    mark();
+    const st = U.step();
+    if (!st) break;
+    if (st.kind === 'item' && U.canBuyItem(st.item).ok) { U.acceptOffer(st.item); continue; }
+    for (const id of ['limite', 'analisis', 'suerte', 'resistencia']) {
+      const c = SN.Upgrades.canBuy(id), keep = SN.Debt.active() ? run.debt.amount : 0;
+      if (c.ok && run.capital - c.cost >= Math.max(keep, run.capital * 0.7)) SN.Upgrades.buy(id);
+    }
+    // ¿Se ha perdido? Cerdito (con 2 días más si era por el plazo) o vuelta al punto de control
+    const late = (run.debt && run.debt.defaulted) || SN.Debt.hopeless();
+    if (late || run.capital + run.committed < SN.Data.sim.bankruptcyThreshold) {
+      if (run.piggy === 'ready') {
+        piggies++;
+        SN.Economy.add(S.piggyAmount(), 'piggy');
+        run.piggy = 'broken';
+        if (late) { run.debt.deadlineDay = Math.max(run.debt.deadlineDay, run.day) + 2; run.debt.defaulted = false; }
+      } else {
+        // Al volver, un jugador no repite exactamente lo mismo: el bot tampoco (si no, las mismas velas)
+        rewinds++; S.restoreCheckpoint(); run = S.run; S.rng.s = (S.rng.s + rewinds * 7919) | 0;
+      }
+      continue;
+    }
+    // Mercado: el de mayor tope entre los abiertos con pista clara
+    let best = null;
+    for (const d of SN.Data.markets) {
+      if (!U.isUnlocked(d.id)) continue;
+      const h = SN.Market.hint(d.id);
+      if (h.power && (!best || d.cap > best.d.cap || (d.cap === best.d.cap && h.power > best.h.power))) best = { d, h };
+    }
+    if (!best) { T.skipTurn(); continue; }
+    run.selected = best.d.id;
+    const p = best.h.power;
+    const want = Math.min(T.maxAmount() * [0, 0.3, 0.6, 1][p], best.d.cap / ([1, 2, 2, 5][p] * 0.06));
+    run.form = { amount: Math.max(SN.Data.sim.minInvestment, Math.floor(want)), leverage: [1, 2, 2, 5][p] };
+    T.clampForm();
+    if (!T.open(best.h.dir)) { T.skipTurn(); continue; }
+    T.close();
+  }
+  return { done: !U.step(), day: run.day, rewinds, piggies, reached: run.step, stepDay };
+}
+{
+  const N = 30, MAX = 140, runs = [];
+  for (let i = 0; i < N; i++) runs.push(fullRun(MAX));
+  const done = runs.filter((r) => r.done);
+  const avg = (a, f) => a.reduce((s, r) => s + f(r), 0) / Math.max(1, a.length);
+  console.log(`Partida entera (${N} bots, máximo ${MAX} días):`);
+  console.log(`  la terminan: ${(done.length / N * 100).toFixed(0)}% · días de media: ${avg(done, (r) => r.day).toFixed(0)} · cerditos: ${avg(runs, (r) => r.piggies).toFixed(1)} · vueltas al punto de control: ${avg(runs, (r) => r.rewinds).toFixed(1)}`);
+  const by = SN0().Data.chain.map((st, i) => `${st.id}:${avg(runs.filter((r) => r.stepDay[i] != null), (r) => r.stepDay[i]).toFixed(0)}`);
+  console.log('  día medio en que empieza cada paso: ' + by.join(' '));
+  ok(done.length / N >= 0.5, 'un jugador sensato puede terminar la escalera');
+  ok(avg(runs, (r) => r.rewinds + r.piggies) >= 0.5, 'pero no es un paseo: alguna vez se pierde');
+  ok(runs.every((r) => r.rewinds < 25), `nunca se queda atascado volviendo al mismo punto de control (máx. ${Math.max(...runs.map((r) => r.rewinds))})`);
+}
+
+// 16) Puntos de control: nunca en un momento sin dinero para apostar
+{
+  const SN = load();
+  SN.State.newRun();
+  const run = SN.State.run;
+  SN.State.checkpoint('inicio');
+  run.capital = 250;
+  SN.Debt.pay(); // te quedas con $0
+  ok(SN.State.checkpoint('después de pagar') === false && run.checkpoint.label === 'inicio' && run.checkpoint.capital === 100,
+    'pagar y quedarte sin nada no guarda un punto de control (sigue el anterior)');
+}
+function SN0() { return load(); }
+
+// 17) Idioma secreto: traducción progresiva, tildes, se guarda en el perfil y todo texto cifrado tiene pistas
+{
+  const SN = load();
+  SN.State.newRun();
+  const C = SN.Cipher, X = SN.Data.cipher;
+  ok(C.text('No le creas') === 'ИФ БД ЮЛДЖЯ', `sin pistas todo sale en cirílico (${C.text('No le creas')})`);
+  let found = null;
+  SN.Events.on('cipher:found', (d) => { found = d; });
+  const clueA = X.clues.find((c) => c.letter === 'A');
+  ok(C.discover(clueA.id) && found && found.letter === 'A' && found.glyph === 'Ж' && found.isNew, 'encontrar una pista avisa con su letra y su símbolo');
+  ok(C.text('No le creas') === 'ИФ БД ЮЛДAЯ', 'la letra encontrada se traduce en todos los textos');
+  ok(C.html('NO LE CREAS', 'A').includes('<span class="cx-k cx-new">A</span>') && C.html('NO').includes('<span class="cx">И</span>'), 'en HTML se marcan las letras (y la recién encontrada)');
+  ok(C.discover(clueA.id) === null, 'una pista solo cuenta una vez');
+  ok(C.text('Señor, está aquí') === C.text('SENOR, ESTA AQUI'), 'las tildes y la Ñ no cambian el cifrado');
+  ok(JSON.parse(SN.__store['saldonegro.profile.v1']).cipher.known.A, 'lo descubierto se guarda en el perfil');
+  SN.State.newRun();
+  ok(C.knows('A'), 'y sigue ahí en una partida nueva');
+  const letters = new Set(X.clues.map((c) => c.letter));
+  const texts = [X.contact.name, ...X.messages.filter((m) => m.text).map((m) => m.text), ...X.news.map((n) => n.text), ...Object.values(X.hidden)];
+  const bad = texts.filter((t) => C.letters(t).some((ch) => !letters.has(ch)));
+  ok(!bad.length, 'todo texto cifrado usa solo letras que tienen pista ' + bad.join(' | '));
+  ok(letters.size === Object.keys(X.alphabet).length && Object.keys(X.alphabet).every((l) => letters.has(l)), 'cada letra del alfabeto tiene su pista');
+  ok(new Set(Object.values(X.alphabet)).size === Object.keys(X.alphabet).length, 'cada letra tiene un símbolo distinto');
+  const w = C.wildcard(SN.State.rng);
+  ok(w && w.letter !== 'A' && C.knows(w.letter), 'el comodín descubre una letra que faltaba');
+  for (const c of X.clues) C.discover(c.id);
+  ok(C.complete() && C.text('El de la capa miente') === 'EL DE LA CAPA MIENTE' && C.wildcard(SN.State.rng) === null, 'con las 15 pistas se lee todo');
+}
+
+// 18) Días de la suerte: los que llevan un 7; crecen los mercados, bonificación, estrella y ruleta
+{
+  const SN = load();
+  const L = SN.Luck;
+  ok(L.sevens(7) === 1 && L.sevens(17) === 1 && L.sevens(77) === 2 && L.sevens(777) === 3 && L.sevens(8) === 0, 'cuenta los sietes del día');
+  ok([7, 17, 27, 70, 79].every((d) => L.isLucky(d)) && ![1, 6, 8, 16, 80].some((d) => L.isLucky(d)), 'días de la suerte: los que llevan un 7');
+  SN.State.newRun();
+  const run = SN.State.run;
+  run.debt.paid = true; run.flags.debtPaid = true;
+  for (let i = 0; i < 18; i++) SN.Trading.skipTurn();
+  ok(run.day === 7 && L.today() && L.k() === 1 && run.luck.events.length === 1, 'el día 7 es de la suerte, con un evento especial');
+  for (let i = 0; i < 3; i++) SN.Trading.skipTurn();
+  ok(run.day === 8 && !L.today(), 'el día 8 ya no');
+  const s0 = SN.State.rng.s;
+  const a = JSON.stringify(L.roll(77)); SN.State.rng.s = s0;
+  const b = JSON.stringify(L.roll(77));
+  ok(a === b, 'el sorteo del día sale igual con el mismo generador (recargar no lo cambia)');
+  run.day = 77;
+  const l2 = L.roll(77);
+  ok(l2.k === 2 && l2.events.length >= 2 && l2.events.some((e) => SN.Data.luck.big.includes(e)), 'el 77 vale doble: más eventos y uno grande');
+  run.day = 777;
+  ok(L.roll(777).events.length === 5, 'el 777: todos los eventos');
+  // Crecimiento: 12 velas desde el precio de referencia, con y sin suerte
+  const growth = (lucky) => {
+    let sum = 0;
+    const m = run.markets.salud;
+    for (let i = 0; i < 700; i++) {
+      run.day = 17; run.luck = null;
+      if (lucky) L.roll(17);
+      m.price = m.anchor; m.events = [];
+      const p0 = m.price;
+      for (let k = 0; k < 12; k++) SN.Market.step('salud', {});
+      sum += Math.log(m.price / p0);
+    }
+    return sum / 700;
+  };
+  const g0 = growth(false), g1 = growth(true);
+  console.log(`  rendimiento medio de 12 velas: normal ${(g0 * 100).toFixed(2)}% · día de la suerte ${(g1 * 100).toFixed(2)}%`);
+  ok(g1 > g0 + 0.015, 'los días de la suerte los mercados crecen');
+  run.day = 17; run.luck = null; L.roll(17);
+  run.luck.star = 'salud';
+  ok(L.starMul('salud') === 1.77 && L.starMul('tecno') === 1, 'la Estrella de la Suerte multiplica un solo mercado');
+  ok(L.bonus(100) === 7 && L.bonus(-50) === 0, 'bonificación del 7% por siete en cada operación ganadora');
+  run.luck.events = ['ruleta']; run.luck.spun = false;
+  const spin = L.spin();
+  ok(spin && spin.text && L.spin() === null, 'la ruleta da un premio y solo gira una vez por día');
+}
 
 console.log(`\n${passed} correctas, ${failed} fallos`);
 process.exit(failed ? 1 : 0);

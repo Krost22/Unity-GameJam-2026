@@ -57,11 +57,14 @@
 
       const eff = ctx.quiet ? { trend: 0, vol: 1 } : this.effects(m);
       const sigma = def.volatility * eff.vol * (ctx.tutorial ? sim.tutorial.volMul : 1);
-      let mu = (m.regime + eff.trend) * def.drift - def.reversion * Math.log(m.price / m.anchor);
+      // Días de la suerte: todos los mercados abiertos tiran hacia arriba (js/systems/luck.js)
+      const lucky = ctx.quiet || ctx.tutorial || !SN.Luck ? 0 : SN.Luck.trend(m.id);
+      let mu = (m.regime + eff.trend + lucky) * def.drift - def.reversion * Math.log(m.price / m.anchor);
       // La suerte inclina ligeramente el ruido a favor de tu operación (no garantiza nada)
       if (ctx.direction && ctx.luck) mu += ctx.direction * ctx.luck * sim.luckBiasPerLevel * sigma;
       let ret = mu + sigma * rng.normal();
-      if (ctx.tutorial) ret = Math.max(ret, -0.4 * sigma);
+      // Tutorial: hasta el susto, ninguna vela baja (al pulsar COBRAR siempre vas ganando de verdad)
+      if (ctx.tutorial) ret = Math.max(ret, 0.3 * sigma);
 
       const marks = [];
       const resolved = [];
@@ -151,7 +154,9 @@
         if (!m.unlocked || m.events.length >= D.sim.maxEventsPerMarket) continue;
         const want = force && force.market === def.id;
         if (!want && S.rng.next() >= def.eventRate) continue;
-        const pool = D.marketEvents[def.id].filter((e) => !m.events.some((x) => x.id === e.id));
+        // Los días de la suerte también pueden salir noticias de la fortuna
+        const lucky = SN.Luck && SN.Luck.today() ? D.luck.events : [];
+        const pool = D.marketEvents[def.id].concat(lucky).filter((e) => !m.events.some((x) => x.id === e.id));
         const evDef = want && force.id ? pool.find((e) => e.id === force.id) || S.rng.pick(pool) : S.rng.pick(pool);
         if (evDef) this.addEvent(m, evDef);
       }
@@ -189,6 +194,7 @@
       const eff = this.effects(m);
       let trend = 0;
       for (let k = 1; k <= n; k++) trend += k < m.phaseLeft ? m.regime : m.nextRegime;
+      if (SN.Luck) trend += SN.Luck.trend(id) * n; // la PISTA también ve la suerte del día
       for (const e of m.events) if (e.kind === 'trend') trend += e.trend * Math.min(e.left, n);
       let move = trend * def.drift - n * def.reversion * Math.log(m.price / m.anchor);
       let spread = Math.pow(def.volatility * eff.vol, 2) * n;

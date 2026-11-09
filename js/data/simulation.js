@@ -36,18 +36,15 @@
     tutorial: { frac: 0.5, leverage: 2, candles: 12, regime: 1, volMul: 0.45, holdAt: 7, twistAt: 10, twistJump: -0.11 },
   };
 
+  // Mejoras. Ninguna está disponible al empezar: cada una llega como "regalo" del encapuchado (que trae una
+  // deuda, ver js/data/progression.js) y después sus niveles se compran con tu capital.
+  // Van en el orden en que llegan los regalos.
+  const GIFT = { type: 'gift', label: 'Un "regalo" del encapuchado' };
   D.upgrades = [
-    {
-      id: 'suerte', name: 'Suerte', icon: 'trebol', color: 'green',
-      desc: 'Inclina un poquito el mercado a tu favor.',
-      unlock: { type: 'start' },
-      levels: [{ cost: 25, value: 1 }, { cost: 90, value: 2 }, { cost: 320, value: 3 }, { cost: 1400, value: 4 }, { cost: 6000, value: 5 }],
-      effect: (v) => (v ? `≈ +${v * 3}% de acierto` : 'Sin efecto'),
-    },
     {
       id: 'limite', name: 'Límite', icon: 'caja', color: 'yellow',
       desc: 'Apuestas más grandes.',
-      unlock: { type: 'flag', flag: 'debtPaid', label: 'Paga tu deuda' },
+      unlock: GIFT,
       base: 250,
       levels: [{ cost: 150, value: 1000 }, { cost: 700, value: 5000 }, { cost: 3500, value: 25000 }, { cost: 15000, value: 100000 }, { cost: 60000, value: 1000000 }],
       effect: (v) => `Máximo: ${SN.Util.short(v)}`,
@@ -55,26 +52,27 @@
     {
       id: 'analisis', name: 'Análisis', icon: 'lupa', color: 'cyan',
       desc: 'La pista de la gráfica acierta más.',
-      unlock: { type: 'goal', goal: 'g1000', label: 'Meta $1,000' },
+      unlock: GIFT,
       levels: [{ cost: 400, value: 1 }, { cost: 2500, value: 2 }, { cost: 12000, value: 3 }],
       effect: (v) => ['Sin efecto', 'Pista nítida', 'Pista muy nítida', 'Pista casi exacta'][v],
     },
     {
+      id: 'suerte', name: 'Suerte', icon: 'trebol', color: 'green',
+      desc: 'Inclina un poquito el mercado a tu favor.',
+      unlock: GIFT,
+      levels: [{ cost: 400, value: 1 }, { cost: 1200, value: 2 }, { cost: 3500, value: 3 }, { cost: 9000, value: 4 }, { cost: 22000, value: 5 }],
+      effect: (v) => (v ? `≈ +${v * 3}% de acierto` : 'Sin efecto'),
+    },
+    {
+      // "Cosas que todavía no han pasado": las últimas velas. Cada nivel quita un 20% de probabilidad de giro.
       id: 'resistencia', name: 'Resistencia', icon: 'escudo', color: 'orange',
       desc: 'Reduce ciertos efectos... de cosas que todavía no han pasado.',
-      unlock: { type: 'future', label: 'Próximamente' },
-      levels: [],
-      effect: () => '???',
+      unlock: GIFT,
+      levels: [{ cost: 8000, value: 1 }, { cost: 25000, value: 2 }, { cost: 60000, value: 3 }],
+      effect: (v) => (v ? `Giros: −${v * 20}%` : 'Sin efecto'),
     },
   ];
-
-  // Objetivos económicos tras pagar la deuda. La app "premia" la ambición con bonos.
-  D.goals = [
-    { id: 'g1000', amount: 1000, reward: 100, markets: ['tecno'], story: 'goal1000' },
-    { id: 'g5000', amount: 5000, reward: 400, markets: ['negocios'], story: 'goal5000' },
-    { id: 'g25000', amount: 25000, reward: 2000, markets: ['mineria'], story: 'goal25000' },
-    { id: 'g100000', amount: 100000, reward: 0, markets: [], story: 'goal100000' },
-  ];
+  D.sim.resistPerLevel = 0.2;
 
   // Tienda de estilo de vida: cada compra aparece en el escritorio
   D.shop = [

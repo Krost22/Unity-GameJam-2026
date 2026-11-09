@@ -1,5 +1,6 @@
 // Escritorio del PC: FUTURO.exe se minimiza (botón _ o tecla D) y debajo está el ordenador del
-// protagonista, con sus programas: Mensajín (chat con Kevo), Notas y Papelera.
+// protagonista, con sus programas: Mensajín (chat con Kevo y con LOS PAGADOS), Notas, Papelera y,
+// cuando descifras el primer símbolo, Símbolos (la tabla del idioma secreto, js/systems/cipher.js).
 // En Mensajín no se escribe de verdad: cualquier tecla pone las letras de la
 // respuesta que el protagonista tiene que dar; el jugador siente que escribe y la historia sigue su guion.
 // El clic no escribe (a propósito): la gracia es teclear.
@@ -15,7 +16,12 @@
     { id: 'chat', name: 'Mensajín', sprite: 'icoChat' },
     { id: 'notes', name: 'Notas', sprite: 'icoNotes' },
     { id: 'trash', name: 'Papelera', sprite: 'icoTrash' },
+    { id: 'symbols', name: 'Símbolos', sprite: 'icoSymbols' },
   ];
+  const TITLES = { notes: 'Notas.txt', trash: 'Papelera', symbols: 'Símbolos.txt' };
+  const TASKS = { notes: 'Notas', trash: 'Papelera', symbols: 'Símbolos' };
+  const X = () => SN.Data.cipher;
+  const cx = (t) => SN.Cipher.html(t, SN.UI.freshLetter);
 
   const D = SN.Desktop = {
     open: false,
@@ -45,16 +51,34 @@
       root.querySelector('.dt-start').addEventListener('click', () => { SN.Audio.sfx('click'); this.restore(); });
       $('btn-min').querySelector('.ico-min').style.backgroundImage = `url(${SN.Sprites.url('icoMin', 1)})`;
       $('btn-min').addEventListener('click', () => this.minimize());
-      SN.Events.on('turn:ready', () => { if (S.run) this.chat().clock++; this.check(); });
-      SN.Events.on('chat:flag', ({ flag }) => this.flag(flag));
+      // El logo del fondo: siete clics (el número de la suerte) y enseña un símbolo
+      const logo = root.querySelector('.dt-logo');
+      logo.addEventListener('click', () => {
+        this.logoHits = (this.logoHits || 0) + 1;
+        SN.Audio.sfx('tick');
+        logo.classList.remove('knock'); void logo.offsetWidth; logo.classList.add('knock');
+        if (this.logoHits >= 7) {
+          this.logoHits = 0;
+          logo.textContent = X().alphabet.R;
+          SN.Cipher.discover('logo');
+          SN.after(2.5, () => { logo.textContent = 'P6'; });
+        }
+      });
+      this.renderIcons();
+      SN.Events.on('turn:ready', () => { if (S.run) this.chat().clock++; this.check(); this.serCheck(); this.refreshNotes(); this.refreshTrash(); });
+      SN.Events.on('chat:flag', ({ flag }) => { this.flag(flag); this.serCheck(); });
       SN.Events.on('piggy:broken', () => this.flag('piggy'));
       SN.Events.on('trade:closed', (r) => { if (r && (r.liquidated || r.pnl <= -Math.max(50, r.amount * 0.6))) this.flag('bigLoss'); });
       SN.Events.on('debt:paid', () => this.refreshNotes());
+      SN.Events.on('debt:opened', () => this.refreshNotes());
     },
 
     // Partida nueva: todo cerrado y FUTURO.exe a la vista
     reset() {
       clearTimeout(this.timer); this.timer = null; this.typing = false;
+      clearTimeout(this.serT); this.serT = null;
+      this.contact = 'kevo';
+      this.renderIcons();
       for (const id of Object.keys(this.wins)) { this.wins[id].remove(); delete this.wins[id]; }
       this.open = false;
       const d = $('desktop'); if (d) d.classList.add('hidden');
@@ -95,7 +119,7 @@
       if (id === 'futuro') return this.restore();
       if (this.wins[id]) return this.focus(id);
       const w = U.el('div', 'dt-win dt-' + id);
-      const title = { chat: C().app, notes: 'Notas.txt', trash: 'Papelera' }[id];
+      const title = id === 'chat' ? C().app : TITLES[id];
       w.innerHTML = `<div class="dt-head"><span>${title}</span><button class="dt-x" title="Cerrar (Esc)">×</button></div><div class="dt-body"></div>`;
       w.querySelector('.dt-x').addEventListener('click', (e) => { e.stopPropagation(); this.closeWin(id); });
       w.addEventListener('mousedown', () => this.focus(id));
@@ -105,6 +129,11 @@
       if (id === 'chat') this.buildChat(w);
       if (id === 'notes') this.refreshNotes();
       if (id === 'trash') this.buildTrash(w);
+      if (id === 'symbols') {
+        const badge = $('desktop').querySelector('.dt-icon[data-app="symbols"] .badge');
+        if (badge) badge.classList.add('hidden');
+        this.renderSymbols();
+      }
       this.focus(id);
       this.refresh();
     },
@@ -134,10 +163,10 @@
         tasks.appendChild(b);
       };
       add('futuro', 'FUTURO.exe');
-      for (const id of Object.keys(this.wins)) add(id, { chat: C().app, notes: 'Notas', trash: 'Papelera' }[id]);
+      for (const id of Object.keys(this.wins)) add(id, id === 'chat' ? C().app : TASKS[id]);
       const names = SN.Data.sim.turnNames || ['Mañana', 'Tarde', 'Noche'];
       root.querySelector('.dt-clock').textContent = `Día ${S.run.day} · ${names[S.run.turn] || ''}`;
-      const unread = this.chat().unread || 0;
+      const unread = (this.chat().unread || 0) + (this.ser().unread || 0);
       const badge = root.querySelector('.dt-icon[data-app="chat"] .badge');
       badge.textContent = unread; badge.classList.toggle('hidden', !unread);
       const mb = $('min-badge');
@@ -156,7 +185,7 @@
       e.preventDefault();
       const top = this.topWin();
       if (e.code === 'Escape') { if (top) this.closeWin(top); else this.restore(); return true; }
-      if (top === 'chat' && this.chat().phase === 'reply') {
+      if (top === 'chat' && this.contact !== 'ser' && this.chat().phase === 'reply') {
         if (e.code === 'Enter' && this.replyDone()) this.send();
         else if (!e.repeat || Math.random() < 0.35) this.typeChunk();
         return true;
@@ -254,13 +283,17 @@
         this.nudge();
       } else if (line.startsWith('*')) {
         ch.log.push({ who: 's', t: line.slice(1) });
+      } else if (line.startsWith('#')) {
+        // '#pista': un símbolo del idioma secreto con su letra (y queda descubierto)
+        const clue = SN.Cipher.clue(line.slice(1));
+        if (clue) { ch.log.push({ who: 'f', t: `${X().alphabet[clue.letter]} = ${clue.letter}` }); SN.Cipher.discover(clue.id); }
       } else {
         ch.log.push({ who: 'f', t: line });
       }
       const reading = this.open && this.topWin() === 'chat';
       if (!reading && !line.startsWith('*')) ch.unread = (ch.unread || 0) + 1;
       if (line.startsWith('*')) SN.Audio.sfx('close'); else SN.Audio.sfx('notify');
-      if (!this.open && line !== '!zumbido' && !line.startsWith('*')) this.toast(line);
+      if (!this.open && line !== '!zumbido' && !line.startsWith('*') && !line.startsWith('#')) this.toast(line);
       this.renderChat();
       this.refresh();
     },
@@ -273,7 +306,7 @@
     },
 
     // Aviso dentro de FUTURO.exe: clic para ir al chat
-    toast(line) {
+    toast(line, html) {
       const layer = $('layer-top');
       let t = layer.querySelector('.msg-toast');
       if (!t) {
@@ -281,7 +314,7 @@
         t.addEventListener('click', () => { t.remove(); this.minimize('chat'); });
         layer.appendChild(t);
       }
-      t.innerHTML = `<i></i><span><b>${esc(C().friend.name)}</b> ${esc(line)}</span><kbd>D</kbd>`;
+      t.innerHTML = html ? `<i></i><span>${html}</span><kbd>D</kbd>` : `<i></i><span><b>${esc(C().friend.name)}</b> ${esc(line)}</span><kbd>D</kbd>`;
       t.querySelector('i').appendChild(SN.Sprites.node('icoChat', 1));
       t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
       clearTimeout(this.toastT);
@@ -291,15 +324,27 @@
     buildChat(w) {
       const f = C().friend;
       w.querySelector('.dt-body').innerHTML = `
+        <div class="ch-tabs hidden"><button class="ch-tab" data-c="kevo">${esc(f.name)}<b class="badge hidden"></b></button><button class="ch-tab ser" data-c="ser"></button></div>
         <div class="ch-who"><i class="ch-ava"></i><div><b class="ch-nick"></b><span class="ch-status"></span></div></div>
         <div class="ch-log"></div>
         <div class="ch-typing"></div>
         <div class="ch-input"><div class="ch-box"></div><button class="ch-send btn btn-green">Enviar<kbd>⏎</kbd></button></div>`;
-      w.querySelector('.ch-ava').appendChild(SN.Sprites.node('avaKevo', 2));
       w.querySelector('.ch-send').addEventListener('click', () => this.send());
-      void f;
-      const ch = this.chat();
-      ch.unread = 0;
+      w.querySelectorAll('.ch-tab').forEach((b) => b.addEventListener('click', () => {
+        if (this.contact === b.dataset.c) return;
+        this.contact = b.dataset.c;
+        SN.Audio.sfx('select');
+        this.renderChat();
+        this.refresh();
+      }));
+      // La foto de LOS PAGADOS: tres llamadas a su puerta
+      w.querySelector('.ch-ava').addEventListener('click', () => {
+        if (this.contact !== 'ser') return;
+        this.avaHits = (this.avaHits || 0) + 1;
+        SN.Audio.sfx('thud');
+        if (this.avaHits >= 3) { this.avaHits = 0; SN.Cipher.discover('avatar'); }
+      });
+      if (!this.ser().log.length) this.contact = 'kevo';
       this.renderChat();
     },
 
@@ -346,7 +391,17 @@
     renderChat() {
       const w = this.wins.chat;
       if (!w) return;
-      const ch = this.chat(), f = C().friend;
+      const ch = this.chat(), f = C().friend, cs = this.ser();
+      // Pestañas: Kevo y, cuando escriben, LOS PAGADOS
+      const tabs = w.querySelector('.ch-tabs');
+      tabs.classList.toggle('hidden', !cs.log.length);
+      tabs.querySelector('.ser').innerHTML = `${cx(X().contact.name)}<b class="badge${cs.unread ? '' : ' hidden'}">${cs.unread || ''}</b>`;
+      const kb = tabs.querySelector('[data-c="kevo"] .badge');
+      kb.textContent = ch.unread || ''; kb.classList.toggle('hidden', !ch.unread || this.contact === 'kevo');
+      tabs.querySelectorAll('.ch-tab').forEach((b) => b.classList.toggle('on', b.dataset.c === (this.contact || 'kevo')));
+      if (this.contact === 'ser') { this.renderSer(w); return; }
+      const ava = w.querySelector('.ch-ava');
+      if (ava.dataset.who !== 'kevo') { ava.innerHTML = ''; ava.appendChild(SN.Sprites.node('avaKevo', 2)); ava.dataset.who = 'kevo'; ava.classList.remove('ser'); }
       if (this.topWin() === 'chat') ch.unread = 0;
       w.querySelector('.ch-nick').textContent = ch.nick || f.nick;
       const st = w.querySelector('.ch-status');
@@ -367,30 +422,147 @@
       this.renderInput();
     },
 
+    // ---------- LOS PAGADOS: escriben en el idioma secreto; no se les puede contestar ----------
+    ser() {
+      if (!S.run) return {};
+      if (!S.run.chatSer) S.run.chatSer = { i: 0, log: [], unread: 0, offline: false };
+      return S.run.chatSer;
+    },
+    // ¿Toca otro mensaje? (mismas condiciones que las conversaciones de Kevo)
+    serCheck() {
+      if (!S.run || S.run.over || SN.Game.state !== 'GAMEPLAY' || this.serT) return;
+      const cs = this.ser(), ch = this.chat();
+      if (SN.Cipher.count() > 0 && ch.flags.cipher == null) ch.flags.cipher = ch.clock;
+      const m = X().messages[cs.i];
+      const ready = m && (this.ready(m) || (m.orWhen && this.ready({ when: m.orWhen, delay: m.orDelay || 0 })));
+      if (!ready) return;
+      this.serT = setTimeout(() => { this.serT = null; this.serDeliver(m); }, 1600);
+    },
+    serDeliver(m) {
+      if (!S.run || SN.Game.state !== 'GAMEPLAY') return;
+      const cs = this.ser(), name = X().contact.name;
+      if (m.hood) {
+        // El encapuchado sabe de este idioma: entra en la conversación y les manda callar
+        for (const l of m.hood) cs.log.push(l.startsWith('*') ? { who: 's', t: l.slice(1) } : { who: 'h', t: l });
+        cs.offline = true;
+        SN.FX.glitch(0.5, 1.2);
+        SN.Audio.sfx('static', { dur: 0.5 });
+      } else {
+        if (cs.offline || m.back) { if (cs.offline) cs.log.push({ who: 's', t: `${name} se ha conectado.` }); cs.offline = false; }
+        cs.log.push({ who: 'x', t: m.text });
+        SN.Audio.sfx('notify');
+        SN.FX.glitch(0.2, 0.6);
+      }
+      cs.i++;
+      const reading = this.open && this.topWin() === 'chat' && this.contact === 'ser';
+      if (!reading) cs.unread = (cs.unread || 0) + 1;
+      if (!this.open) this.toast('', m.hood ? `<b>???</b> ${esc(m.hood[1] || '')}` : `<b>${cx(name)}</b> ${cx(m.text)}`);
+      SN.Save.saveRun();
+      this.renderChat();
+      this.refresh();
+      this.serCheck();
+    },
+    renderSer(w) {
+      const cs = this.ser(), name = X().contact.name;
+      if (this.topWin() === 'chat') cs.unread = 0;
+      const ava = w.querySelector('.ch-ava');
+      if (ava.dataset.who !== 'ser') { ava.innerHTML = ''; ava.appendChild(SN.Sprites.node('avaSer', 2)); ava.dataset.who = 'ser'; ava.classList.add('ser'); }
+      w.querySelector('.ch-nick').innerHTML = cx(name);
+      const st = w.querySelector('.ch-status');
+      st.textContent = cs.offline ? 'Desconectado' : 'Conectado';
+      st.className = 'ch-status' + (cs.offline ? ' off' : '');
+      const log = w.querySelector('.ch-log');
+      log.innerHTML = '';
+      let prev = null;
+      for (const m of cs.log) {
+        if (m.who === 's') { log.insertAdjacentHTML('beforeend', `<p class="ch-sys">${esc(m.t).replace(name, cx(name))}</p>`); prev = null; continue; }
+        const head = m.who !== prev ? `<b>${m.who === 'h' ? '???' : cx(name)}</b>` : '';
+        log.insertAdjacentHTML('beforeend', `<p class="ch-msg ${m.who === 'h' ? 'hood' : 'ser'}${head ? ' first' : ''}">${head}${m.who === 'h' ? esc(m.t) : cx(m.t)}</p>`);
+        prev = m.who;
+      }
+      log.scrollTop = log.scrollHeight;
+      w.querySelector('.ch-typing').textContent = '';
+      const box = w.querySelector('.ch-box'), btn = w.querySelector('.ch-send');
+      box.innerHTML = '<span class="ph">No puedes responder a este contacto</span>';
+      box.classList.remove('live');
+      btn.disabled = true;
+      btn.classList.remove('ready');
+    },
+
+    // ---------- Símbolos: la tabla del idioma secreto ----------
+    renderIcons() {
+      const root = $('desktop');
+      const b = root && root.querySelector('.dt-icon[data-app="symbols"]');
+      if (b) b.classList.toggle('hidden', !SN.Cipher || SN.Cipher.count() === 0);
+    },
+    renderSymbols() {
+      const w = this.wins.symbols;
+      if (!w) return;
+      const C = SN.Cipher, fresh = SN.UI.freshLetter;
+      const cells = X().clues.map((c) => {
+        const known = C.knows(c.letter);
+        return `<div class="sy-cell${known ? ' on' : ''}${c.letter === fresh ? ' fresh' : ''}" title="${known ? esc(c.where) : ''}"><b class="cx">${X().alphabet[c.letter]}</b><i>=</i><b class="${known ? 'cx-k' : 'q'}">${known ? c.letter : '?'}</b></div>`;
+      }).join('');
+      const missing = X().clues.filter((c) => !C.knows(c.letter));
+      const shown = missing.slice(0, Math.min(missing.length, 1 + (C.state().hints || 0)));
+      w.querySelector('.dt-body').innerHTML = `<div class="sy-head">${C.count()}/${C.total()} símbolos</div><div class="sy-grid">${cells}</div>` +
+        (missing.length ? `<div class="sy-hints"><b>Pistas</b>${shown.map((c) => `<p>· ${esc(c.hint)}</p>`).join('')}</div>` : '<div class="sy-hints"><b>Ya puedes leerlo todo.</b></div>');
+    },
+    // Un símbolo nuevo: aparece la app, se marca y todo lo que hay abierto se traduce un poco más
+    onCipher() {
+      this.renderIcons();
+      const badge = $('desktop').querySelector('.dt-icon[data-app="symbols"] .badge');
+      if (badge && !(this.open && this.topWin() === 'symbols')) { badge.textContent = '+1'; badge.classList.remove('hidden'); }
+      this.renderSymbols();
+      this.renderChat();
+      this.refreshNotes();
+      this.refreshTrash();
+    },
+
     // ---------- Notas y Papelera ----------
     refreshNotes() {
       const w = this.wins.notes;
       if (!w || !S.run) return;
-      const paid = SN.Debt && SN.Debt.paid;
+      const run = S.run, paid = !!run.flags.debtPaid, d = run.debt;
       const box = (on) => (on ? '[x]' : '[ ]');
+      // Las deudas que llegaron después también van a la lista (la última, sin tachar si no está pagada)
+      const later = [...(run.debts || []), d].filter((x) => x && x.id !== 'pleyzeta').slice(-3)
+        .map((x) => `${box(x.paid)} Pagar ${esc(x.label)}: ${U.money(x.amount)} antes del día ${x.deadlineDay}`).join('\n');
       w.querySelector('.dt-body').innerHTML = `<pre class="nt">COSAS QUE HACER
-${box(paid)} Pagar la Pleyzeta: ${U.money(SN.Debt ? SN.Debt.amount : 250)} antes del día 7
+${box(paid)} Pagar la Pleyzeta: ${U.money(SN.Data.sim.startDebt)} antes del día 7${later ? '\n' + later : ''}
 ${box(false)} Comprar ramen (otra vez)
 ${box(this.chat().i > 0)} Contestar a Kevo
 ${box(false)} NO apostarlo todo
-${box(false)} Dormir</pre>`;
+${box(false)} Dormir${this.ghostLine()}</pre>`;
+      const gh = w.querySelector('.nt-ghost');
+      if (gh) gh.addEventListener('click', () => { SN.Audio.sfx('select'); SN.Cipher.discover('notas'); });
     },
+    // De noche aparece una línea que nadie escribió (o que ya se lee, si la descifraste)
+    ghostLine() {
+      const night = S.run && S.run.turn === 2;
+      if (!night && !SN.Cipher.found('notas')) return '';
+      return `\n<span class="nt-ghost${SN.Cipher.found('notas') ? ' read' : ''}">${cx(X().hidden.notas)}</span>`;
+    },
+    refreshTrash() { if (this.wins.trash) this.buildTrash(this.wins.trash); },
     buildTrash(w) {
       const files = [
         ['curriculum_FINAL_v3.doc', '12 KB', 'Lo tiraste por algo.'],
         ['ahorros.xls', '0 KB', 'Está vacío. Como la cuenta.'],
         ['dieta_lunes.txt', '1 KB', 'Empezaba el lunes. ¿Qué lunes?'],
       ];
+      // Desde el día 3 aparece un archivo que tú no tiraste
+      if (S.run && (S.run.day >= 3 || SN.Cipher.found('papelera'))) files.push(['no_abrir.txt', '1 KB', null]);
       const body = w.querySelector('.dt-body');
       body.innerHTML = '<div class="tr-list"></div><div class="tr-note">Haz clic en un archivo</div>';
       for (const [n, size, joke] of files) {
-        const b = U.el('button', 'tr-file', `<span>${esc(n)}</span><em>${size}</em>`);
-        b.addEventListener('click', () => { SN.Audio.sfx('select'); body.querySelector('.tr-note').textContent = joke; });
+        const b = U.el('button', 'tr-file' + (joke ? '' : ' odd'), `<span>${esc(n)}</span><em>${size}</em>`);
+        b.addEventListener('click', () => {
+          SN.Audio.sfx('select');
+          const note = body.querySelector('.tr-note');
+          if (joke) { note.textContent = joke; return; }
+          note.innerHTML = cx(X().hidden.papelera);
+          SN.Cipher.discover('papelera');
+        });
         body.querySelector('.tr-list').appendChild(b);
       }
     },

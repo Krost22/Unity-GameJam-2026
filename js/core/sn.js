@@ -4,7 +4,7 @@ window.SN = window.SN || {};
 (function (SN) {
   'use strict';
 
-  SN.VERSION = '1.1';
+  SN.VERSION = '1.5';
   SN.W = 640; // resolución de referencia 16:9 del escritorio (px de pixel art)
   SN.H = 360;
   // Pantalla física del monitor dentro del escenario: TODA la interfaz jugable vive aquí
