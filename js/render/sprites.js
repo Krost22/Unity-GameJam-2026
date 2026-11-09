@@ -25,6 +25,26 @@
     // LOS PAGADOS: una capucha vacía (no se le ve la cara)
     avaSer: ['....kkkk....', '...kllllk...', '..kllllllk..', '..klKKKKlk..', '..lKKKKKKl..', '..lKKyyKKl..', '..lKKKKKKl..',
       '..llKKKKll..', '.kllllllllk.', '.kllllllllk.', 'kllllllllllk', 'kllllllllllk'],
+    // Bravo Fines: tupé, gafas de sol, sonrisa de anuncio y cadena de oro
+    avaBravo: ['...OOOOOO...', '..OOOOOOOOO.', '..OssssssO..', '..kxkkkkxkk.', '..ssssssssS.', '..sswwwwwsS.', '...ssssssS..',
+      '....SSSS....', '.wwwyyyywww.', 'wwwwsyysswww', 'wwwwssssswww', 'wwwwwsswwwww'],
+    // --- Academia de Bravo Fines (12x12) ---
+    limonada: ['......kk....', '.....kuk....', '..kkkkkkkk..', '..kwwwwwwk..', '..kuyuuyuk..', '..kuyyyyuk..', '..kuuyuuuk..',
+      '..kuuuuuyk..', '..kyuuyuuk..', '..kuuuuuuk..', '...kkkkkk...', '............'],
+    chicles: ['...kkkkkk...', '..krrrrrrk..', '.krwgwywcrk.', '.krgwywcwrk.', '.krwywcwgrk.', '..krrrrrrk..', '...kRRRRk...',
+      '...kRkkRk...', '...kRRRRk...', '...kRRRRk...', '..kkkkkkkk..', '............'],
+    lavadora: ['.kkkkkkkkkk.', '.kwwwwwwwwk.', '.kwrwgwwwwk.', '.kkkkkkkkkk.', '.kwwkkkkwwk.', '.kwkccbckwk.', '.kwkcccckwk.',
+      '.kwkcbcckwk.', '.kwwkkkkwwk.', '.kwwwwwwwwk.', '.kkkkkkkkkk.', '............'],
+    tiburon: ['............', '.....k......', '....kck.....', '...kccck....', '..kccccck..k', '.kccccccckck', 'kcwcccccccck',
+      'kccccccccck.', '.kbbbbbbbck.', '..kkkkkkkk..', '............', '............'],
+    robot: ['.....kk.....', '.....cc.....', '..kkkkkkkk..', '..kwwwwwwk..', '..kwckkcwk..', '..kwwwwwwk..', '..kwkkkkwk..',
+      '..kkkkkkkk..', '.kkcccccckk.', '.k.cccccc.k.', '...kk..kk...', '............'],
+    tienda: ['............', '.rwrwrwrwrw.', '.rwrwrwrwrw.', '.kkkkkkkkkk.', '.kwwwwwwwwk.', '.kwkkwwkkwk.', '.kwkbwwkbwk.',
+      '.kwkkwwkkwk.', '.kwwwkkwwwk.', '.kwwwkkwwwk.', '.kkkkkkkkkk.', '............'],
+    documento: ['..kkkkkkk...', '..kwwwwwkk..', '..kwDDDwwk..', '..kwwwwwwk..', '..kwDDDDwk..', '..kwwwwwwk..', '..kwDDDDwk..',
+      '..kwwwwwwk..', '..kwDDwrrk..', '..kwwwwrrk..', '..kkkkkkkk..', '............'],
+    camion: ['............', '............', 'kkkkkkkk....', 'kwwwwwwkkkk.', 'kwrwrwwkcck.', 'kwwwwwwkcckk', 'kwwwwwwkkkkk',
+      'kkkkkkkkkkkk', '.kkk...kkk..', '.kDk...kDk..', '............', '............'],
     avaKevo: ['...rrrrrr...', '..rrrrrrrr..', '..RRRRRRRRRR', '..kssssssk..', '..sskssksS..', '..sssssssS..', '..ssszzssS..',
       '...ssssSS...', '....SSSS....', '..oooooooo..', '.oooooooooo.', '.oooooooooo.'],
     // --- Mercados (12x12) ---

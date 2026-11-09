@@ -40,6 +40,13 @@
       return out;
     },
 
+    // El nombre del programa en el idioma secreto: FUTURO.exe (lo que ya conoces, en latín).
+    // brand() para HTML, brandText() para lienzos y textos que se escriben letra a letra.
+    brand(upper) { return `<span class="cx-brand">${this.html('FUTURO')}</span>${upper ? '.EXE' : '.exe'}`; },
+    brandText(upper) { return this.text('FUTURO') + (upper ? '.EXE' : '.exe'); },
+    // Cambia FUTURO.exe por su versión cifrada en un texto plano
+    brandify(t) { return String(t).replace(/FUTURO\.(exe|EXE)/g, (_, e) => this.brandText(e === 'EXE')); },
+
     // Encuentra la pista: su letra queda descifrada para siempre. Devuelve la pista si es nueva.
     discover(clueId) {
       const st = this.state(), clue = this.clue(clueId);

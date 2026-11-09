@@ -4,7 +4,7 @@
 //
 // convos = la historia principal, en orden. Cada una llega cuando se cumple su condición:
 //   day/turn  -> a partir de ese día y turno
-//   when      -> cuando pasa algo ('debtPaid', un paso de la escalera: 'regalo1', 'tele', 'g1000'... y delay turnos después)
+//   when      -> cuando pasa algo ('debtPaid', un paso de la escalera: 'regalo1', 'tele', 'regalo2'... y delay turnos después)
 //   skipIf    -> se salta si ya pasó eso (p. ej. no preguntar por el plazo si ya pagaste)
 // side = conversaciones que solo llegan si pasa algo concreto ('piggy', 'bigLoss', 'rewind').
 // msgs = lo que escribe Kevo · reply = lo que escribe el protagonista (el jugador solo pulsa teclas)
@@ -53,7 +53,7 @@
       {
         id: 'hermano', day: 5, turn: 0,
         msgs: ['mi hermana dice que estoy raro', 'que hablo dormido. de velas', '¿tú tienes hermanos?'],
-        reply: 'Tengo a Timmy. Tiene 8 años y ahorra para su operación.',
+        reply: 'Tengo a Timmy. Tiene 8 años y ahorra para su cirugía.',
         after: ['qué bonito', 'cuídalo', 'en serio, bro. cuídalo'],
       },
       {
@@ -89,15 +89,15 @@
         reply: 'A mí igual. Y ahora tengo un mercado nuevo. Uno... negro.',
         after: ['el mío se llama igual', 'paga mejor', 'pero cada vez que gano ahí, en las noticias sale algo raro'],
       },
-      // ---------- $1,000: Tecnología ----------
+      // ---------- 2º regalo: Tecnología ----------
       {
-        id: 'farolas', when: 'g1000', delay: 1,
+        id: 'farolas', when: 'regalo2', delay: 1,
         msgs: ['¿te abrió TECNOLOGÍA?', 'a mí también', 'ahí se gana rapidísimo. y se pierde más rápido', 'ayer las farolas de mi calle se apagaron cuando gané', '>apagon'],
         reply: 'Casualidad. Las farolas siempre se apagan.',
         after: ['a la vez que gané', 'las 12. una por una'],
       },
       {
-        id: 'perdio', when: 'g1000', delay: 5,
+        id: 'perdio', when: 'regalo2', delay: 5,
         msgs: ['perdí todo', 'TODO', '$3,000 en una vela. la última. siempre es la última', 'el programa dice que siga. que la próxima es la buena'],
         reply: 'Para, Kevo. Cierra el programa. Te paso algo si lo necesitas.',
         after: ['no puedo cerrarlo', 'no tiene botón de cerrar', '¿el tuyo sí?'],
@@ -109,24 +109,24 @@
         reply: '¿Y tu familia? ¿Tu hermana?',
         after: ['¿qué hermana?', '...', 'ah. sí. mi hermana. claro'],
       },
-      // ---------- $5,000: Negocios ----------
+      // ---------- 3er regalo: Negocios ----------
       {
-        id: 'frio', when: 'g5000', delay: 1,
+        id: 'frio', when: 'regalo3', delay: 1,
         msgs: ['!zumbido', 'lo recuperé todo', 'tengo 30 mil', 'el encapuchado vino a felicitarme. en persona', 'dice que soy de los buenos'],
         reply: '¿Vino a tu casa? Kevo, eso da miedo.',
         after: ['no da miedo', 'da... frío', 'mi casa está muy fría desde entonces'],
         nick: 'Kevo ~ de los buenos ~',
       },
       {
-        id: 'ventana', when: 'g5000', delay: 6,
+        id: 'ventana', when: 'regalo3', delay: 6,
         msgs: ['!zumbido', 'hay alguien en mi ventana', 'con capucha', 'dice que viene a cobrar', 'lo otro'],
         reply: 'No abras. Llama a tu madre. ¿Kevo? ¿Sigues ahí?',
         after: ['*Kevo se ha desconectado.'],
         offline: true,
       },
-      // ---------- $25,000: Minería ----------
+      // ---------- 4º regalo: Minería ----------
       {
-        id: 'pagado', when: 'g25000', delay: 1,
+        id: 'pagado', when: 'regalo4', delay: 1,
         msgs: ['*Kevo se ha conectado.', 'ya pagué', 'todo está bien ahora', 'no me acuerdo de qué me preocupaba', 'tú también vas a pagar :)'],
         reply: '¿Quién eres? Tú no eres Kevo.',
         after: ['soy de los buenos', 'nos vemos pronto', '*Kevo se ha desconectado.'],
@@ -134,7 +134,7 @@
         offline: true,
       },
       {
-        id: 'madre', when: 'g25000', delay: 4,
+        id: 'madre', when: 'regalo4', delay: 4,
         msgs: ['*Kevo se ha conectado.', 'hola. soy la madre de Kevo', 'estoy usando su ordenador', 'Kevo no vuelve a casa desde hace cuatro días', 'en su pantalla solo hay un programa abierto. FUTURO.exe', 'y en la mesa, un papel con esto', '#madre', 'dice que tú también lo tienes'],
         reply: 'Señora, no sé dónde está. Pero voy a averiguarlo.',
         after: ['gracias', 'si lo ves, dile que su perro se llamaba Toby', 'él siempre se olvidaba', '*Kevo se ha desconectado.'],
@@ -154,8 +154,8 @@
       {
         id: 'piggy', when: 'piggy', delay: 1,
         msgs: ['bro', 'no contestas desde ayer', '¿estás bien?'],
-        reply: 'Rompí el cerdito de Timmy. El dinero de su operación.',
-        after: ['...', 'yo rompí la hucha de mi abuela', 'no se lo digas a nadie', 'ella ya no se acuerda de que tenía una'],
+        reply: 'Rompí los ahorros de Timmy. El dinero de su cirugía.',
+        after: ['...', 'yo rompí los ahorros de mi abuela', 'no se lo digas a nadie', 'ella ya no se acuerda de que los tenía'],
       },
       {
         id: 'bigloss', when: 'bigLoss', delay: 0,

@@ -30,7 +30,9 @@
     luckBiasPerLevel: 0.03,  // sesgo por vela (en desviaciones típicas) a favor de tu operación
     luckRumorPerLevel: 0.03, // +3% por nivel a que un rumor salga a tu favor
     // PISTA: error de lectura según el nivel de ANÁLISIS y umbrales de fuerza (1, 2 y 3 flechas)
-    hint: { noise: [0.6, 0.42, 0.26, 0.1], powers: [0.5, 1.1, 1.8] },
+    // (1.6: sin ANÁLISIS la pista falla más y Salud sube más despacio: el principio es más difícil;
+    // la Academia de Bravo Fines es lo que acelera después)
+    hint: { noise: [0.75, 0.42, 0.26, 0.1], powers: [0.5, 1.1, 1.8] },
     // Primera operación del tutorial: parámetros controlados. Se detiene en `holdAt` para enseñar a
     // CERRAR y en `twistAt` llega el susto, que el jugador ve ya a salvo.
     tutorial: { frac: 0.5, leverage: 2, candles: 12, regime: 1, volMul: 0.45, holdAt: 7, twistAt: 10, twistJump: -0.11 },

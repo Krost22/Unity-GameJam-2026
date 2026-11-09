@@ -75,6 +75,47 @@
     return hoodCanvas;
   };
 
+  // ---------- Bravo Fines (retrato de 40x40 para los diálogos) ----------
+  // Gurú del trading: tupé, gafas de sol con brillo, sonrisa de anuncio, camisa abierta y cadena de oro.
+  // Detrás, el "estudio": un fondo morado con una gráfica que siempre sube (y el morro de un Lambo).
+  let bravoCanvas = null;
+  Chars.bravoCanvas = function (t, opts = {}) {
+    if (!bravoCanvas) bravoCanvas = Px.canvas(40, 40);
+    const g = Px.ctx(bravoCanvas);
+    g.clearRect(0, 0, 40, 40);
+    R(g, 0, 0, 40, 40, P.violetD);
+    R(g, 0, 28, 40, 12, P.violet);
+    // La gráfica del fondo, siempre para arriba
+    for (let i = 0; i < 7; i++) R(g, 2 + i * 5, 22 - i * 2 - (i % 2), 3, 3 + i % 2, P.green);
+    Px.line(g, 2, 25, 36, 9, P.greenL);
+    // El morro amarillo de un deportivo, abajo a la derecha
+    R(g, 31, 33, 9, 4, P.yellow); R(g, 32, 32, 6, 1, P.yellowL); R(g, 34, 37, 3, 2, P.coal);
+    const bob = Math.round(Math.sin(t * 2.4));
+    const y = 2 + bob;
+    // Camisa blanca abierta y cadena de oro
+    R(g, 8, y + 27, 24, 12, P.creamL); R(g, 8, y + 27, 2, 12, P.creamD); R(g, 30, y + 27, 2, 12, P.creamD);
+    R(g, 16, y + 27, 8, 7, P.skin); R(g, 17, y + 34, 6, 3, P.skinM);
+    for (let i = 0; i < 6; i++) R(g, 16 + i + (i > 2 ? 1 : 0), y + 30 + Math.min(i, 5 - i), 1, 1, P.yellow);
+    R(g, 19, y + 33, 2, 2, P.yellowL);
+    // Cuello y cara bronceada
+    R(g, 17, y + 23, 6, 5, P.skinM);
+    R(g, 12, y + 9, 16, 15, P.coal);
+    R(g, 13, y + 9, 14, 14, P.skin); R(g, 13, y + 19, 14, 4, P.skinM); R(g, 26, y + 11, 1, 10, P.skinM);
+    // Tupé (enorme, con brillo)
+    R(g, 11, y + 3, 18, 7, P.coal); R(g, 12, y + 2, 15, 3, P.coal); R(g, 14, y + 1, 10, 2, P.coal);
+    R(g, 12, y + 3, 16, 6, P.orangeDD); R(g, 13, y + 2, 12, 2, P.orangeDD); R(g, 15, y + 2, 8, 1, P.orangeD);
+    R(g, 16, y + 3, 6, 1, P.orangeD); R(g, 12, y + 9, 2, 4, P.orangeDD); R(g, 26, y + 9, 2, 4, P.orangeDD);
+    // Gafas de sol con un brillo que cruza de vez en cuando
+    R(g, 12, y + 13, 16, 4, P.coal); R(g, 13, y + 13, 6, 4, P.coalDD); R(g, 21, y + 13, 6, 4, P.coalDD);
+    const sh = Math.floor((t * 1.3) % 4 * 6);
+    if (sh < 12) { R(g, 13 + sh, y + 13, 1, 1, P.white); if (sh + 8 < 14) R(g, 21 + sh, y + 13, 1, 1, P.white); }
+    // Sonrisa de anuncio (con un destello en un diente)
+    R(g, 15, y + 19, 10, 3, P.coal); R(g, 16, y + 19, 8, 2, P.white); R(g, 16, y + 21, 8, 1, P.coralD);
+    if (Math.sin(t * 3.1) > 0.85) { R(g, 22, y + 17, 1, 3, P.yellowL); R(g, 21, y + 18, 3, 1, P.yellowL); }
+    if (opts.wink) R(g, 21, y + 15, 6, 1, P.skin);
+    return bravoCanvas;
+  };
+
   // ---------- Protagonista: cabeza y hombros (coordenadas de un búfer de 160x90) ----------
   // expr: neutral | happy | star | confused | worried | shocked | relieved
   Chars.face = function (g, cx, top, expr, t, opts = {}) {
@@ -227,6 +268,9 @@
       R(g, cx + 15, cy - 10, 3, 4, P.coal); R(g, cx + 15, cy - 10, 1, 1, P.creamL);
     }
     R(g, cx + 12, cy - 2, 6, 3, P.coralL);
+    // Lo que pone en la tripa (con rotulador, como lo escribiría un niño de 8 años)
+    Px.text(g, 'AHORROS', cx - 3, cy + 10, deep, { align: 'center' });
+    Px.text(g, 'AHORROS', cx - 4, cy + 9, P.creamL, { align: 'center' });
     // Grietas
     if (opts.cracks) {
       for (const c of opts.cracks) {

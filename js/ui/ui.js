@@ -5,6 +5,7 @@
   'use strict';
   const U = SN.Util, S = SN.State, D = SN.Data, P = SN.PAL;
   const $ = (id) => document.getElementById(id);
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   const UI = SN.UI = {
     busy: false,
@@ -16,12 +17,15 @@
 
     init() {
       $('screen').querySelector('.app-icon').style.backgroundImage = `url(${SN.Sprites.url('app', 1)})`;
+      $('screen').querySelector('.app-icon').addEventListener('click', () => { if (!this.busy && SN.Game.state === 'GAMEPLAY' && !S.run.position) this.openWindow('about'); });
+      this.renderTitle();
       document.querySelector('#hud-capital .coin').style.backgroundImage = `url(${SN.Sprites.url('coin0', 1)})`;
       // Iconos de los botones de navegación
       for (const [cls, name] of [['ico-up', 'wrench'], ['ico-news', 'news'], ['ico-shop', 'cart']]) { const el = document.querySelector('.' + cls); if (el) el.style.backgroundImage = `url(${SN.Sprites.url(name, 1)})`; }
       SN.Chart.init($('chart'));
       SN.FX.init($('fx'), $('layer-float'), $('screen'));
       SN.Dialog.init();
+      SN.HeroSay.init();
       this.buildSegments();
       this.bindInput();
       this.bindEvents();
@@ -79,8 +83,11 @@
       $('nav-upgrades').addEventListener('click', () => this.openWindow('upgrades'));
       $('nav-news').addEventListener('click', () => this.openWindow('news'));
       $('nav-shop').addEventListener('click', () => this.openWindow('shop'));
-      $('btn-item').addEventListener('click', () => this.openWindow('shop'));
-      $('events').addEventListener('click', () => this.openWindow('news'));
+      $('btn-item').addEventListener('click', () => {
+        const it = SN.Unlocks.pendingItem();
+        if (it && !this.busy && !S.run.position) SN.Windows.offer(it.id, 'hud');
+      });
+      $('events').addEventListener('click', () => this.openWindow('news', { focus: this.eventsNews || null }));
       $('btn-skip-turn').addEventListener('click', () => this.skip());
       $('btn-pay').addEventListener('click', () => { if (!this.busy && this.allowed('pay')) SN.Game.payDebt(); });
       $('btn-sound').addEventListener('click', () => this.toggleSound());
@@ -164,14 +171,30 @@
       E.on('trade:closed', (r) => this.onTradeClosed(r));
       E.on('trade:rejected', (r) => this.note(r.reason));
       E.on('window:closed', () => this.renderAll());
-      E.on('window:opened', () => this.renderHUD());
+      E.on('window:opened', () => { this.renderHUD(); const t = document.querySelector('.msg-toast.shop'); if (t) t.remove(); });
+      // Cosas que ya se pueden comprar: número rojo y aviso; la oferta de un objeto clave salta sola
+      E.on('shop:seen', () => this.renderNav());
+      E.on('shop:new', (d) => this.onShopNew(d));
+      E.on('offer:prompt', (d) => this.onOfferPrompt(d));
+      // Academia: tus negocios pagan cada mañana; lo comprado cambia los números rojos
+      E.on('academy:income', ({ amount }) => {
+        const p = this.posIn($('hud-capital'));
+        SN.FX.float(`+${U.money(amount)} negocios`, p.x + p.w / 2, p.y + p.h + 6, 'gain small');
+        SN.Audio.sfx('coin');
+      });
+      E.on('academy:bought', () => { this.renderNav(); this.renderHUD(); });
+      E.on('academy:open', () => this.renderNav());
       E.on('cipher:found', (d) => this.onCipher(d));
       E.on('turn:ready', () => this.afterTurnTips());
     },
 
     // ---------- Render ----------
+    // El nombre del programa, en el idioma secreto (se va leyendo según descubres letras)
+    renderTitle() { const el = $('screen').querySelector('.app-name'); if (el && SN.Cipher) el.innerHTML = SN.Cipher.brand(true); },
+
     renderAll() {
       if (!S.run) return;
+      this.renderTitle();
       this.renderClock();
       this.renderHUD();
       this.renderMarkets();
@@ -199,7 +222,7 @@
       const goal = SN.Unlocks.currentGoal();
       const fill = $('goal-fill');
       if (goal) {
-        $('goal-title').textContent = goal.type === 'debt' ? `Deuda: ${goal.label}` : goal.type === 'item' ? `Compra: ${goal.label}` : `Meta ${U.short(goal.amount)}`;
+        $('goal-title').textContent = goal.type === 'debt' ? `Deuda: ${goal.label}` : goal.type === 'item' ? `Oferta: ${goal.label}` : `Meta ${U.short(goal.amount)}`;
         fill.style.width = (U.clamp(run.capital / goal.amount, 0, 1) * 100).toFixed(1) + '%';
         fill.classList.toggle('debt', goal.type === 'debt');
         fill.classList.toggle('item', goal.type === 'item');
@@ -210,14 +233,15 @@
         fill.classList.remove('debt', 'item');
         $('goal-text').textContent = '';
       }
-      $('hud-goal').title = goal && goal.type === 'item' ? `Siguiente paso: comprar ${goal.item.name} en la TIENDA (T)` : goal && goal.type === 'debt' ? `Debes ${U.money(goal.amount)} por ${goal.label}` : '';
+      $('hud-goal').title = goal && goal.type === 'item' ? `Siguiente paso: la oferta de ${goal.item.name} (FUTURO.exe necesita ver ${U.money(goal.amount)} en tu cuenta)` : goal && goal.type === 'debt' ? `Debes ${U.money(goal.amount)} por ${goal.label}` : '';
       // (con una ventana abierta no se enseñan: quedarían por encima de ella)
       const canPay = SN.Debt.canPay() && !this.busy && !SN.Windows.current;
       $('btn-pay').classList.toggle('hidden', !canPay);
       $('btn-pay').classList.toggle('pulse', canPay);
-      // El objeto clave ya te llega: un botón que lleva a la tienda
-      const canItem = !canPay && goal && goal.type === 'item' && !this.busy && !SN.Windows.current && SN.Unlocks.canBuyItem(goal.item.id).ok;
-      $('btn-item').classList.toggle('hidden', !canItem);
+      // La oferta de FUTURO.exe está esperando: un botón para verla (parpadea si ya te llega la entrada)
+      const showItem = !canPay && goal && goal.type === 'item' && !this.busy && !SN.Windows.current;
+      const canItem = showItem && SN.Unlocks.canBuyItem(goal.item.id).ok;
+      $('btn-item').classList.toggle('hidden', !showItem);
       $('btn-item').classList.toggle('pulse', !!canItem);
       this.renderDays();
     },
@@ -375,6 +399,7 @@
       this.freshLetter = d.letter;
       SN.after(1.6, () => { this.freshLetter = null; });
       if (SN.Windows.current) SN.Windows.refresh();
+      this.renderTitle();
       SN.Desktop.onCipher(d);
       const html = `<small>Símbolo descifrado · ${d.count}/${d.total}</small><span class="cx-pair"><b class="cx">${d.glyph}</b> = <b class="cx-k">${d.letter}</b></span><small>${d.clue.where}</small>`;
       return this.card(html, 'stamp cx-stamp', 2.6);
@@ -395,12 +420,16 @@
         for (let i = run.news.length - 1; i >= 0; i--) if (run.news[i].market === id) { item = run.news[i]; break; }
         if (item) kicker = `Día ${item.day} · ${D.sim.turnNames[item.turn] || ''}`;
       }
+      // La noticia que se abrirá en primera plana al hacer clic (la última de este mercado)
+      this.eventsNews = null;
+      for (let i = run.news.length - 1; i >= 0; i--) if (run.news[i].market === id && !run.news[i].dark) { this.eventsNews = run.news[i]; break; }
       box.className = item ? `${item.dark ? 'neg' : item.tone}${ev ? '' : ' old'}${animateNew ? ' new' : ''}` : 'empty';
       box.title = item ? 'Ver todas las noticias (N)' : '';
       box.innerHTML = '';
       if (!item) { box.innerHTML = '<div class="tk" style="left:6px"><span class="tk-k">Sin noticias</span><span class="tk-t">La calma antes de la tormenta.</span></div>'; return; }
       box.appendChild(SN.NewsArt.node(item.art || 'ciudad', item.tone || 'neu', item.dark ? darkLevel() : 0, [52, 32]));
       box.insertAdjacentHTML('beforeend', `<div class="tk"><span class="tk-k">${kicker}</span><span class="tk-a">${arrows}</span><span class="tk-t">${item.title}</span></div>`);
+      SN.KW.apply(box.querySelector('.tk-t'));
     },
 
     renderForm() {
@@ -444,6 +473,12 @@
       const badge = $('news-badge');
       badge.textContent = unread > 9 ? '9+' : unread;
       badge.classList.toggle('hidden', unread <= 0);
+      // Lo que ya se puede comprar y todavía no has visto: número rojo en Mejoras y Tienda
+      for (const [id, win] of [['up-badge', 'upgrades'], ['shop-badge', 'shop']]) {
+        const n = SN.ShopWatch.badge(win), b = $(id);
+        b.textContent = n > 9 ? '9+' : n;
+        b.classList.toggle('hidden', n <= 0);
+      }
       // La tienda se puede mirar siempre (los objetos clave solo se compran cuando toca)
       const shop = $('nav-shop');
       shop.disabled = false;
@@ -455,6 +490,27 @@
     renderSound() {
       const st = S.profile.settings;
       $('btn-sound').classList.toggle('off', !st.sfx && !st.music);
+    },
+
+    // Algo nuevo que ya se puede comprar: aviso dentro de FUTURO.exe (clic: abre la ventana)
+    onShopNew({ items }) {
+      this.renderNav();
+      if (SN.Tutorial.active || SN.Game.state !== 'GAMEPLAY' || SN.Windows.current) return;
+      const up = items.filter((x) => x.win === 'upgrades'), sh = items.filter((x) => x.win === 'shop');
+      const pick = up.length ? up : sh;
+      const win = up.length ? 'upgrades' : 'shop';
+      const first = pick[0];
+      const what = first.kind === 'upgrade' ? 'Mejora disponible' : first.kind === 'academy' ? 'Academia de Bravo Fines' : first.kind === 'gold' ? 'Mercado Dorado' : 'Ya puedes comprar';
+      const more = items.length > 1 ? ` (y ${items.length - 1} más)` : '';
+      SN.Desktop.toast('', `<b>${what}:</b> ${esc(first.label)}${more}`, { icon: win === 'upgrades' ? 'wrench' : 'cart', kbd: win === 'upgrades' ? 'M' : 'T', onClick: () => this.openWindow(win) });
+      SN.Audio.sfx('select');
+    },
+    // La oferta de un objeto clave salta sola (si no hay otra ventana o un diálogo delante)
+    onOfferPrompt({ item, why }) {
+      if (SN.Tutorial.active || SN.Game.state !== 'GAMEPLAY' || SN.Dialog.active || SN.Desktop.open) return;
+      if (SN.Windows.current && SN.Windows.current !== 'offer') return;
+      SN.Windows.offer(item.id, why);
+      this.renderHUD();
     },
 
     // ---------- Acciones ----------
@@ -518,9 +574,9 @@
       this.selectMarket(ids[i < 0 ? 0 : (i + dir + ids.length) % ids.length]);
     },
 
-    openWindow(kind) {
+    openWindow(kind, opts) {
       if (this.busy || !this.allowed('window')) return;
-      SN.Windows.open(kind);
+      SN.Windows.open(kind, opts);
     },
 
     toggleSound() {
@@ -777,6 +833,7 @@
     card(html, cls, time = 1.4) {
       return new Promise((resolve) => {
         const el = U.el('div', cls, html);
+        SN.KW.apply(el);
         $('layer-top').appendChild(el);
         let done = false;
         const finish = () => {
@@ -795,7 +852,9 @@
       const label = r.liquidated ? 'Liquidado' : even ? 'Te quedas igual' : win ? 'Ganaste' : 'Perdiste';
       const extra = (r.capped ? '<span class="rc-cap">Tope del mercado</span>' : '') +
         (r.luckBonus ? `<span class="rc-luck">★ Suerte: +${U.money(r.luckBonus)}</span>` : '') +
-        (r.shielded ? '<span class="rc-luck">Seguro de la ruleta: no pierdes nada</span>' : '');
+        (r.shielded ? '<span class="rc-luck">Seguro de la ruleta: no pierdes nada</span>' : '') +
+        (r.academyBonus ? `<span class="rc-luck">Tiburón: +${U.money(r.academyBonus)}</span>` : '') +
+        (r.halved ? `<span class="rc-luck">Plan B: te ahorras ${U.money(r.halved)}</span>` : '');
       const html = `<span class="rc-l">${label}</span><b class="rc-v">${U.money(r.pnl, { sign: win })}</b>${extra}<span class="rc-t">Ahora tienes ${U.money(S.run.capital)}</span><kbd>clic</kbd>`;
       const p = this.posIn($('chart-wrap'));
       return new Promise((resolve) => {
@@ -830,6 +889,7 @@
     stamp(text, cls = '', sub = '', time = 1.6) { return this.card(`${text}${sub ? `<small>${sub}</small>` : ''}`, 'stamp ' + cls, time); },
 
     update(dt) {
+      SN.HeroSay.update(dt);
       const c = this.cap;
       if (c.t < 1) {
         c.t = Math.min(1, c.t + dt / 0.7);

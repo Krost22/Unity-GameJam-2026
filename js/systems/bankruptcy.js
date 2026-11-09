@@ -87,6 +87,7 @@
       el.innerHTML = `<div class="t1">${st.title}</div><div class="t2">${st.message}</div>
         <div class="t3">${st.back.replace('{where}', where).replace('{money}', money)}</div>
         <div class="row"><button class="btn btn-yellow" id="bk-retry">Volver a intentarlo</button><button class="btn btn-cream" id="bk-menu">Volver al menú</button></div>`;
+      SN.KW.apply(el);
       document.getElementById('layer-top').appendChild(el);
       this.ui = el;
       this.active = true;
@@ -178,6 +179,7 @@
       const el = U.el('div', 'overlay-panel piggy-ui');
       el.innerHTML = `<div class="msg"><div class="t1">${st.title}</div><div class="t2">${st.message}</div><div class="t3">${extra}<br>${late ? st.extension : st.extra[0]}</div></div>
         <div class="row"><button class="btn btn-yellow" id="bk-continue">Seguir jugando</button></div>`;
+      SN.KW.apply(el);
       document.getElementById('layer-top').appendChild(el);
       this.ui = el;
       SN.Audio.sfx('notify');

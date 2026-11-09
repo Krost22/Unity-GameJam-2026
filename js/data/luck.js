@@ -45,9 +45,9 @@
 
     // Noticias de la fortuna que pueden salir ese día (con su efecto en el precio)
     events: [
-      { id: 'gatonegro', kind: 'shock', tone: 'pos', art: 'trebol', title: 'Un gato negro cruza la calle marcha atrás', text: 'Los expertos dicen que eso trae suerte. Los gatos no opinan.', min: 0.04, max: 0.09 },
-      { id: 'trebolsiete', kind: 'trend', tone: 'pos', art: 'trebol', title: 'Encuentran un trébol de siete hojas', text: 'Una vecina lo ha plastificado. Cola para verlo.', trend: 0.6, candles: 12 },
-      { id: 'loteria', kind: 'rumor', tone: 'pos', art: 'oro', title: '¿Ha tocado la lotería en el barrio?', text: 'Todos dicen tener el número premiado. Todos acaban en 7.', prob: 0.7, yes: 0.09, no: -0.04, yesText: 'Premio confirmado', noText: 'Era otro número' },
+      { id: 'gatonegro', kind: 'shock', tone: 'pos', art: 'gatonegro', title: 'Un gato negro cruza la calle marcha atrás', text: 'Dicen que eso trae suerte. Los gatos no opinan.', more: 'Al revés, la mala suerte se da la vuelta. O eso dice la vecina del quinto.', min: 0.04, max: 0.09 },
+      { id: 'trebolsiete', kind: 'trend', tone: 'pos', art: 'trebol', title: 'Encuentran un trébol de siete hojas', text: 'Una vecina lo ha plastificado. Cola para verlo.', more: 'Cada persona que lo ve dice que le ha tocado algo. Aunque sea un caramelo.', trend: 0.6, candles: 12 },
+      { id: 'loteria', kind: 'rumor', tone: 'pos', art: 'oro', title: '¿Ha tocado la lotería en el barrio?', text: 'Todos dicen tener el número premiado. Todos acaban en 7.', more: 'Si es verdad, el barrio entero sale de compras. Si no, a llorar.', prob: 0.7, yes: 0.09, no: -0.04, yesText: 'Ha tocado de verdad', noText: 'Era otro número' },
     ],
     news: { title: 'HOY ES DÍA DE LA SUERTE', text: 'El número 7 está en todas partes. Los mercados lo celebran.' },
   };

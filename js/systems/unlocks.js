@@ -1,6 +1,7 @@
 // MarketUnlockManager y escalera de progresión: qué mercados están abiertos y en qué paso vas
-// (la Pleyzeta, cada "regalo" del encapuchado, cada objeto clave de la tienda, cada meta).
-// La escalera es LINEAL: solo el paso actual cuenta y, mientras haya una deuda sin pagar, nada avanza.
+// (la Pleyzeta, cada "regalo" del encapuchado, cada objeto clave de la tienda y la meta final).
+// La escalera es una CADENA DE DEUDAS: solo el paso actual cuenta; mientras haya una deuda sin pagar
+// nada avanza y, al pagarla, llega la siguiente.
 // Este archivo no toca la interfaz: devuelve lo que ha pasado y la narrativa lo cuenta (game.js).
 (function (SN) {
   'use strict';
@@ -33,8 +34,9 @@
       const st = this.step();
       if (!st) return null;
       if (st.kind === 'item') {
-        const it = D.keyItemById(st.item);
-        return { type: 'item', amount: it.price, title: `COMPRA: ${it.name}`, label: it.short, item: it };
+        // La oferta de FUTURO.exe está esperando: la barra mide lo que hace falta en la cuenta para aceptarla
+        const it = D.keyItemById(st.item), o = this.offer(it);
+        return { type: 'item', amount: o.need, title: `OFERTA: ${it.name}`, label: it.short, item: it, offer: o };
       }
       if (st.kind === 'goal') return Object.assign({ type: 'goal', title: `OBJETIVO ${U.short(st.amount)}` }, st);
       return null;
@@ -43,8 +45,8 @@
     // Avanza la escalera todo lo que se pueda. Devuelve lo que acaba de pasar o null si toca esperar:
     //   { type: 'done', step }  -> se completó un paso (su deuda está pagada)
     //   { type: 'gift', step }  -> el encapuchado trae un regalo (mejora + deuda nueva)
-    //   { type: 'goal', step }  -> meta alcanzada (mercado nuevo y bono)
-    // Los objetos clave no avanzan solos: se compran en la tienda (acceptOffer).
+    //   { type: 'goal', step }  -> meta alcanzada (solo la final)
+    // Los objetos clave no avanzan solos: se aceptan con la oferta de FUTURO.exe (acceptOffer).
     check() {
       const run = S.run;
       if (!run || run.position || run.over) return null;
@@ -65,10 +67,11 @@
       return { type: 'done', step: st, next: this.step() };
     },
 
-    // Regalo: la mejora se puede comprar a partir de ahora... y te deja una deuda
+    // Regalo: la mejora se puede comprar a partir de ahora, se abren sus mercados... y te deja una deuda
     giveGift(st) {
       const run = S.run, up = SN.Upgrades.def(st.upgrade);
       run.gifts[st.upgrade] = true;
+      for (const id of st.markets || []) this.unlock(id);
       SN.Debt.open({ id: st.id, kind: 'gift', label: `el regalo (${up.name})`, amount: st.debt, days: st.days });
       run.stepOpen = true;
       SN.Events.emit('gift:given', { step: st, upgrade: st.upgrade });
@@ -87,12 +90,23 @@
 
     // ---------- Objetos clave (tienda) ----------
     // La oferta de FUTURO.exe: un 10% hoy y el resto, con intereses, en unos días
+    // (la Academia de Bravo Fines enseña a leer la letra pequeña: menos deuda)
     offer(item) {
       const it = typeof item === 'string' ? D.keyItemById(item) : item;
-      return { item: it, now: Math.round(it.price * D.offer.upfront), debt: Math.round(it.price * D.offer.debt), days: it.days };
+      const k = SN.Academy ? SN.Academy.offerMul() : 1;
+      const now = Math.round(it.price * D.offer.upfront), debt = Math.round(it.price * D.offer.debt * k);
+      // need: lo que tiene que haber en tu cuenta para que FUTURO.exe te lo financie (la entrada o, si es
+      // más, el 25% de lo que vas a deber)
+      return { item: it, now, debt, days: it.days, need: Math.max(now, Math.round(debt * (D.offer.solvency || 0))) };
+    },
+    // El objeto clave que está esperando su oferta (o null): el paso actual, sin deudas pendientes
+    pendingItem() {
+      const run = S.run, st = this.step();
+      if (!run || !st || st.kind !== 'item' || run.owned[st.item] || (run.debt && !run.debt.paid)) return null;
+      return D.keyItemById(st.item);
     },
 
-    // ¿Se puede comprar ya? Solo el del paso actual, cuando te llega el precio COMPLETO y sin deudas pendientes
+    // ¿Se puede comprar ya? Solo el del paso actual, sin deudas pendientes y con dinero para la ENTRADA
     canBuyItem(id) {
       const run = S.run, st = this.step(), it = D.keyItemById(id);
       if (!it) return { ok: false };
@@ -108,7 +122,8 @@
       }
       if (run.position) return { ok: false, reason: 'HAY UNA OPERACIÓN EN CURSO' };
       if (run.debt && !run.debt.paid) return { ok: false, reason: 'PRIMERO PAGA LO QUE DEBES' };
-      if (run.capital < it.price) return { ok: false, reason: 'NO TE ALCANZA' };
+      const need = this.offer(it).need;
+      if (run.capital < need) return { ok: false, reason: `TE FALTAN ${U.money(need - run.capital)}`, short: need - run.capital };
       return { ok: true };
     },
 

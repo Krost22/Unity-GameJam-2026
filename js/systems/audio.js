@@ -148,7 +148,9 @@
     notifyBad: () => { tone({ type: 'sine', f0: note(88), f1: note(80), dur: 0.2, vol: 0.12, detune: -30 }); tone({ type: 'sine', f0: note(83), f1: note(70), dur: 0.5, vol: 0.12, at: 0.14, detune: 20 }); },
     static: ({ dur = 0.5 } = {}) => { noise({ dur, vol: 0.14, filter: 'bandpass', f0: 2600, q: 0.4, attack: 0.02 }); tone({ type: 'sawtooth', f0: 60, dur, vol: 0.03 }); },
     whisper: () => { tone({ type: 'sine', f0: 92, f1: 88, dur: 1.8, vol: 0.12, attack: 0.4 }); tone({ type: 'sine', f0: 138, f1: 131, dur: 1.8, vol: 0.06, attack: 0.5, detune: 14 }); noise({ dur: 1.4, vol: 0.04, filter: 'bandpass', f0: 500, q: 3, attack: 0.5 }); },
-    type: ({ voice = 'hood' } = {}) => tone({ type: voice === 'hood' ? 'triangle' : 'square', f0: voice === 'hood' ? 110 + Math.random() * 20 : 600 + Math.random() * 80, dur: 0.03, vol: voice === 'hood' ? 0.06 : 0.025 }),
+    type: ({ voice = 'hood' } = {}) => (voice === 'bravo'
+      ? tone({ type: 'sawtooth', f0: 230 + Math.random() * 60, dur: 0.035, vol: 0.03 })
+      : tone({ type: voice === 'hood' ? 'triangle' : 'square', f0: voice === 'hood' ? 110 + Math.random() * 20 : 600 + Math.random() * 80, dur: 0.03, vol: voice === 'hood' ? 0.06 : 0.025 })),
     crack: ({ n = 0 } = {}) => {
       noise({ dur: 0.08, vol: 0.25, filter: 'bandpass', f0: 1800 + n * 300, q: 2 });
       tone({ type: 'triangle', f0: 240 + n * 40, f1: 120, dur: 0.1, vol: 0.18 });

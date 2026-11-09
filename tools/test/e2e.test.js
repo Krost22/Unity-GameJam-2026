@@ -81,7 +81,7 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
     ok(await ev('SN.Game.state') === 'TUTORIAL', 'tras la intro empieza el tutorial');
 
     // --- Tutorial, solo con el ratón ---
-    let sawCone = false, sawBuy = false, sawCash = false, sawDrama = false, sawErrata = false;
+    let sawCone = false, sawBuy = false, sawCash = false, sawDrama = false, sawErrata = false, sawUpg = false, sawShop = false, sawBadge = false;
     for (let i = 0; i < 300 && await ev('SN.Tutorial.active'); i++) {
       const st = await ev('({ allow: SN.UI.allow, spot: SN.UI.spotSel, dlg: SN.Dialog.active, drama: SN.Drama.active })');
       if (st.spot === '#chart-wrap' && !sawCone) { sawCone = true; await b.sleep(700); await shot('04-tutorial-pista'); }
@@ -90,6 +90,10 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
         sawErrata = await ev('/[ЖДФЯИЛШБЭЦГЮЩПЧ]/.test(document.querySelector(".np-hero.cipher .h").textContent)');
         await b.sleep(300); await shot('07b-tutorial-errata');
       }
+      // Mejoras y Tienda: el número rojo y cada ventana por dentro
+      if (!sawBadge && st.spot === '#nav-shop') sawBadge = await ev('!document.getElementById("shop-badge").classList.contains("hidden")');
+      if (!sawUpg && st.spot === '.win' && await ev('SN.Windows.current === "upgrades"')) { sawUpg = true; await b.sleep(300); await shot('07c-tutorial-mejoras'); }
+      if (!sawShop && st.spot === '.win' && await ev('SN.Windows.current === "shop"')) { sawShop = true; await b.sleep(300); await shot('07d-tutorial-tienda'); }
       if (st.dlg) { await b.sleep(200); await advance(); await b.sleep(120); continue; }
       if (st.allow && st.allow.includes('buy')) {
         if (!sawBuy) { sawBuy = true; await shot('05-tutorial-sube'); }
@@ -108,6 +112,9 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
     ok(sawCone && sawBuy && sawCash, 'el tutorial enseña la pista, SUBE y COBRAR');
     ok(sawDrama, 'el tutorial enseña el susto de las últimas velas (cámara lenta)');
     ok(sawErrata, 'el tutorial enseña las noticias con una "errata" en el idioma secreto');
+    ok(sawUpg && sawShop, 'el tutorial enseña MEJORAS y la TIENDA por dentro');
+    ok(sawBadge, 'el tutorial enseña el número rojo de lo que se puede comprar');
+    ok(await ev('!SN.Windows.current'), 'al acabar el tutorial no queda ninguna ventana abierta');
     ok(!await ev('SN.Tutorial.active') && await ev('SN.Game.state') === 'GAMEPLAY', 'el tutorial termina');
     ok(await ev('SN.State.run.capital') > 100, 'cobrar en el tutorial deja ganancias');
     ok(await ev('SN.State.run.turn') === 1, 'la operación del tutorial consume un turno');
@@ -209,37 +216,36 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
       'el "regalo" del encapuchado: LÍMITE para comprar... y una deuda nueva');
     await b.sleep(500);
     await shot('18-regalo');
-    // El regalo solo desbloquea: LÍMITE se compra con dinero
+    // El regalo solo desbloquea: LÍMITE se compra con dinero (y MEJORAS lo avisa con un número rojo)
     await waitFor('!SN.UI.busy', 10000);
-    await ev('SN.Economy.add(200, "test"); true');
+    await ev('SN.Economy.add(200, "test"); SN.UI.renderNav(); true');
+    await b.sleep(300);
+    ok(await ev('!document.getElementById("up-badge").classList.contains("hidden")'), 'MEJORAS avisa con un número rojo de que ya puedes comprar algo');
     await mouse('#nav-upgrades');
     await b.sleep(400);
+    ok(await ev('document.getElementById("up-badge").classList.contains("hidden")'), 'al abrir MEJORAS el número rojo desaparece');
     await mouse('.up-row .btn');
     await b.sleep(400);
     ok(await ev('SN.Upgrades.level("limite")') === 1, 'tras el regalo, LÍMITE se compra en MEJORAS');
     await mouse('.win-x');
     await b.sleep(300);
 
-    // --- Pagar el regalo y comprar la tele: FUTURO.exe se mete con una oferta ---
+    // --- Pagar el regalo: la oferta de la tele salta SOLA (sin ir a la tienda) ---
     await waitFor('!SN.UI.busy', 10000);
     await ev('SN.Economy.add(800, "test"); SN.UI.renderAll(); true');
     await b.sleep(300);
     await mouse('#btn-pay');
     for (let i = 0; i < 60 && await ev('SN.UI.busy'); i++) { await advance(); await b.sleep(250); }
-    ok(await ev('!SN.Debt.active() && SN.Unlocks.step().id === "tele"'), 'pagado el regalo: toca comprar la tele');
-    ok(await ev('!document.getElementById("btn-item").classList.contains("hidden")'), 'el HUD avisa de que ya te llega la tele');
-    await mouse('#btn-item');
-    await b.sleep(500);
-    ok(await ev('SN.Windows.current') === 'shop', 'el aviso lleva a la tienda');
-    await mouse('.shop-row[data-item="tele"] .btn');
-    await b.sleep(400);
-    ok(await ev('!!document.querySelector(".offer")'), 'FUTURO.exe se mete en la compra con una oferta');
+    ok(await ev('!SN.Debt.active() && SN.Unlocks.step().id === "tele"'), 'pagado el regalo: toca la tele');
+    ok(await waitFor('SN.Windows.current === "offer" && !!document.querySelector(".offer")', 4000), 'la oferta de FUTURO.exe salta sola al pagar la deuda, sin abrir la tienda');
     await shot('19-oferta');
     await mouse('.offer .of-no');
     await b.sleep(300);
-    ok(await ev('!document.querySelector(".offer") && !SN.State.run.owned.tele && !SN.Debt.active()'), '"No, gracias" cancela la compra');
-    await mouse('.shop-row[data-item="tele"] .btn');
+    ok(await ev('!document.querySelector(".offer") && !SN.State.run.owned.tele && !SN.Debt.active()'), '"No, gracias" la cierra sin comprar nada');
+    ok(await ev('!document.getElementById("btn-item").classList.contains("hidden")'), 'el HUD sigue enseñando la oferta pendiente');
+    await mouse('#btn-item');
     await b.sleep(400);
+    ok(await ev('SN.Windows.current') === 'offer', 'el botón del HUD vuelve a abrir la oferta');
     await mouse('.offer .of-yes');
     for (let i = 0; i < 80 && await ev('SN.UI.busy'); i++) { await advance(); await b.sleep(300); }
     ok(await ev('SN.State.run.owned.tele && SN.Debt.active() && SN.Unlocks.isUnlocked("salud_negro")'), 'aceptar: la tele es tuya, debes el resto y se abre Salud negro');
@@ -249,12 +255,12 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
     ok(await ev('SN.State.run.selected === "salud_negro" && document.getElementById("app").classList.contains("black")'), 'en el mercado negro FUTURO.exe se oscurece');
     await shot('20-mercado-negro');
 
-    // --- Pagar la tele y Meta $1,000: desbloquea Tecnología (y el siguiente regalo) ---
+    // --- Pagar la tele: llega la siguiente deuda al momento (el regalo que abre Tecnología) ---
     await ev('SN.Economy.add(1500, "test"); SN.UI.renderAll(); true');
     await b.sleep(300);
     await mouse('#btn-pay');
     for (let i = 0; i < 120 && await ev('SN.UI.busy'); i++) { await advance(); await b.sleep(300); }
-    ok(await ev('SN.Unlocks.isUnlocked("tecno") && SN.State.run.debt.id === "regalo2"'), 'la meta de $1,000 desbloquea Tecnología y trae el regalo de ANÁLISIS');
+    ok(await ev('SN.Unlocks.isUnlocked("tecno") && SN.State.run.debt.id === "regalo2"'), 'pagada la tele llega al momento el regalo de ANÁLISIS, que abre Tecnología');
     await mouse('.mtab-legal');
     await b.sleep(300);
     await mouse('.mcard[data-id="tecno"]');
@@ -275,6 +281,8 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
     await b.sleep(800);
     await shot('23-timmy');
     ok(await ev('document.querySelector(".piggy-ui").textContent.toUpperCase().includes("TIMMY")'), 'aparece el mensaje de Timmy');
+    ok(await ev('/cirugía del pequeño Timmy/i.test(document.querySelector(".piggy-ui").textContent) && document.querySelector(".piggy-ui").textContent.includes("velas japonesas")'),
+      '"Rompiste los ahorros para la cirugía del pequeño Timmy" y el cirujano no acepta velas japonesas');
     const coins = await ev('SN.Bankruptcy.pig.coins');
     await mouse('#bk-continue');
     await b.sleep(900);

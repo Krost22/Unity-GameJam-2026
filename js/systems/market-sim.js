@@ -63,8 +63,9 @@
       // La suerte inclina ligeramente el ruido a favor de tu operación (no garantiza nada)
       if (ctx.direction && ctx.luck) mu += ctx.direction * ctx.luck * sim.luckBiasPerLevel * sigma;
       let ret = mu + sigma * rng.normal();
-      // Tutorial: hasta el susto, ninguna vela baja (al pulsar COBRAR siempre vas ganando de verdad)
-      if (ctx.tutorial) ret = Math.max(ret, 0.3 * sigma);
+      // Tutorial: hasta el susto, ninguna vela baja (al pulsar COBRAR siempre vas ganando de verdad);
+      // después del susto, ninguna sube
+      if (ctx.tutorial) ret = ctx.after ? Math.min(ret, -0.1 * sigma) : Math.max(ret, 0.3 * sigma);
 
       const marks = [];
       const resolved = [];

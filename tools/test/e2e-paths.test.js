@@ -13,7 +13,7 @@ fs.mkdirSync(OUT, { recursive: true });
 let failed = 0, passed = 0;
 const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:', m); } };
 const URL = 'file:///' + path.join(__dirname, '..', '..', 'index.html').replace(/\\/g, '/') + '?debug';
-const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV: 3, runs: 0, bestCapital: 0, settings: { music: false, sfx: false } });
+const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV: 4, runs: 0, bestCapital: 0, settings: { music: false, sfx: false } });
 
 (async () => {
   const b = await launch(URL, { width: 1280, height: 720, port: 9345 });
@@ -145,6 +145,45 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
     await b.sleep(500);
     ok(await ev('document.querySelectorAll(".np-item.dark, .np-hero.dark").length >= 3'), 'las noticias extrañas salen en el periódico');
     await shot('p4-noticias-extranas');
+    await ev('SN.Windows.close(); true');
+
+    // --- 1.6: FUTURO cifrado, el protagonista habla, Bravo Fines y su Academia, primera plana ---
+    ok(await ev('document.querySelector("#titlebar .app-name").textContent.includes(SN.Data.cipher.alphabet.F)'), 'FUTURO.exe se escribe en el idioma secreto');
+    ok(await ev('"debtPaid" in SN.HeroSay.last'), 'al pagar, el protagonista lo dice en un globo encima del teclado');
+    await ev('Object.assign(SN.State.run, { turn: 2 }); SN.UI.renderAll(); true');
+    await ev('document.getElementById("btn-skip-turn").click(); true');
+    let sawBravo = false;
+    for (let i = 0; i < 100; i++) {
+      if (!sawBravo && await ev('SN.Dialog.active && SN.Dialog.opts.portrait === "bravo"')) { sawBravo = true; await b.sleep(500); await shot('p5-bravo'); }
+      await ev('SN.Dialog.active && (SN.Dialog.advance(), SN.Dialog.advance()); true');
+      await b.sleep(250);
+      if (!(await ev('SN.UI.busy || SN.Dialog.active'))) break;
+    }
+    ok(sawBravo && await ev('SN.State.run.flags.academy'), 'la mañana siguiente a pagar, Bravo Fines se presenta y abre su Academia');
+    await ev('SN.Economy.add(300, "test"); SN.UI.renderAll(); document.getElementById("nav-upgrades").click(); true');
+    await b.sleep(400);
+    await ev('document.querySelector(".up-tab.ac").click(); true');
+    await b.sleep(300);
+    ok(await ev('document.querySelectorAll(".ac-node").length') === 12, 'la pestaña Academia enseña el árbol (12 nodos)');
+    await ev('document.querySelector(".ac-node[data-node=limonada]").click(); true');
+    await b.sleep(200);
+    await ev('document.querySelector(".ac-det .btn").click(); true');
+    await b.sleep(300);
+    ok(await ev('SN.Academy.has("limonada")'), 'se compra el puesto de limonada en la Academia');
+    await shot('p6-academia');
+    await ev('SN.Windows.close(); true');
+    await b.sleep(300);
+    await ev('SN.Events.emit("market:event", { market: "salud", event: SN.Data.marketEvents.salud.find((e) => e.id === "chequeo") }); true');
+    await ev('document.getElementById("nav-news").click()');
+    await b.sleep(400);
+    await ev('document.querySelector(".np-hero").click(); true');
+    await b.sleep(300);
+    ok(await ev('!!document.querySelector(".np-front canvas.photo") && document.querySelector(".np-front").textContent.includes("¿A quién afecta?") && document.querySelector(".np-front .h").textContent.includes("Patín")'),
+      'clic en una noticia: primera plana con foto a color, a quién afecta y qué puede pasar');
+    await shot('p7-primera-plana');
+    await ev('document.querySelector(".np-back").click(); true');
+    await b.sleep(200);
+    ok(await ev('!document.querySelector(".np-front") && !!document.querySelector(".np-hero")'), '"Volver" regresa al periódico');
     await ev('SN.Windows.close(); true');
 
     // --- Día de la suerte (el día 7): tarjeta dorada y Ruleta de la Fortuna ---

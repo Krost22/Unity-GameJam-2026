@@ -104,7 +104,7 @@
       SN.UI.renderAll();
     },
 
-    // Punto de control al empezar cada paso que empieza sin deuda (una meta o una compra).
+    // Punto de control al empezar cada paso que empieza sin deuda (la oferta de un objeto o la meta final).
     // El regalo guarda el suyo al llegar, ya con su deuda.
     stepCheckpoint() {
       const st = SN.Unlocks.step();
@@ -120,14 +120,21 @@
     },
     fill(lines, vars) { return lines.map((l) => l.replace(/\{(\w+)\}/g, (_, k) => (vars[k] != null ? vars[k] : ''))); },
 
-    // "Regalo" del encapuchado: una mejora que ya se puede comprar... y una deuda
+    // "Regalo" del encapuchado: una mejora que ya se puede comprar, quizá un mercado nuevo... y una deuda
     async onGift(st) {
       const up = SN.Upgrades.def(st.upgrade);
       const debt = U.money(st.debt), days = st.days;
       const lines = this.fill(story().hoodedEvents[st.story] || [], { debt, days });
       if (lines.length) await this.hoodedScene(lines, { smile: st.id !== 'regalo1' });
+      if (st.markets && st.markets.length) {
+        SN.Desk.windowEvent('fuegos');
+        SN.Audio.sfx('unlock');
+        SN.FX.confetti(40);
+        await SN.UI.stamp('MERCADO NUEVO', '', st.markets.map((id) => D.marketById(id).name).join(' · '), 1.6);
+      }
       SN.Audio.sfx('unlock');
       await SN.UI.stamp(`REGALO: ${up.name.toUpperCase()}`, 'coral', `Deuda: ${debt} · ${days} días`, 2.2);
+      if (st.id === 'regalo4') await this.teaser();
       this.addNews({ title: `Un "regalo": ${up.name}. Y una deuda de ${debt}`, tone: 'neg', art: 'documento' });
       S.checkpoint(this.stepLabel(st));
       SN.Events.emit('chat:flag', { flag: st.id });
@@ -144,7 +151,6 @@
       }
       const lines = story().hoodedEvents[g.story];
       if (lines) await this.hoodedScene(lines, { smile: true });
-      if (g.id === 'g25000') await this.teaser();
       if (!next) await this.endDemo();
       this.addNews({ title: `Objetivo ${U.short(g.amount)} cumplido`, tone: 'pos', art: 'dinero' });
       SN.Events.emit('chat:flag', { flag: g.id });
@@ -165,6 +171,22 @@
       await SN.UI.stamp('MERCADO NEGRO', 'coral', def.name, 1.8);
       this.addNews({ title: 'Abre un mercado que no sale en ningún periódico', text: def.desc, tone: 'neg', market: it.market, art: 'cartel' });
       SN.Events.emit('chat:flag', { flag: ev.step.id });
+    },
+
+    // Bravo Fines se presenta (la mañana siguiente a pagar la Pleyzeta) y abre su Academia
+    async bravoIntro() {
+      const run = S.run, A = D.academy;
+      if (!run || run.flags.academy) return;
+      SN.Audio.sfx('notify');
+      await SN.UI.stamp('¡NUEVO MENTOR!', 'bravo', `${A.guru.name} quiere hablar contigo`, 1.4);
+      await SN.Dialog.show(A.intro, { pos: { v: 'bottom', h: 'center' }, name: A.guru.name, portrait: 'bravo', voice: 'bravo' });
+      run.flags.academy = true;
+      SN.Audio.sfx('unlock');
+      SN.FX.confetti(30);
+      await SN.UI.stamp('ACADEMIA DE BRAVO FINES', 'bravo', 'En MEJORAS (tecla M), pestaña Academia', 1.8);
+      this.addNews({ title: 'UN GURÚ DEL TRADING ABRE SU ACADEMIA: "EL DINERO SE MANIFIESTA"', text: 'Bravo Fines promete hacerte rico. Él ya lo es, dice. Sus tres Lambos son alquilados.', tone: 'neu', art: 'bravo' });
+      SN.Events.emit('chat:flag', { flag: 'bravo' });
+      SN.Events.emit('academy:open');
     },
 
     async teaser() {
@@ -215,7 +237,7 @@
       if (!pool.length) return;
       const n = pool[Math.floor(Math.random() * pool.length)];
       run.cityUsed[all.indexOf(n)] = true;
-      this.addNews({ title: n.title, text: n.text, tone: n.tone, art: n.art, city: true });
+      this.addNews({ title: n.title, text: n.text, more: n.more, tone: n.tone, art: n.art, city: true });
     },
 
     // Noticia extraña vinculada al mercado donde acabas de ganar
@@ -262,16 +284,24 @@
     if (Math.random() < 0.22) SN.Desk.windowEvent(U.pick(run.darkness >= 2 ? ['cuervo', 'lluvia', 'ambulancia', 'cuervo'] : ['cuervo', 'dron', 'ambulancia', 'fuegos']));
   });
   SN.Events.on('market:event', ({ market, event }) => {
-    N.addNews({ title: event.title, text: event.text, tone: event.tone, market, art: event.art });
+    N.addNews({ title: event.title, text: event.text, tone: event.tone, market, art: event.art, ev: event.id, kind: event.kind });
   });
   SN.Events.on('market:event-resolved', (n) => {
-    N.addNews({ title: n.text, tone: n.tone, market: n.market, art: n.art });
+    N.addNews({ title: n.text, tone: n.tone, market: n.market, art: n.art, ev: n.e && n.e.id, kind: 'result' });
   });
   SN.Events.on('debt:paid', ({ auto, debt }) => {
     N.pending.unshift(() => N.onDebtPaid(auto, debt));
   });
   SN.Events.on('debt:defaulted', () => N.addNews({ title: 'Plazo vencido. Embargo.', tone: 'neg', art: 'documento' }));
-  SN.Events.on('day:changed', () => N.cityNews());
+  SN.Events.on('day:changed', () => {
+    N.cityNews();
+    // Bravo Fines se presenta la mañana siguiente a pagar la Pleyzeta
+    const run = S.run;
+    if (run && run.flags.debtPaid && !run.flags.academy && !run.flags.bravoQueued && !(SN.Tutorial && SN.Tutorial.active)) {
+      run.flags.bravoQueued = true;
+      N.pending.push(() => N.bravoIntro());
+    }
+  });
   // Día de la suerte: portada, y si llueve oro, se ve por la ventana
   SN.Events.on('luck:day', (l) => {
     const sp = D.luck.specials;

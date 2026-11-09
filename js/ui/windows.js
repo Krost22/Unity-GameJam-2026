@@ -1,30 +1,42 @@
-// Ventanas modales dentro del monitor: MEJORAS, NOTICIAS (un periódico con fotos), TIENDA y AJUSTES.
+// Ventanas modales dentro del monitor: MEJORAS, NOTICIAS (un periódico con fotos), TIENDA, AJUSTES,
+// la RULETA de los días de la suerte y la OFERTA de FUTURO.exe (que salta sola, sin pasar por la tienda).
 (function (SN) {
   'use strict';
   const U = SN.Util, S = SN.State, D = SN.Data;
 
-  const TITLES = { upgrades: 'Mejoras', news: 'Noticias', shop: 'Tienda · MEGATIENDA.COM', settings: 'Ajustes', ruleta: 'Ruleta de la Fortuna' };
+  const TITLES = { upgrades: 'Mejoras', news: 'Noticias', shop: 'Tienda · MEGATIENDA.COM', settings: 'Ajustes', ruleta: 'Ruleta de la Fortuna', offer: '', about: 'Acerca de FUTURO.exe' };
 
   const W = SN.Windows = {
     current: null, back: null, win: null,
+    opts: {},
 
-    open(kind) {
-      if (this.current === kind) return;
+    // opts: para la oferta, { item, why } (why: 'new' | 'afford' | 'insist' | 'shop')
+    open(kind, opts = {}) {
+      if (this.current === kind && kind !== 'offer') return;
       this.close(true);
       this.current = kind;
+      this.opts = opts;
+      if (kind === 'news') this.newsFocus = opts.focus || null; // abrir una noticia directamente en primera plana
       const layer = document.getElementById('layer-windows');
       this.back = U.el('div', 'win-back');
       this.back.addEventListener('click', () => this.close());
-      this.win = U.el('div', 'win' + (kind === 'news' ? ' wide paper' : ''));
-      this.win.innerHTML = `<div class="win-head"><span>${TITLES[kind]}</span><button class="win-x">X<kbd>ESC</kbd></button></div><div class="win-body"></div>`;
-      this.win.querySelector('.win-x').addEventListener('click', () => this.close());
+      this.win = U.el('div', 'win' + (kind === 'news' ? ' wide paper' : kind === 'offer' ? ' offer-win' : ''));
+      if (kind === 'offer') this.win.innerHTML = '<div class="win-body"></div>';
+      else {
+        this.win.innerHTML = `<div class="win-head"><span>${TITLES[kind]}</span><button class="win-x">X<kbd>ESC</kbd></button></div><div class="win-body"></div>`;
+        SN.KW.apply(this.win.querySelector('.win-head span'));
+        this.win.querySelector('.win-x').addEventListener('click', () => this.close());
+      }
       layer.appendChild(this.back);
       layer.appendChild(this.win);
-      SN.Audio.sfx('open');
+      SN.Audio.sfx(kind === 'offer' ? 'notify' : 'open');
       this.refresh();
       SN.Events.emit('window:opened', { kind });
       if (kind === 'news' && S.run) { S.run.newsSeen = S.run.news.length; SN.Events.emit('news:read'); }
+      if ((kind === 'upgrades' || kind === 'shop') && S.run && SN.ShopWatch) { SN.ShopWatch.markSeen(kind); SN.Events.emit('shop:seen', { kind }); }
     },
+    // La oferta de FUTURO.exe de un objeto clave
+    offer(id, why = 'shop') { this.open('offer', { item: id, why }); },
 
     close(silent) {
       if (!this.current) return;
@@ -42,7 +54,9 @@
       if (!this.win) return;
       const body = this.win.querySelector('.win-body');
       body.innerHTML = '';
-      ({ upgrades: buildUpgrades, news: buildNews, shop: buildShop, settings: buildSettings, ruleta: buildWheel })[this.current](body);
+      ({ upgrades: buildUpgrades, news: buildNews, shop: buildShop, settings: buildSettings, ruleta: buildWheel, offer: buildOffer, about: buildAbout })[this.current](body);
+      // Palabras clave con color (dinero, 7, suerte) y FUTURO.exe en el idioma secreto
+      SN.KW.apply(body);
     },
   };
 
@@ -53,7 +67,24 @@
     return c;
   }
 
+  // Mejoras (los "regalos" del encapuchado) y, cuando Bravo Fines se presenta, la pestaña de su Academia
   function buildUpgrades(body) {
+    const acOpen = SN.Academy && SN.Academy.open();
+    if (!acOpen) W.tab = 'mejoras';
+    const tab = W.tab || 'mejoras';
+    W.win.classList.toggle('wide', tab === 'academia');
+    if (acOpen) {
+      const tabs = U.el('div', 'up-tabs');
+      const n = SN.Academy.buyable().length;
+      for (const [id, label] of [['mejoras', 'Mejoras'], ['academia', `Academia de Bravo Fines${n ? `<b class="badge">${n}</b>` : ''}`]]) {
+        const b = U.el('button', 'up-tab' + (tab === id ? ' on' : '') + (id === 'academia' ? ' ac' : ''), label);
+        b.dataset.tab = id;
+        b.addEventListener('click', (e) => { e.stopPropagation(); if (W.tab === id) return; W.tab = id; SN.Audio.sfx('select'); W.refresh(); });
+        tabs.appendChild(b);
+      }
+      body.appendChild(tabs);
+    }
+    if (tab === 'academia') { buildAcademy(body); return; }
     body.appendChild(U.el('div', 'win-note', 'Se pagan con tu capital. Ninguna garantiza nada.'));
     for (const d of D.upgrades) {
       const unlocked = SN.Upgrades.isUnlocked(d.id);
@@ -93,6 +124,59 @@
     }
   }
 
+  // ---------- La Academia de Bravo Fines: un árbol de habilidades (js/data/academy.js) ----------
+  // Cada rama es una fila; cada nodo necesita el anterior. Clic en un nodo: sus detalles y el botón de comprar.
+  function buildAcademy(body) {
+    const A = SN.Academy, data = D.academy;
+    const head = U.el('div', 'ac-head');
+    const ava = U.el('i', 'ac-ava');
+    ava.appendChild(SN.Sprites.node('avaBravo', 2));
+    head.appendChild(ava);
+    head.insertAdjacentHTML('beforeend', `<div class="ac-who"><b>${data.guru.name}</b><span>"El dinero no se gana. Se manifiesta."</span></div>
+      <em class="ac-inc">Tus negocios: +${U.money(A.income())} al día</em>`);
+    body.appendChild(head);
+    const all = A.nodes();
+    if (!W.acSel || !A.node(W.acSel)) W.acSel = (all.find((n) => A.canBuy(n.id).ok) || all.find((n) => !A.has(n.id) && !n.soon) || all[0]).id;
+    for (const br of data.branches) {
+      const row = U.el('div', 'ac-row ' + br.color);
+      row.appendChild(U.el('div', 'ac-br', br.name));
+      br.nodes.forEach((n, i) => {
+        if (i) row.appendChild(U.el('i', 'ac-link' + (A.has(br.nodes[i - 1].id) ? ' on' : '')));
+        const can = A.canBuy(n.id), own = A.has(n.id);
+        const el = U.el('button', 'ac-node' + (own ? ' own' : n.soon ? ' soon' : can.ok ? ' can' : ' locked') + (W.acSel === n.id ? ' sel' : ''));
+        el.dataset.node = n.id;
+        el.title = n.name;
+        el.appendChild(icon(n.soon ? 'lock' : n.icon));
+        el.insertAdjacentHTML('beforeend', `<span class="nm">${n.short || n.name}</span><span class="pr">${own ? 'TUYO' : n.soon ? 'PRONTO' : U.short(n.cost)}</span>`);
+        el.addEventListener('click', (e) => { e.stopPropagation(); W.acSel = n.id; SN.Audio.sfx('select'); W.refresh(); });
+        row.appendChild(el);
+      });
+      body.appendChild(row);
+    }
+    // Detalle del nodo elegido
+    const n = A.node(W.acSel), can = A.canBuy(n.id), own = A.has(n.id);
+    const det = U.el('div', 'ac-det');
+    det.innerHTML = `<div class="t">${n.name}${n.soon ? ' <em>· Próximamente</em>' : ''}</div><div class="d">${n.desc}</div>`;
+    if (!own && !n.soon) {
+      const b = U.el('button', 'btn btn-yellow', `Comprar ${U.money(n.cost)}`);
+      b.disabled = !can.ok;
+      if (!can.ok && can.reason) { b.title = can.reason; det.insertAdjacentHTML('beforeend', `<div class="r">${can.reason.charAt(0) + can.reason.slice(1).toLowerCase()}</div>`); }
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!A.buy(n.id)) { SN.Audio.sfx('error'); return; }
+        SN.Audio.sfx('unlock');
+        const p = SN.UI.posIn(b);
+        SN.FX.burst(p.x + p.w / 2, p.y, { n: 18, colors: [SN.PAL.yellow, SN.PAL.green, SN.PAL.creamL] });
+        SN.FX.ring(p.x + p.w / 2, p.y + 5, SN.PAL.yellow, 40);
+        SN.Save.saveRun();
+        W.acSel = null;
+        W.refresh();
+      });
+      det.appendChild(b);
+    } else if (own) det.insertAdjacentHTML('beforeend', '<div class="r ok">Ya es tuyo.</div>');
+    body.appendChild(det);
+  }
+
   // ---------- El periódico ----------
   const MARKET_ART = { salud: 'hospital', tecno: 'chip', negocios: 'compras', mineria: 'mina', salud_negro: 'pastillas', tecno_negro: 'candado', negocios_negro: 'persiana', mineria_negro: 'mina' };
   function artFor(n) {
@@ -103,6 +187,34 @@
     return MARKET_ART[n.market] || 'ciudad';
   }
   function when(n) { return n.filler ? 'En la ciudad' : `Día ${n.day} · ${D.sim.turnNames[n.turn] || ''}`; }
+  // El evento de mercado de una noticia (si lo es)
+  function eventOf(n) {
+    if (!n || !n.ev || !n.market) return null;
+    return (D.marketEvents[n.market] || []).find((e) => e.id === n.ev) || ((D.luck && D.luck.events) || []).find((e) => e.id === n.ev) || null;
+  }
+  // Qué dice la pegatina de la foto: el color del mercado y hacia dónde va
+  function stickerOf(n) {
+    if (!n || !n.market || n.dark || n.cipher) return null;
+    const ev = eventOf(n), def = D.marketById(n.market);
+    if (!def) return null;
+    let sym = n.tone === 'neg' ? 'down' : n.tone === 'pos' ? 'up' : 'vol';
+    if (ev && n.kind !== 'result') sym = ev.kind === 'rumor' ? 'rumor' : ev.kind === 'vol' ? 'vol' : ev.kind === 'trend' ? (ev.trend > 0 ? 'up' : 'down') : (ev.tone === 'pos' ? 'up' : 'down');
+    return { color: def.colors.main, sym };
+  }
+  // PRIMERA PLANA: qué pasa, a quién afecta y qué puede pasar (en palabras de la calle)
+  function newsInfo(n) {
+    const ev = eventOf(n), mk = n.market ? D.marketLabel(n.market) : '';
+    const up = (v) => (v >= 0 ? 'sube' : 'baja');
+    if (n.cipher) return { more: 'Está escrita con unas letras que nadie sabe leer. El periódico dice que es una errata.', who: 'Nadie lo sabe.', what: 'No se puede leer. Todavía.' };
+    if (n.dark) return { more: 'Pasó justo después de tu operación. Seguro que es casualidad.', who: mk ? `La ciudad. Justo donde ganaste: ${mk}.` : 'La ciudad.', what: 'Nadie sabe qué significa. Mejor no pensarlo.' };
+    if (!ev) return { more: n.more || '', who: mk || 'A nadie: es una noticia de la ciudad.', what: mk ? (n.tone === 'neg' ? 'Ya ha pasado: el precio ha bajado.' : n.tone === 'pos' ? 'Ya ha pasado: el precio ha subido.' : 'Ya ha pasado.') : 'Nada. No mueve ningún mercado.' };
+    if (n.kind === 'result') return { more: ev.more || '', who: mk, what: n.tone === 'neg' ? 'Ya se sabe: el precio ha bajado.' : 'Ya se sabe: el precio ha subido.' };
+    const what = ev.kind === 'shock' ? (ev.tone === 'pos' ? 'Un salto hacia arriba en las próximas velas.' : 'Un golpe hacia abajo en las próximas velas.')
+      : ev.kind === 'trend' ? (ev.trend > 0 ? 'Empuja el precio hacia arriba durante un buen rato.' : 'Empuja el precio hacia abajo durante un buen rato.')
+        : ev.kind === 'vol' ? 'El precio se va a mover mucho, arriba y abajo. Cuidado con apostar fuerte.'
+          : `Se sabrá en unas velas. Si pasa ("${ev.yesText}"), ${mk} ${up(ev.yes)}. Si no ("${ev.noText}"), ${up(ev.no)}.`;
+    return { more: ev.more || '', who: mk, what };
+  }
   function tag(n) {
     if (n.cipher) return { cls: 'dark', text: '¿ERRATA?' };
     if (n.dark) return { cls: 'dark', text: 'SUCESOS' };
@@ -129,10 +241,16 @@
       photo.classList.add('clue');
       photo.addEventListener('click', (e) => { e.stopPropagation(); if (!SN.Tutorial.active) SN.Cipher.discover('errata'); });
     };
+    // Una noticia elegida (clic): PRIMERA PLANA
+    const focus = W.newsFocus && items.find((x) => x === W.newsFocus || (x.filler && W.newsFocus.filler && x.title === W.newsFocus.title));
+    if (focus) { buildFront(body, focus, dark, title); return; }
+    const pick = (n) => (e) => { e.stopPropagation(); W.newsFocus = n; SN.Audio.sfx('select'); W.refresh(); };
     const [top, ...rest] = items;
     // Portada: la noticia más reciente, con foto grande
     const hero = U.el('div', 'np-hero' + (top.dark ? ' dark' : '') + (top.cipher ? ' cipher' : ''));
-    const heroPhoto = SN.NewsArt.node(artFor(top), top.tone || 'neu', top.dark || top.cipher ? dark : 0);
+    hero.title = 'Clic: leer la noticia entera';
+    hero.addEventListener('click', pick(top));
+    const heroPhoto = SN.NewsArt.node(artFor(top), top.tone || 'neu', top.dark || top.cipher ? dark : 0, null, { sticker: stickerOf(top) });
     hero.appendChild(heroPhoto);
     errata(top, heroPhoto);
     const tg = tag(top);
@@ -143,7 +261,9 @@
     const grid = U.el('div', 'np-grid');
     for (const n of rest) {
       const it = U.el('div', 'np-item' + (n.dark ? ' dark' : '') + (n.cipher ? ' cipher' : ''));
-      const photo = SN.NewsArt.node(artFor(n), n.tone || 'neu', n.dark || n.cipher ? dark : 0, [48, 30]);
+      it.title = 'Clic: leer la noticia entera';
+      it.addEventListener('click', pick(n));
+      const photo = SN.NewsArt.node(artFor(n), n.tone || 'neu', n.dark || n.cipher ? dark : 0, [48, 30], { sticker: stickerOf(n) });
       it.appendChild(photo);
       errata(n, photo);
       it.insertAdjacentHTML('beforeend', `<div><div class="w">${when(n)}</div><div>${title(n)}</div></div>`);
@@ -153,29 +273,48 @@
     body.insertAdjacentHTML('beforeend', '<div class="np-ad">Publicidad · <b>Pleyzeta 6 Ultra</b> · ahora también a plazos. Muchos plazos.</div>');
   }
 
+  // PRIMERA PLANA de una noticia: la foto grande y a color, y lo que significa
+  function buildFront(body, n, dark, title) {
+    const info = newsInfo(n), tg = tag(n), def = n.market ? D.marketById(n.market) : null;
+    const fr = U.el('div', 'np-front' + (n.dark ? ' dark' : '') + (n.cipher ? ' cipher' : ''));
+    const ph = n.dark || n.cipher ? SN.NewsArt.node(artFor(n), n.tone || 'neu', dark) : SN.NewsArt.node(artFor(n), n.tone || 'neu', 0, null, { color: true, sticker: stickerOf(n) });
+    fr.appendChild(ph);
+    if (n.cipher === 'tuto') { ph.classList.add('clue'); ph.addEventListener('click', (e) => { e.stopPropagation(); if (!SN.Tutorial.active) SN.Cipher.discover('errata'); }); }
+    const st = stickerOf(n);
+    const arrow = st ? { up: '<b class="up">▲ sube</b>', down: '<b class="down">▼ baja</b>', rumor: '<b class="mid">? puede subir o bajar</b>', vol: '<b class="mid">≈ se mueve mucho</b>' }[st.sym] : '';
+    const who = def ? `<i class="np-ico"></i>${info.who} ${arrow}` : info.who;
+    fr.insertAdjacentHTML('beforeend', `<div class="np-fcol"><span class="np-tag ${tg.cls}">${tg.text}</span> <span class="w">${when(n)}</span>
+      <div class="h">${title(n)}</div><div class="t">${n.text || ''}</div>${info.more ? `<div class="more">${info.more}</div>` : ''}
+      <div class="np-box"><b>¿A quién afecta?</b>${who}</div><div class="np-box"><b>¿Qué puede pasar?</b>${info.what}</div></div>`);
+    const ico = fr.querySelector('.np-ico');
+    if (ico && def) ico.appendChild(SN.Sprites.node(def.icon, 1));
+    body.appendChild(fr);
+    const back = U.el('button', 'btn btn-cream np-back', '◀ Volver');
+    back.addEventListener('click', (e) => { e.stopPropagation(); W.newsFocus = null; SN.Audio.sfx('select'); W.refresh(); });
+    body.appendChild(back);
+  }
+
   // ---------- La tienda ----------
-  // Se puede mirar siempre. Los objetos clave van en orden y solo se compran cuando te llega el precio
-  // completo... y entonces FUTURO.exe se mete por medio con una oferta "mejor" (ver showOffer).
+  // Se puede mirar siempre. Los objetos clave van en orden: el que toca tiene su oferta de FUTURO.exe
+  // esperando (un poco hoy y el resto después), que también salta sola al pagar la deuda anterior.
   function buildShop(body) {
     const run = S.run;
-    body.appendChild(U.el('div', 'win-note', 'Mira lo que quieras. Los objetos clave van en orden: cuando te llegue el precio, es tuyo.'));
+    body.appendChild(U.el('div', 'win-note', 'Mira lo que quieras. Los objetos clave van en orden: FUTURO.exe te avisa cuando toca el siguiente.'));
     body.appendChild(U.el('div', 'sec-title', 'Objetos clave'));
+    const pending = SN.Unlocks.pendingItem();
     for (const it of D.keyItems) {
       const can = SN.Unlocks.canBuyItem(it.id);
       const owned = !!run.owned[it.id];
       const row = U.el('div', 'shop-row key' + (owned ? ' owned' : can.locked ? ' locked' : ''));
       row.dataset.item = it.id;
       row.appendChild(icon(owned ? 'trebol' : 'caja'));
-      row.insertAdjacentHTML('beforeend', `<div class="t">${it.name}</div><div class="d">${owned ? 'En tu habitación' : can.locked ? can.reason.charAt(0) + can.reason.slice(1).toLowerCase() : it.desc}</div>`);
-      if (!owned && !can.locked) {
-        const b = U.el('button', 'btn btn-cyan', U.short(it.price));
-        b.disabled = !can.ok;
-        if (!can.ok && can.reason) b.title = can.reason;
-        b.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (!SN.Unlocks.canBuyItem(it.id).ok) { SN.Audio.sfx('error'); return; }
-          showOffer(it);
-        });
+      const o = SN.Unlocks.offer(it);
+      const desc = owned ? 'En tu habitación' : can.locked ? can.reason.charAt(0) + can.reason.slice(1).toLowerCase() : `${it.desc} Oferta: ${U.money(o.now)} hoy.`;
+      row.insertAdjacentHTML('beforeend', `<div class="t">${it.name}</div><div class="d">${desc}</div>`);
+      if (!owned && !can.locked && pending && pending.id === it.id) {
+        const b = U.el('button', 'btn btn-cyan', 'Ver oferta');
+        b.disabled = !!run.position;
+        b.addEventListener('click', (e) => { e.stopPropagation(); W.offer(it.id, 'shop'); });
         row.appendChild(b);
       }
       body.appendChild(row);
@@ -301,24 +440,32 @@
     });
   }
 
-  // FUTURO.exe se mete en la compra: el mismo objeto por un 10%... y la letra pequeña.
-  // "No, gracias" cancela la compra (el objeto clave solo se compra así).
-  function showOffer(it) {
-    if (!W.win || W.win.querySelector('.offer')) return;
-    const o = SN.Unlocks.offer(it), st = D.story.offer;
+  // ---------- La oferta de FUTURO.exe ----------
+  // El mismo objeto por un 10% hoy... y la letra pequeña. Salta sola al pagar la deuda anterior (y cuando te
+  // llega para la entrada, y cada mañana que siga pendiente); también se abre desde la tienda o el HUD.
+  // "No, gracias" la cierra: el objeto sigue esperando en la tienda.
+  function buildOffer(body) {
+    const it = D.keyItemById(W.opts.item);
+    if (!it) { W.close(true); return; }
+    const o = SN.Unlocks.offer(it), st = D.story.offer, run = S.run;
     const fill = (t) => t.replace('{item}', it.name).replace(/\{now\}/g, U.money(o.now)).replace('{debt}', U.money(o.debt)).replace('{days}', o.days);
+    const can = SN.Unlocks.canBuyItem(it.id);
+    const short = !can.ok && can.short ? `<div class="of-short">${st.short.replace('{need}', U.money(o.need)).replace('{left}', U.money(can.short))}</div>` : '';
     const pop = U.el('div', 'offer');
-    pop.innerHTML = `<div class="of-head"><i class="of-ico"></i>FUTURO.EXE<span>Oferta encontrada</span></div>
+    pop.innerHTML = `<div class="of-head"><i class="of-ico"></i>${SN.Cipher.brand(true)}<span>${W.opts.why === 'insist' ? st.insist : 'Oferta encontrada'}</span></div>
       <div class="of-title">${st.title}</div>
       <div class="of-line">${fill(st.line)}</div>
       <div class="of-price"><s>${U.money(it.price)}</s><b>${U.money(o.now)}</b><em>${st.save}</em></div>
       <div class="of-later">${fill(st.later)}</div>
       <button class="of-small">${st.small} ▼</button>
       <div class="of-fine hidden">${fill(st.smallText)} <b class="cx of-clue" title="">${D.cipher.alphabet.D}</b></div>
+      ${short}
       <div class="of-row"><button class="btn btn-yellow of-yes">${st.yes}</button><button class="btn btn-cream of-no">${st.no}</button></div>`;
     pop.querySelector('.of-ico').style.backgroundImage = `url(${SN.Sprites.url('app', 1)})`;
-    W.win.appendChild(pop);
-    SN.Audio.sfx('notify');
+    const yes = pop.querySelector('.of-yes');
+    yes.disabled = !can.ok || !!(run && run.position);
+    if (!can.ok && can.reason) yes.title = can.reason;
+    body.appendChild(pop);
     SN.FX.glitch(0.25, 0.8);
     pop.addEventListener('click', (e) => e.stopPropagation());
     pop.querySelector('.of-small').addEventListener('click', () => {
@@ -327,10 +474,24 @@
       SN.Events.emit('offer:fineprint', { item: it.id, el: pop.querySelector('.of-fine') });
     });
     pop.querySelector('.of-clue').addEventListener('click', () => SN.Cipher.discover('letra'));
-    pop.querySelector('.of-no').addEventListener('click', () => { SN.Audio.sfx('close'); pop.remove(); });
-    pop.querySelector('.of-yes').addEventListener('click', () => { pop.remove(); SN.Game.buyKeyItem(it.id); });
+    pop.querySelector('.of-no').addEventListener('click', () => { W.close(); SN.Events.emit('offer:declined', { item: it.id }); });
+    yes.addEventListener('click', () => { if (SN.Unlocks.canBuyItem(it.id).ok) SN.Game.buyKeyItem(it.id); else SN.Audio.sfx('error'); });
   }
-  W.showOffer = showOffer;
+  // Compatibilidad: abrir la oferta de un objeto
+  W.showOffer = (it) => W.offer(it.id || it, 'shop');
+
+  // "Acerca de FUTURO.exe" (clic en el icono de la barra de título): créditos... y el sello con la F
+  function buildAbout(body) {
+    const found = SN.Cipher.found('acerca');
+    body.innerHTML = `<div class="ab"><div class="ab-logo"></div><div class="ab-txt">
+      <b>${SN.Cipher.brand(true)}</b> versión 6.6.6<br>
+      Licencia: perpetua. No se puede cerrar.<br>
+      © Futuro S.L. Todos los derechos reservados. También los tuyos.<br>
+      Programa recomendado por: un amigo con capucha.</div>
+      <button class="ab-seal${found ? ' read' : ''}" title="">${found ? '<b class="cx-k">F</b>' : `<b class="cx">${D.cipher.alphabet.F}</b>`}</button></div>`;
+    body.querySelector('.ab-logo').appendChild(SN.Sprites.node('appBig', 2));
+    body.querySelector('.ab-seal').addEventListener('click', (e) => { e.stopPropagation(); SN.Cipher.discover('acerca'); W.refresh(); });
+  }
 
   function buildSettings(body) {
     const st = S.profile.settings;

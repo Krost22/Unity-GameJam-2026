@@ -1,5 +1,5 @@
 // Escritorio del PC: FUTURO.exe se minimiza (botón _ o tecla D) y debajo está el ordenador del
-// protagonista, con sus programas: Mensajín (chat con Kevo y con LOS PAGADOS), Notas, Papelera y,
+// protagonista, con sus programas: Mensajín (chat con Kevo, con LOS PAGADOS y con Bravo Fines), Notas, Papelera y,
 // cuando descifras el primer símbolo, Símbolos (la tabla del idioma secreto, js/systems/cipher.js).
 // En Mensajín no se escribe de verdad: cualquier tecla pone las letras de la
 // respuesta que el protagonista tiene que dar; el jugador siente que escribe y la historia sigue su guion.
@@ -21,6 +21,7 @@
   const TITLES = { notes: 'Notas.txt', trash: 'Papelera', symbols: 'Símbolos.txt' };
   const TASKS = { notes: 'Notas', trash: 'Papelera', symbols: 'Símbolos' };
   const X = () => SN.Data.cipher;
+  const B = () => SN.Data.academy;
   const cx = (t) => SN.Cipher.html(t, SN.UI.freshLetter);
 
   const D = SN.Desktop = {
@@ -44,7 +45,7 @@
         const b = U.el('button', 'dt-icon');
         b.dataset.app = ic.id;
         b.appendChild(SN.Sprites.node(ic.sprite, 1));
-        b.insertAdjacentHTML('beforeend', `<span>${ic.name}</span><b class="badge hidden"></b>`);
+        b.insertAdjacentHTML('beforeend', `<span class="nm">${ic.id === 'futuro' ? SN.Cipher.brand() : ic.name}</span><b class="badge hidden"></b>`);
         b.addEventListener('click', () => { SN.Audio.sfx('click'); this.launch(ic.id); });
         icons.appendChild(b);
       }
@@ -65,8 +66,8 @@
         }
       });
       this.renderIcons();
-      SN.Events.on('turn:ready', () => { if (S.run) this.chat().clock++; this.check(); this.serCheck(); this.refreshNotes(); this.refreshTrash(); });
-      SN.Events.on('chat:flag', ({ flag }) => { this.flag(flag); this.serCheck(); });
+      SN.Events.on('turn:ready', () => { if (S.run) this.chat().clock++; this.check(); this.serCheck(); this.bravoCheck(); this.refreshNotes(); this.refreshTrash(); });
+      SN.Events.on('chat:flag', ({ flag }) => { this.flag(flag); this.serCheck(); this.bravoCheck(); });
       SN.Events.on('piggy:broken', () => this.flag('piggy'));
       SN.Events.on('trade:closed', (r) => { if (r && (r.liquidated || r.pnl <= -Math.max(50, r.amount * 0.6))) this.flag('bigLoss'); });
       SN.Events.on('debt:paid', () => this.refreshNotes());
@@ -77,6 +78,7 @@
     reset() {
       clearTimeout(this.timer); this.timer = null; this.typing = false;
       clearTimeout(this.serT); this.serT = null;
+      clearTimeout(this.bravoT); this.bravoT = null;
       this.contact = 'kevo';
       this.renderIcons();
       for (const id of Object.keys(this.wins)) { this.wins[id].remove(); delete this.wins[id]; }
@@ -158,7 +160,7 @@
       const tasks = root.querySelector('.dt-tasks');
       tasks.innerHTML = '';
       const add = (id, name) => {
-        const b = U.el('button', 'dt-task' + (id === 'futuro' ? ' min' : '') + (this.topWin() === id ? ' on' : ''), esc(name));
+        const b = U.el('button', 'dt-task' + (id === 'futuro' ? ' min' : '') + (this.topWin() === id ? ' on' : ''), id === 'futuro' ? SN.Cipher.brand() : esc(name));
         b.addEventListener('click', () => this.launch(id));
         tasks.appendChild(b);
       };
@@ -166,7 +168,7 @@
       for (const id of Object.keys(this.wins)) add(id, id === 'chat' ? C().app : TASKS[id]);
       const names = SN.Data.sim.turnNames || ['Mañana', 'Tarde', 'Noche'];
       root.querySelector('.dt-clock').textContent = `Día ${S.run.day} · ${names[S.run.turn] || ''}`;
-      const unread = (this.chat().unread || 0) + (this.ser().unread || 0);
+      const unread = (this.chat().unread || 0) + (this.ser().unread || 0) + (this.bravo().unread || 0);
       const badge = root.querySelector('.dt-icon[data-app="chat"] .badge');
       badge.textContent = unread; badge.classList.toggle('hidden', !unread);
       const mb = $('min-badge');
@@ -237,6 +239,7 @@
       }
       const c = this.convo();
       ch.phase = 'in'; ch.k = 0; ch.typed = 0;
+      SN.Events.emit('kevo:writes', { id: c.id });
       if (c.nick) ch.nick = c.nick;
       ch.offline = false;
       this.pump();
@@ -305,17 +308,22 @@
       SN.FX.shake(3, 0.35);
     },
 
-    // Aviso dentro de FUTURO.exe: clic para ir al chat
-    toast(line, html) {
+    // Aviso dentro de FUTURO.exe: clic para ir al chat. opts (otros avisos, como "ya puedes comprar..."):
+    // { icon, kbd, onClick }
+    toast(line, html, opts = {}) {
       const layer = $('layer-top');
       let t = layer.querySelector('.msg-toast');
       if (!t) {
         t = U.el('button', 'msg-toast');
-        t.addEventListener('click', () => { t.remove(); this.minimize('chat'); });
+        t.addEventListener('click', () => { const fn = t.onPick; t.remove(); if (fn) fn(); });
         layer.appendChild(t);
       }
-      t.innerHTML = html ? `<i></i><span>${html}</span><kbd>D</kbd>` : `<i></i><span><b>${esc(C().friend.name)}</b> ${esc(line)}</span><kbd>D</kbd>`;
-      t.querySelector('i').appendChild(SN.Sprites.node('icoChat', 1));
+      t.onPick = opts.onClick || (() => this.minimize('chat'));
+      t.classList.toggle('shop', !!opts.icon);
+      const kbd = opts.kbd || 'D';
+      t.innerHTML = html ? `<i></i><span>${html}</span><kbd>${kbd}</kbd>` : `<i></i><span><b>${esc(C().friend.name)}</b> ${esc(line)}</span><kbd>${kbd}</kbd>`;
+      t.querySelector('i').appendChild(SN.Sprites.node(opts.icon || 'icoChat', 1));
+      SN.KW.apply(t.querySelector('span'));
       t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
       clearTimeout(this.toastT);
       this.toastT = setTimeout(() => t.remove(), 6000);
@@ -324,7 +332,7 @@
     buildChat(w) {
       const f = C().friend;
       w.querySelector('.dt-body').innerHTML = `
-        <div class="ch-tabs hidden"><button class="ch-tab" data-c="kevo">${esc(f.name)}<b class="badge hidden"></b></button><button class="ch-tab ser" data-c="ser"></button></div>
+        <div class="ch-tabs hidden"><button class="ch-tab" data-c="kevo">${esc(f.name)}<b class="badge hidden"></b></button><button class="ch-tab ser" data-c="ser"></button><button class="ch-tab bravo" data-c="bravo"></button></div>
         <div class="ch-who"><i class="ch-ava"></i><div><b class="ch-nick"></b><span class="ch-status"></span></div></div>
         <div class="ch-log"></div>
         <div class="ch-typing"></div>
@@ -344,7 +352,8 @@
         SN.Audio.sfx('thud');
         if (this.avaHits >= 3) { this.avaHits = 0; SN.Cipher.discover('avatar'); }
       });
-      if (!this.ser().log.length) this.contact = 'kevo';
+      if (this.contact === 'ser' && !this.ser().log.length) this.contact = 'kevo';
+      if (this.contact === 'bravo' && !this.bravo().log.length) this.contact = 'kevo';
       this.renderChat();
     },
 
@@ -391,17 +400,23 @@
     renderChat() {
       const w = this.wins.chat;
       if (!w) return;
-      const ch = this.chat(), f = C().friend, cs = this.ser();
-      // Pestañas: Kevo y, cuando escriben, LOS PAGADOS
+      const ch = this.chat(), f = C().friend, cs = this.ser(), cb = this.bravo();
+      // Pestañas: Kevo y, cuando escriben, LOS PAGADOS y Bravo Fines
       const tabs = w.querySelector('.ch-tabs');
-      tabs.classList.toggle('hidden', !cs.log.length);
-      tabs.querySelector('.ser').innerHTML = `${cx(X().contact.name)}<b class="badge${cs.unread ? '' : ' hidden'}">${cs.unread || ''}</b>`;
+      tabs.classList.toggle('hidden', !cs.log.length && !cb.log.length);
+      const stab = tabs.querySelector('.ser');
+      stab.classList.toggle('hidden', !cs.log.length);
+      stab.innerHTML = `${cx(X().contact.name)}<b class="badge${cs.unread ? '' : ' hidden'}">${cs.unread || ''}</b>`;
+      const bt = tabs.querySelector('.bravo');
+      bt.classList.toggle('hidden', !cb.log.length);
+      bt.innerHTML = `${esc(B().guru.name)}<b class="badge${cb.unread ? '' : ' hidden'}">${cb.unread || ''}</b>`;
       const kb = tabs.querySelector('[data-c="kevo"] .badge');
       kb.textContent = ch.unread || ''; kb.classList.toggle('hidden', !ch.unread || this.contact === 'kevo');
       tabs.querySelectorAll('.ch-tab').forEach((b) => b.classList.toggle('on', b.dataset.c === (this.contact || 'kevo')));
       if (this.contact === 'ser') { this.renderSer(w); return; }
+      if (this.contact === 'bravo') { this.renderBravo(w); return; }
       const ava = w.querySelector('.ch-ava');
-      if (ava.dataset.who !== 'kevo') { ava.innerHTML = ''; ava.appendChild(SN.Sprites.node('avaKevo', 2)); ava.dataset.who = 'kevo'; ava.classList.remove('ser'); }
+      if (ava.dataset.who !== 'kevo') { ava.innerHTML = ''; ava.appendChild(SN.Sprites.node('avaKevo', 2)); ava.dataset.who = 'kevo'; ava.classList.remove('ser', 'bravo'); }
       if (this.topWin() === 'chat') ch.unread = 0;
       w.querySelector('.ch-nick').textContent = ch.nick || f.nick;
       const st = w.querySelector('.ch-status');
@@ -417,6 +432,7 @@
         log.insertAdjacentHTML('beforeend', `<p class="ch-msg ${m.who}${head ? ' first' : ''}">${head}${esc(m.t)}</p>`);
         prev = m.who;
       }
+      SN.KW.apply(log);
       log.scrollTop = log.scrollHeight;
       w.querySelector('.ch-typing').textContent = this.typing ? `${f.name} está escribiendo…` : '';
       this.renderInput();
@@ -489,6 +505,61 @@
       btn.classList.remove('ready');
     },
 
+    // ---------- Bravo Fines: el gurú manda frases (js/data/academy.js) y no lee lo que le contestan ----------
+    bravo() {
+      if (!S.run) return {};
+      if (!S.run.chatBravo) S.run.chatBravo = { i: 0, log: [], unread: 0 };
+      return S.run.chatBravo;
+    },
+    bravoCheck() {
+      if (!S.run || S.run.over || SN.Game.state !== 'GAMEPLAY' || this.bravoT || !SN.Data.academy) return;
+      const cb = this.bravo(), m = B().messages[cb.i];
+      if (!m || !this.ready(m)) return;
+      cb.i++;
+      // Las frases llegan una a una, como si las escribiera (con mucha seguridad)
+      const lines = m.lines.slice();
+      const next = () => {
+        this.bravoT = null;
+        if (!S.run || !lines.length) { SN.Save.saveRun(); this.bravoCheck(); return; }
+        const line = lines.shift();
+        cb.log.push({ who: 'b', t: line });
+        const reading = this.open && this.topWin() === 'chat' && this.contact === 'bravo';
+        if (!reading) cb.unread = (cb.unread || 0) + 1;
+        SN.Audio.sfx('notify');
+        if (!this.open) this.toast('', `<b>${esc(B().guru.name)}</b> ${esc(line)}`);
+        SN.Events.emit('bravo:message', { line });
+        this.renderChat();
+        this.refresh();
+        this.bravoT = setTimeout(next, 900 + Math.min(1200, (lines[0] || '').length * 30));
+      };
+      this.bravoT = setTimeout(next, 1200);
+    },
+    renderBravo(w) {
+      const cb = this.bravo(), g = B().guru;
+      if (this.topWin() === 'chat') cb.unread = 0;
+      const ava = w.querySelector('.ch-ava');
+      if (ava.dataset.who !== 'bravo') { ava.innerHTML = ''; ava.appendChild(SN.Sprites.node('avaBravo', 2)); ava.dataset.who = 'bravo'; ava.classList.remove('ser'); ava.classList.add('bravo'); }
+      w.querySelector('.ch-nick').textContent = g.nick;
+      const st = w.querySelector('.ch-status');
+      st.textContent = 'Conectado · cerrando tratos';
+      st.className = 'ch-status';
+      const log = w.querySelector('.ch-log');
+      log.innerHTML = '';
+      let first = true;
+      for (const m of cb.log) {
+        log.insertAdjacentHTML('beforeend', `<p class="ch-msg bravo${first ? ' first' : ''}">${first ? `<b>${esc(g.name)}</b>` : ''}${esc(m.t)}</p>`);
+        first = false;
+      }
+      log.scrollTop = log.scrollHeight;
+      w.querySelector('.ch-typing').textContent = this.bravoT ? `${g.name} está escribiendo…` : '';
+      const box = w.querySelector('.ch-box'), btn = w.querySelector('.ch-send');
+      box.innerHTML = '<span class="ph">Bravo Fines no lee mensajes. Solo los manda.</span>';
+      box.classList.remove('live');
+      btn.disabled = true;
+      btn.classList.remove('ready');
+      if (SN.KW) SN.KW.apply(log);
+    },
+
     // ---------- Símbolos: la tabla del idioma secreto ----------
     renderIcons() {
       const root = $('desktop');
@@ -511,6 +582,9 @@
     // Un símbolo nuevo: aparece la app, se marca y todo lo que hay abierto se traduce un poco más
     onCipher() {
       this.renderIcons();
+      const nm = $('desktop').querySelector('.dt-icon[data-app="futuro"] .nm');
+      if (nm) nm.innerHTML = SN.Cipher.brand();
+      this.refresh();
       const badge = $('desktop').querySelector('.dt-icon[data-app="symbols"] .badge');
       if (badge && !(this.open && this.topWin() === 'symbols')) { badge.textContent = '+1'; badge.classList.remove('hidden'); }
       this.renderSymbols();
@@ -534,6 +608,7 @@ ${box(false)} Comprar ramen (otra vez)
 ${box(this.chat().i > 0)} Contestar a Kevo
 ${box(false)} NO apostarlo todo
 ${box(false)} Dormir${this.ghostLine()}</pre>`;
+      SN.KW.apply(w.querySelector('.nt'));
       const gh = w.querySelector('.nt-ghost');
       if (gh) gh.addEventListener('click', () => { SN.Audio.sfx('select'); SN.Cipher.discover('notas'); });
     },

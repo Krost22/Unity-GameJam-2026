@@ -18,7 +18,7 @@
       colors: { main: P.green, alt: P.cream, dark: P.greenD, ink: P.greenDD },
       startPrice: 100,
       volatility: 0.016, // desviación típica por vela
-      drift: 0.0105,     // deriva por vela con tendencia máxima
+      drift: 0.0093,     // deriva por vela con tendencia máxima (1.6: un poco menos, para un inicio más difícil)
       phase: [16, 30],   // velas que dura cada fase de tendencia
       flatChance: 0.16,  // probabilidad de que una fase no tenga dirección clara
       reversion: 0.012,  // vuelta suave al precio de referencia (evita precios absurdos)
@@ -46,7 +46,7 @@
       candles: 10,
       twist: { chance: 0.32, min: 0.07, max: 0.13 },
       cap: 1500,
-      unlock: { type: 'goal', goal: 'g1000', label: '$1K' },
+      unlock: { type: 'gift', step: 'regalo2', label: '2º regalo' },
     },
     {
       id: 'negocios',
@@ -66,7 +66,7 @@
       candles: 14,
       twist: { chance: 0.22, min: 0.05, max: 0.1 },
       cap: 7500,
-      unlock: { type: 'goal', goal: 'g5000', label: '$5K' },
+      unlock: { type: 'gift', step: 'regalo3', label: '3er regalo' },
     },
     {
       id: 'mineria',
@@ -86,7 +86,7 @@
       candles: 10,
       twist: { chance: 0.4, min: 0.1, max: 0.18 },
       cap: 30000,
-      unlock: { type: 'goal', goal: 'g25000', label: '$25K' },
+      unlock: { type: 'gift', step: 'regalo4', label: '4º regalo' },
     },
   ];
 

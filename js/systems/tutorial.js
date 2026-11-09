@@ -1,7 +1,8 @@
 // TutorialManager: se aprende haciendo, con frases cortas. Obligatorio en la primera partida y
 // repetible desde AJUSTES (al repetirlo, la partida se restaura tal y como estaba).
 // 1. La PISTA de la gráfica.  2. SUBE.  3. COBRAR a tiempo.  4. Ver el susto de las últimas velas
-// desde fuera.  5. Apuesta y multiplicador.  6. Las noticias (y una "errata" que "no es relevante").  7. La meta.
+// desde fuera.  5. Apuesta y multiplicador.  6. Las noticias (y una "errata" que "no es relevante").
+// 7. Mejoras y Tienda (y el número rojo cuando hay algo que comprar).  8. La meta.
 (function (SN) {
   'use strict';
   const S = SN.State, D = SN.Data, U = SN.Util;
@@ -21,7 +22,7 @@
   }
 
   const T = SN.Tutorial = {
-    VERSION: 3, // si cambia, los jugadores que hicieron el tutorial antiguo ven el nuevo (3: las noticias y la "errata")
+    VERSION: 4, // si cambia, los jugadores que hicieron el tutorial antiguo ven el nuevo (4: mejoras y tienda)
     active: false,
     controlledTrade: false,
 
@@ -124,6 +125,19 @@
         await SN.wait(0.35);
         const spots = st.spots || [];
         await SN.Dialog.show(st.lines, { pos: { v: 'bottom', h: 'center' }, onLine: (i) => { if (spots[i]) UI.spot(spots[i]); } });
+        UI.clearSpot();
+        SN.Windows.close();
+        return;
+      }
+      if (st.buy) {
+        // Mejoras y Tienda: primero los botones (con su número rojo), luego cada ventana por dentro
+        UI.renderNav();
+        const acts = st.acts || [];
+        await SN.Dialog.show(st.lines, { pos: { v: 'bottom', h: 'center' }, onLine: (i) => {
+          const a = acts[i] || {};
+          if (a.open && SN.Windows.current !== a.open) SN.Windows.open(a.open);
+          if (a.spot) UI.spot(a.spot);
+        } });
         UI.clearSpot();
         SN.Windows.close();
         return;

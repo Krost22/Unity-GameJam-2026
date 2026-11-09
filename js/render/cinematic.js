@@ -398,7 +398,7 @@
         g.globalAlpha = k;
         g.drawImage(SN.Sprites.get('appBig'), ix, iy, 32, 32);
         R(g, ix - 10, iy + 35, 52, 10, P.coal);
-        Px.text(g, 'FUTURO.EXE', ix + 16, iy + 43, P.yellow, { align: 'center' });
+        Px.text(g, SN.Cipher.brandText(true), ix + 16, iy + 43, P.yellow, { align: 'center' });
         g.globalAlpha = 1;
       }
       if (this.screenMode === 'open') {
@@ -408,7 +408,7 @@
         const x = U.lerp(336, 0, k), y = U.lerp(150, 0, k);
         R(g, x, y, w, h, P.cream);
         R(g, x, y, w, Math.min(h, 11), P.coal);
-        if (k > 0.6) Px.text(g, 'FUTURO.EXE', x + 14, y + 9, P.yellow);
+        if (k > 0.6) Px.text(g, SN.Cipher.brandText(true), x + 14, y + 9, P.yellow);
       }
       // Barrido
       g.globalAlpha = 0.1;

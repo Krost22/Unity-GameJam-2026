@@ -113,7 +113,10 @@
       if (inside(win) && ev.includes('encapuchado')) return SN.Cipher.discover('azotea');
       // El gato: solo despierto se le ve el collar
       if (inside([2, 142, 64, 34])) {
-        if (SN.Hero.cat.state === 'sleep') { SN.Audio.sfx('tick'); return null; }
+        const st = SN.Hero.cat.state;
+        SN.Hero.petCat();
+        // (solo cuando algo le ha despertado de verdad: un susto, una gran pérdida, alguien en la ventana)
+        if (!['awake', 'arch', 'alert'].includes(st)) { SN.Audio.sfx('tick'); return null; }
         return SN.Cipher.discover('gato');
       }
       // El póster, cuando la ciudad ya se ha apagado un poco

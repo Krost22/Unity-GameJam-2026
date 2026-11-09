@@ -19,7 +19,7 @@
       const seed = (Math.random() * 2 ** 31) >>> 0;
       this.rng = new SN.RNG(seed);
       const run = {
-        v: 3,
+        v: 4,
         seed,
         rngState: 0,
         capital: D.sim.startCapital,
@@ -41,6 +41,9 @@
         darkness: 0,
         darkUsed: {},
         owned: {},
+        academy: {},     // nodos comprados en la Academia de Bravo Fines
+        seen: {},        // lo que ya se vio en Mejoras y Tienda (para los números rojos)
+        offer: null,     // cuándo se enseñó la oferta pendiente de FUTURO.exe ({ step, shown, aff, day })
         storySeen: {},
         selected: 'salud',
         form: { amount: 50, frac: 0.5, leverage: 2 },
@@ -69,14 +72,14 @@
 
     // Punto de control: al empezar cada paso de la escalera (la deuda, cada regalo, cada compra, cada meta)
     // se guarda la partida tal cual. Si pierdes del todo, vuelves aquí con los fondos que tenías entonces.
-    // Timmy rellena su cerdito. Los chats no se rebobinan: lo hablado, hablado está.
+    // Timmy vuelve a juntar sus ahorros. Los chats no se rebobinan: lo hablado, hablado está.
     checkpoint(label) {
       const run = this.run;
       // Nunca se guarda un punto de control sin dinero para apostar (volver ahí sería perder otra vez):
       // si acabas de pagar y te has quedado sin nada, sigue valiendo el anterior.
       if (run.checkpoint && run.capital + run.committed < D.sim.bankruptcyThreshold) return false;
       this.sync();
-      const copy = Object.assign({}, run, { checkpoint: null, chat: null, chatSer: null });
+      const copy = Object.assign({}, run, { checkpoint: null, chat: null, chatSer: null, chatBravo: null });
       run.checkpoint = { label, capital: run.capital, data: JSON.stringify(copy) };
       run.piggy = 'ready';
     },
@@ -87,6 +90,7 @@
       run.checkpoint = cp;
       run.chat = old.chat;
       run.chatSer = old.chatSer;
+      run.chatBravo = old.chatBravo;
       run.piggy = 'ready';
       run.retries = (old.retries || 0) + 1;
       run.chatFlags = Object.assign({}, run.chatFlags || {}, old.chatFlags || {});
@@ -94,7 +98,7 @@
       this.adopt(run);
       return true;
     },
-    // Lo que da el cerdito: para la Pleyzeta, $60; después, una parte de lo que tenías al empezar el paso
+    // Lo que dan los ahorros de Timmy: para la Pleyzeta, $60; después, una parte de lo que tenías al empezar el paso
     piggyAmount() {
       const cp = this.run.checkpoint;
       const base = cp ? cp.capital : 100;

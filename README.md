@@ -26,7 +26,7 @@ El teclado es un atajo y cada botón muestra su tecla:
 | `P` | ESPERAR (pasar el turno sin apostar) |
 | `Tab` | cambiar de mercado (de la pestaña que se ve) |
 | `X` | pestañas Legal / Negro (cuando tienes un mercado negro) |
-| `M` `N` `T` | mejoras, noticias, tienda |
+| `M` `N` `T` | mejoras (y la Academia de Bravo Fines), noticias, tienda |
 | `D` | minimizar FUTURO.exe y ver el escritorio |
 | cualquier tecla | escribir en Mensajín (`Enter` envía) |
 | `Esc` | menú / cerrar ventana |
@@ -45,16 +45,25 @@ El teclado es un atajo y cada botón muestra su tecla:
 - **Topes:** cada mercado gana o pierde como mucho una cantidad por apuesta (Salud $300, Tecnología $1,500,
   Negocios $7,500, Minería $30,000). Al llegar al tope el marcador se pone dorado: para ganar más hay que subir de mercado.
 - **Cada apuesta o ESPERAR gasta un turno.** 3 turnos = 1 día. La deuda vence al final de su último día (la primera, el día 7).
-- **Una escalera de deudas:** la partida es una lista de pasos en orden (nada se desbloquea antes que lo anterior) y
-  solo hay una deuda a la vez:
+- **Una cadena de deudas:** la partida es una lista de pasos en orden y solo hay una deuda a la vez. Al pagar una,
+  llega la siguiente al momento: siempre debes algo.
   1. **La Pleyzeta:** $250 en 7 días.
-  2. **Los "regalos" del encapuchado:** al pagarla (y en cada meta) te "regala" una mejora... que solo queda
-     desbloqueada para comprarla, y trae una deuda nueva con su plazo. Así llegan LÍMITE, ANÁLISIS, SUERTE y RESISTENCIA.
-  3. **Los objetos clave de la tienda** (Tele SAMSONG 98", Móvil iFON 17 Pro Max Plus, Moto YAMAJA, Reloj RÓLEZ):
-     la tienda se mira siempre, pero cada objeto se compra en orden y solo cuando te llega el precio completo. Al ir a
-     pagar, FUTURO.exe se mete con una oferta "mucho más barata" (un 10% hoy; la letra pequeña dice el resto). "No,
-     gracias" cancela; aceptarla te endeuda... y el encapuchado te abre un **mercado negro**.
-  4. **Las metas** ($1,000, $5,000, $25,000) abren Tecnología, Negocios y Minería. La última, $100,000.
+  2. **Los "regalos" del encapuchado:** te "regala" una mejora (que solo queda desbloqueada para comprarla) y, desde
+     el segundo, un mercado nuevo: Tecnología, Negocios y Minería. Cada regalo trae una deuda con su plazo.
+  3. **Los objetos clave** (Tele SAMSONG 98", Móvil iFON 17 Pro Max Plus, Moto YAMAJA, Reloj RÓLEZ): al pagar la
+     deuda anterior, FUTURO.exe salta solo con una oferta "mucho más barata" (un 10% hoy; la letra pequeña dice el
+     resto). Para aceptarla hay que tener en la cuenta un 25% de lo que vas a deber. "No, gracias" la deja esperando
+     en la tienda y en el HUD (y vuelve a insistir cada mañana); aceptarla te endeuda... y el encapuchado te abre un
+     **mercado negro**.
+  4. **La meta final:** $100,000.
+- **Números rojos:** Mejoras y Tienda enseñan un número rojo, como las noticias, cuando hay algo nuevo que ya puedes
+  comprar, y sale un aviso. Abrir la ventana lo da por visto.
+- **Bravo Fines y su Academia:** la mañana siguiente a pagar la Pleyzeta aparece un gurú del trading (gafas de sol,
+  tres Lambos alquilados) que escribe por Mensajín y abre su **Academia** (pestaña de MEJORAS): un árbol de
+  habilidades que se compra con dinero, en orden. Negocios que pagan cada mañana (limonada, chicles, lavandería),
+  Mentalidad de tiburón (+5% en cada ganancia), Plan B (la primera pérdida del día, a la mitad) y Leer la letra
+  pequeña (las ofertas traen un 10% menos de deuda). El resto de nodos sale como "Próximamente".
+- **Palabras clave:** en los textos, el dinero sale en dorado, el 7 en arcoíris y la suerte en verde, y se mueven.
 - **Mercado negro:** cada mercado tiene su versión negra (pestaña Negro, logo con calavera, FUTURO.exe se oscurece).
   Paga más que su versión normal y un 20% menos que el siguiente mercado normal (Salud negro, $1,200 = 0.8 × Tecnología).
   Ganar ahí casi siempre trae una noticia extraña.
@@ -63,10 +72,10 @@ El teclado es un atajo y cada botón muestra su tecla:
   Ruleta de la Fortuna (en la tienda), Estrella de la Suerte (un mercado vale ×1.77) o Bendición de la Fortuna.
 - **Perder:** si no te alcanza para la apuesta mínima ($10), si vence el plazo, o si ya es matemáticamente imposible
   pagar a tiempo, se pierde en ese momento (nada de pasar turnos esperando lo inevitable). Pero no se pierde todo:
-  - **Vida extra: el cerdito de Timmy.** Te cuelas en el cuarto de tu hermano pequeño (mantén pulsado para avanzar y
-    suelta cuando se mueva), coges su cerdito y lo rompes tú mismo en tu mesa. Su dinero es tuyo y la partida sigue
-    (si era por el plazo, el cobrador te da 2 días más). Hay un cerdito por paso.
-  - **Sin cerdito:** vuelves al inicio del paso en el que ibas (una deuda, un regalo, una compra, una meta) con el
+  - **Vida extra: los ahorros de Timmy.** Te cuelas en el cuarto de tu hermano pequeño (mantén pulsado para avanzar
+    y suelta cuando se mueva), coges el cerdito con sus ahorros para la cirugía y lo rompes tú mismo en tu mesa. Su
+    dinero es tuyo y la partida sigue (si era por el plazo, el cobrador te da 2 días más). Una vez por paso.
+  - **Sin ahorros que romper:** vuelves al inicio del paso en el que ibas (una deuda, un regalo, una oferta) con el
     dinero, las mejoras y los mercados que tenías al empezarlo.
 
 ## El idioma secreto (no lo leas si quieres descubrirlo tú)
@@ -76,7 +85,26 @@ y el encapuchado dice que no es relevante) y los mensajes de **LOS PAGADOS**, al
 quien no se puede contestar. Es una sustitución de letras: cada símbolo escondido que encuentras (en el escritorio, en
 la habitación, en las ventanas de la app...) se traduce para siempre, en todos los textos y en todas las partidas.
 La app **Símbolos** aparece al encontrar el primero, con una pista vaga más cada día de la suerte.
+Hasta el nombre del programa, **FUTURO**, está escrito así (la F tiene su propia pista).
 El encapuchado sabe leerlo. No le gusta que lo leas.
+
+## Qué hay en la versión 1.6: deudas en cadena, Bravo Fines y noticias que se entienden
+
+| Cambio | Detalle |
+|---|---|
+| Deudas en cadena | Sin metas de dinero entre medias: al pagar una deuda llega la siguiente. Los mercados legales llegan con los regalos |
+| La oferta salta sola | Al pagar la deuda anterior, FUTURO.exe ofrece el siguiente objeto sin ir a la tienda; pide un 25% de la deuda en la cuenta |
+| Números rojos y avisos | Mejoras y Tienda avisan, como las noticias, cuando hay algo nuevo que comprar |
+| Tutorial | Un paso nuevo enseña Mejoras, la Tienda y el número rojo |
+| Bravo Fines | Gurú del trading con retrato, chat en Mensajín y su Academia: árbol de habilidades con 6 nodos que ya funcionan y hueco para más |
+| Inicio más difícil | Sin ANÁLISIS la pista falla más y Salud sube más despacio: la primera deuda se paga ~63% de las veces siguiendo la pista (antes ~78%). La Academia acelera después |
+| Palabras clave | Dinero en dorado, 7 en arcoíris y suerte en verde, con movimiento (diálogos, noticias, chat, avisos, tienda) |
+| FUTURO cifrado | El nombre del programa está en el idioma secreto; nueva letra (F → Ы) con su pista en "Acerca de" |
+| El protagonista habla | Globos de texto encima del teclado cuando pasa algo: pagar, regalos, ofertas, grandes ganancias y pérdidas, días de la suerte... |
+| El gato | Se estira, bosteza, se lava, se sienta a mirar el ratón, ronronea al ganar, se eriza al perder y vigila la ventana |
+| Ahorros de Timmy | "¡Felicidades! Rompiste los ahorros para la cirugía del pequeño Timmy". El cirujano no acepta velas japonesas |
+| Primera plana | Clic en cualquier noticia: foto grande a color, más información, a quién afecta y qué puede pasar |
+| Noticias | Palabras sencillas en todas; una foto propia por noticia (45 escenas nuevas) con una pegatina del efecto; Donald Trompa y Vladímir Patín |
 
 ## Qué hay en la versión 1.5: deudas, mercado negro, idioma secreto y días de la suerte
 
@@ -162,15 +190,18 @@ css/style.css         estilos (paleta oficial en variables CSS)
 css/font.css          fuente pixel propia, generada (no editar a mano)
 js/core/              sn.js (utilidades, RNG con semilla), events.js, state.js, game.js (GameManager, bucle, tiempo y cámara)
 js/data/              los "ScriptableObjects": mercados (también los negros), eventos, simulación/mejoras/tienda,
-                      progression.js (la escalera de deudas y los objetos clave), luck.js (días de la suerte),
-                      cipher.js (el idioma secreto), historia, chat.js (las conversaciones con Kevo)
+                      progression.js (la cadena de deudas y los objetos clave), luck.js (días de la suerte),
+                      cipher.js (el idioma secreto), academy.js (el árbol de Bravo Fines), historia (también lo
+                      que dice el protagonista en sus globos), chat.js (las conversaciones con Kevo)
 js/systems/           economy, debt, time, market-sim (+ PISTA), trading (+ COBRAR, giros y topes), drama (cámara lenta),
-                      unlocks (la escalera), upgrades, save, cipher, luck, audio, tutorial, narrative, bankruptcy
+                      unlocks (la cadena), upgrades, academy, shopwatch (números rojos y ofertas que saltan solas),
+                      save, cipher, luck, audio, tutorial, narrative, bankruptcy
 js/render/            pixel.js, pixkit.js (kit de pixel art procedural), sprites.js, desk.js (habitación y ventana), hero.js (manos,
                       gato y primeros planos), hands.js, chart.js, fx.js, news-art.js, characters.js, cinematic.js,
                       sneak.js (el cuarto de Timmy)
-js/ui/                ui.js (UIManager), dialog.js, windows.js (mejoras, periódico, tienda, ruleta, ajustes),
-                      desktop.js (escritorio del PC, Mensajín y Símbolos)
+js/ui/                ui.js (UIManager), dialog.js, windows.js (mejoras y Academia, periódico con primera plana,
+                      tienda, oferta, ruleta, ajustes, "Acerca de"), desktop.js (escritorio del PC, Mensajín y
+                      Símbolos), keywords.js (palabras clave con color), hero-say.js (los globos del protagonista)
 tools/                build-font.js y pruebas
 ```
 
@@ -181,6 +212,7 @@ tools/                build-font.js y pruebas
 | MarketSimulator · TradingManager | `js/systems/market-sim.js` · `trading.js` |
 | MarketUnlockManager (escalera) · UpgradeManager | `js/systems/unlocks.js` · `upgrades.js` |
 | CipherManager · LuckManager | `js/systems/cipher.js` · `luck.js` |
+| AcademyManager · ShopWatch (números rojos) | `js/systems/academy.js` · `shopwatch.js` |
 | TutorialManager · NarrativeManager · BankruptcyManager | `js/systems/tutorial.js` · `narrative.js` · `bankruptcy.js` |
 | DeskInteractionController | `js/render/hands.js` |
 | UIManager · SaveManager | `js/ui/ui.js` · `js/systems/save.js` |
@@ -212,9 +244,9 @@ Kevo, la respuesta del protagonista y lo que Kevo contesta.
 ## Pruebas
 
 ```
-node tools/test/logic.test.js       # fórmulas, COBRAR, giros, pista, topes, escalera, deudas, idioma secreto, suerte y equilibrio (con un bot que juega la partida entera)
-node tools/test/e2e.test.js         # partida completa en Chrome/Edge sin ventana: tutorial (con la errata), regalo, tienda, oferta, mercado negro, cerdito
-node tools/test/e2e-paths.test.js   # continuar (también tras cobrar), repetir tutorial, tienda, día de la suerte y ruleta, los 3 finales y pantallas pequeñas
+node tools/test/logic.test.js       # fórmulas, COBRAR, giros, pista, topes, cadena de deudas, Academia, números rojos, palabras clave, noticias, idioma secreto, suerte y equilibrio (con un bot que juega la partida entera)
+node tools/test/e2e.test.js         # partida completa en Chrome/Edge sin ventana: tutorial (errata, mejoras y tienda), regalo, oferta que salta sola, mercado negro, ahorros de Timmy
+node tools/test/e2e-paths.test.js   # continuar (también tras cobrar), repetir tutorial, tienda, Bravo Fines y su Academia, primera plana, día de la suerte y ruleta, los 3 finales y pantallas pequeñas
 node tools/test/e2e-desktop.test.js # minimizar, Mensajín, la historia de Kevo, LOS PAGADOS, una pista que traduce sus mensajes, Símbolos
 ```
 

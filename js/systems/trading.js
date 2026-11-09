@@ -106,7 +106,9 @@
       const candles = [];
       let exit = entry, liquidated = false;
       for (let i = 0; i < n; i++) {
-        const step = i === twistAt ? Object.assign({}, ctx, { jump: this.twistJump(def, m, entry, direction, tutorial) }) : ctx;
+        // (en el tutorial, después del susto ninguna vela vuelve a subir: quedarse habría salido peor)
+        const step = i === twistAt ? Object.assign({}, ctx, { jump: this.twistJump(def, m, entry, direction, tutorial) })
+          : tutorial && i > twistAt ? Object.assign({}, ctx, { after: true }) : ctx;
         const c = SN.Market.step(id, step);
         candles.push(c);
         // Peor momento dentro de la vela: si la pérdida apalancada llega al 100%, se liquida
@@ -170,10 +172,16 @@
       let pnl = this.finalPnl(p), shielded = false;
       // SEGURO de la ruleta: la próxima pérdida no cuenta
       if (pnl < 0 && run.shield && !p.tutorial) { pnl = 0; shielded = true; run.shield = false; }
+      // PLAN B de la Academia: la primera pérdida del día, a la mitad
+      let halved = 0;
+      if (pnl < 0 && SN.Academy && !p.tutorial) { const h = SN.Academy.halve(pnl); halved = h - pnl; pnl = h; }
       SN.Economy.settle(p.amount, pnl);
       // Día de la suerte: bonificación por cada operación ganadora
       const luckBonus = SN.Luck && !p.tutorial ? SN.Luck.bonus(pnl) : 0;
       if (luckBonus) SN.Economy.add(luckBonus, 'luck');
+      // Mentalidad de tiburón (Academia): un extra por cada operación ganadora
+      const academyBonus = SN.Academy && !p.tutorial ? SN.Academy.bonus(pnl) : 0;
+      if (academyBonus) SN.Economy.add(academyBonus, 'academy');
       const st = run.stats;
       st.trades++;
       if (pnl >= 0) st.wins++; else st.losses++;
@@ -182,7 +190,7 @@
       if (pnl > 0) st.earned += pnl;
       p.settled = true;
       const capped = !!p.cap && p.cap !== Infinity && Math.abs(pnl) >= p.cap;
-      p.result = Object.assign({}, p, { pnl, ret: pnl / p.amount, marketChange, capped, luckBonus, shielded });
+      p.result = Object.assign({}, p, { pnl, ret: pnl / p.amount, marketChange, capped, luckBonus, shielded, academyBonus, halved });
       delete p.result.result;
       SN.Events.emit('trade:closed', p.result);
       return p.result;

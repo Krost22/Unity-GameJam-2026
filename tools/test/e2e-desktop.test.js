@@ -20,7 +20,7 @@ const ok = (c, msg) => { if (c) pass++; else fail++; console.log(`  ${c ? 'ok   
   const clickSel = async (sel) => { const p = await center(sel); if (!p) return false; await b.click(p.x, p.y); return true; };
   try {
     await wait('SN.Game && SN.Game.state === "MENU"');
-    await ev(`localStorage.setItem('saldonegro.profile.v1', JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV: 3, runs: 0, bestCapital: 0, settings: { music: false, sfx: false } })); SN.Save.loadProfile(); true`);
+    await ev(`localStorage.setItem('saldonegro.profile.v1', JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV: 4, runs: 0, bestCapital: 0, settings: { music: false, sfx: false } })); SN.Save.loadProfile(); true`);
     await clickSel('#btn-new');
     await wait('SN.Game.state === "GAMEPLAY" && !SN.UI.busy');
 
@@ -114,7 +114,7 @@ const ok = (c, msg) => { if (c) pass++; else fail++; console.log(`  ${c ? 'ok   
     await b.key('KeyD', 'd');
     ok(!(await ev('SN.Desktop.open')), 'con una operación en marcha no se minimiza');
     ok(await ev('!!SN.State.run.chat && SN.State.run.chat.log.length > 3'), 'la conversación queda guardada en la partida');
-    // La historia de Kevo sigue los hitos: pagar la deuda, cada meta, el cerdito...
+    // La historia de Kevo sigue los hitos: pagar la deuda, cada regalo, los ahorros de Timmy...
     const arc = await ev(`(() => {
       const D = SN.Desktop, ch = D.chat(), ids = SN.Data.chat.convos.map((c) => c.id);
       clearTimeout(D.timer); D.timer = null;
@@ -135,15 +135,15 @@ const ok = (c, msg) => { if (c) pass++; else fail++; console.log(`  ${c ? 'ok   
       D.flag('piggy'); ch.clock += 1;
       out.cerdito = start(ids.indexOf('hospital'));
       ch.sideDone.piggy = true;
-      D.flag('g25000'); ch.clock += 5;
+      D.flag('regalo4'); ch.clock += 5;
       out.madre = start(ids.indexOf('madre'));
       out.ultima = ids[ids.length - 1];
       return out;
     })()`);
     ok(arc.esperaDeuda === null && arc.libre === 'libre', 'las conversaciones de después de la deuda esperan a que la pagues');
     ok(arc.saltaPlazo === 'libre', 'si ya pagaste, Kevo no te pregunta por el plazo');
-    ok(arc.cerdito === 'piggy', 'si rompes el cerdito, Kevo reacciona antes de seguir la historia');
-    ok(arc.madre === 'madre' && arc.ultima === 'mira', 'Kevo sigue hasta las últimas metas (su madre escribe en la de $25K)');
+    ok(arc.cerdito === 'piggy', 'si rompes los ahorros de Timmy, Kevo reacciona antes de seguir la historia');
+    ok(arc.madre === 'madre' && arc.ultima === 'mira', 'Kevo sigue hasta el final (su madre escribe tras el regalo que abre Minería)');
   } catch (e) {
     fail++;
     console.log('  ERROR:', e.message);

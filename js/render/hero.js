@@ -281,34 +281,99 @@
     return sp.c;
   }
 
-  // ---------- El gato (64x34, dormido sobre la mesa) ----------
+  // ---------- El gato (64x34, sobre la mesa) ----------
+  // Poses: sleep (dormido), ear (mueve una oreja), purr (ronronea, ojos felices), peek (abre un ojo),
+  // awake (despierto), yawn (bosteza), groom (se lava la pata), stretch (se estira), sit (sentado, mira
+  // el ratón: look -1..1), arch (erizado, lomo arqueado), alert (mira a la ventana, orejas atrás).
   const CW = 64, CH = 34;
-  function buildCat(state, breath, tail, phase) {
+  function buildCat(state, breath, tail, phase, look = 0) {
     const sp = new PK.Sprite(CW, CH);
     const rim = RIM[phase] || RIM.evening;
-    const up = state === 'awake' ? -2 : 0;
-    // Cola rodeando el cuerpo
-    const tailM = sp.mask().capsule(10, 22, 7, 27, 2.6).capsule(7, 27, 16, 30, 2.6).capsule(16, 30, 32 + tail, 30 - (tail > 1 ? 1 : 0), 2.4);
+    if (state === 'sit' || state === 'arch' || state === 'alert') return buildCatUp(sp, state, breath, tail, rim, look);
+    const lying = state === 'sleep' || state === 'ear' || state === 'purr' || state === 'peek';
+    const up = lying ? 0 : -2;
+    const st = state === 'stretch';
+    // Cola: rodeando el cuerpo (o estirada hacia atrás al desperezarse)
+    const tailM = st ? sp.mask().capsule(12, 22, 5, 18, 2.4).capsule(5, 18, 3, 11, 2.2)
+      : sp.mask().capsule(10, 22, 7, 27, 2.6).capsule(7, 27, 16, 30, 2.6).capsule(16, 30, 32 + tail, 30 - (tail > 1 ? 1 : 0), 2.4);
     sp.part(tailM, RAMP.cat, { light: LIGHT });
-    const body = sp.mask().ellipse(31, 21, 19, 10 + breath * 0.6);
+    // Cuerpo: al estirarse, más largo y con el lomo bajo delante
+    const body = st ? sp.mask().ellipse(27, 21, 19, 8).ellipse(19, 18, 9, 8) : sp.mask().ellipse(31, 21, 19, 10 + breath * 0.6);
     sp.part(body, RAMP.cat, { light: LIGHT, lit: 3, sh: 3 });
     sp.rim(body, rim, [-1, -1]);
-    // Cabeza a la derecha, apoyada en las patas
-    const head = sp.mask().ellipse(49, 21 + up, 9, 7.5)
-      .poly([[41, 17 + up], [43, 8 + up], [48, 15 + up]]).poly([[50, 15 + up], [56, 8 + up], [57, 18 + up]]);
+    // Cabeza a la derecha, apoyada en las patas (más baja y adelantada al estirarse)
+    const hx = st ? 51 : 49, hy = st ? 24 : 21 + up;
+    const earL = state === 'ear' || state === 'groom' ? [[41, hy - 3], [41, hy - 9], [47, hy - 6]] : [[hx - 8, hy - 4], [hx - 6, hy - 13], [hx - 1, hy - 6]];
+    const head = sp.mask().ellipse(hx, hy, 9, 7.5).poly(earL).poly([[hx + 1, hy - 6], [hx + 7, hy - 13], [hx + 8, hy - 3]]);
     sp.part(head, RAMP.cat, { light: LIGHT, lit: 2, cast: 1 });
     sp.rim(head, rim, [-1, -1]);
-    sp.px(46, 12 + up, P.catPink).px(54, 12 + up, P.catPink);
-    const paws = sp.mask().ellipse(44, 28, 5, 2.4).ellipse(53, 28, 4, 2.2);
+    if (state !== 'ear' && state !== 'groom') sp.px(hx - 3, hy - 9, P.catPink);
+    sp.px(hx + 5, hy - 9, P.catPink);
+    // Patas: estiradas hacia delante al desperezarse; una levantada hasta la cara al lavarse
+    const paws = st ? sp.mask().ellipse(58, 30, 5, 2.2).ellipse(61, 27, 3, 2)
+      : state === 'groom' ? sp.mask().ellipse(44, 28, 5, 2.4).ellipse(hx + 2, hy + 4, 3, 3.4)
+        : sp.mask().ellipse(44, 28, 5, 2.4).ellipse(53, 28, 4, 2.2);
     sp.part(paws, RAMP.cat, { light: LIGHT, base: 3 });
     // Cara
-    const eyeY = 20 + up;
-    if (state === 'sleep') { sp.rect(45, eyeY, 3, 1, P.catL).rect(52, eyeY, 3, 1, P.catL); }
-    else if (state === 'peek') { sp.rect(45, eyeY, 3, 1, P.catL).rect(52, eyeY - 1, 3, 2, P.catEye).px(53, eyeY - 1, P.catD); }
-    else { sp.rect(45, eyeY - 1, 3, 2, P.catEye).rect(52, eyeY - 1, 3, 2, P.catEye).px(46, eyeY - 1, P.catD).px(53, eyeY - 1, P.catD); }
-    sp.px(49, eyeY + 3, P.catPink).px(50, eyeY + 3, P.catPink);
+    const eyeY = hy - 1, ex = hx - 4;
+    const closed = (y) => sp.rect(ex, y, 3, 1, P.catL).rect(ex + 7, y, 3, 1, P.catL);
+    if (state === 'sleep' || state === 'ear' || state === 'stretch') closed(eyeY);
+    else if (state === 'purr' || state === 'yawn' || state === 'groom') {
+      // Ojos felices (^ ^)
+      sp.px(ex, eyeY, P.catL).px(ex + 1, eyeY - 1, P.catL).px(ex + 2, eyeY, P.catL);
+      sp.px(ex + 7, eyeY, P.catL).px(ex + 8, eyeY - 1, P.catL).px(ex + 9, eyeY, P.catL);
+    } else if (state === 'peek') { sp.rect(ex, eyeY, 3, 1, P.catL).rect(ex + 7, eyeY - 1, 3, 2, P.catEye).px(ex + 8, eyeY - 1, P.catD); }
+    else { const lx = U.clamp(Math.round(look), -1, 1); sp.rect(ex, eyeY - 1, 3, 2, P.catEye).rect(ex + 7, eyeY - 1, 3, 2, P.catEye).px(ex + 1 + lx, eyeY - 1, P.catD).px(ex + 8 + lx, eyeY - 1, P.catD); }
+    if (state === 'yawn') { sp.rect(hx - 1, hy + 2, 4, 3, P.catD).rect(hx, hy + 3, 2, 2, P.catPink); }
+    else sp.px(hx, eyeY + 3, P.catPink).px(hx + 1, eyeY + 3, P.catPink);
     return sp.c;
   }
+  // El gato de pie: sentado mirando el ratón, erizado (lomo arqueado) o alerta mirando a la ventana
+  function buildCatUp(sp, state, breath, tail, rim, look) {
+    const arch = state === 'arch', alert = state === 'alert';
+    if (arch) {
+      // Cola en alto y erizada
+      const tailM = sp.mask().capsule(14, 20, 8, 8, 2.8).capsule(8, 8, 10, 2, 2.6);
+      sp.part(tailM, RAMP.cat, { light: LIGHT });
+      for (let i = 0; i < 5; i++) sp.px(6 + (i % 2) * 5, 3 + i * 3, P.catD);
+      // Lomo arqueado, patas rectas
+      const body = sp.mask().ellipse(30, 17, 17, 9).rect(16, 20, 4, 12).rect(24, 21, 4, 11).rect(36, 21, 4, 11).rect(43, 20, 4, 12);
+      sp.part(body, RAMP.cat, { light: LIGHT, lit: 3, sh: 3 });
+      sp.rim(body, rim, [-1, -1]);
+      for (let x = 18; x < 44; x += 3) sp.px(x, 7 + Math.round(Math.abs(x - 30) / 5), P.catD);
+      const hx = 52, hy = 18;
+      const head = sp.mask().ellipse(hx, hy, 8, 7).poly([[hx - 7, hy - 3], [hx - 9, hy - 10], [hx - 2, hy - 6]]).poly([[hx + 2, hy - 6], [hx + 8, hy - 11], [hx + 8, hy - 2]]);
+      sp.part(head, RAMP.cat, { light: LIGHT, lit: 2, cast: 1 });
+      sp.rim(head, rim, [-1, -1]);
+      sp.rect(hx - 5, hy - 2, 3, 3, P.catEye).rect(hx + 2, hy - 2, 3, 3, P.catEye).px(hx - 4, hy - 1, P.catD).px(hx + 3, hy - 1, P.catD);
+      sp.rect(hx - 1, hy + 2, 4, 3, P.catD).px(hx, hy + 2, P.white).px(hx + 2, hy + 2, P.white);
+      return sp.c;
+    }
+    // Sentado: cola enroscada en las patas
+    const tailM = sp.mask().capsule(44, 31, 54, 31, 2.4).capsule(54, 31, 57 + tail, 25, 2.2);
+    sp.part(tailM, RAMP.cat, { light: LIGHT });
+    const body = sp.mask().ellipse(38, 23 - breath * 0.4, 11, 10).ellipse(38, 28, 12, 6);
+    sp.part(body, RAMP.cat, { light: LIGHT, lit: 3, sh: 3 });
+    sp.rim(body, rim, [-1, -1]);
+    const paws = sp.mask().ellipse(34, 32, 3, 1.6).ellipse(42, 32, 3, 1.6);
+    sp.part(paws, RAMP.cat, { light: LIGHT, base: 3 });
+    // Cabeza (girada hacia la ventana si está alerta)
+    const hx = alert ? 34 : 38 + Math.round(look), hy = 10;
+    const earsBack = alert;
+    const head = sp.mask().ellipse(hx, hy, 8.5, 7)
+      .poly(earsBack ? [[hx - 8, hy - 2], [hx - 12, hy - 7], [hx - 4, hy - 5]] : [[hx - 7, hy - 3], [hx - 6, hy - 11], [hx - 1, hy - 6]])
+      .poly(earsBack ? [[hx + 4, hy - 5], [hx + 11, hy - 8], [hx + 8, hy - 1]] : [[hx + 1, hy - 6], [hx + 6, hy - 11], [hx + 7, hy - 3]]);
+    sp.part(head, RAMP.cat, { light: LIGHT, lit: 2, cast: 1 });
+    sp.rim(head, rim, [-1, -1]);
+    if (!earsBack) sp.px(hx - 5, hy - 8, P.catPink).px(hx + 4, hy - 8, P.catPink);
+    const lx = alert ? -1 : U.clamp(Math.round(look), -1, 1);
+    sp.rect(hx - 5, hy - 1, 3, 2, P.catEye).rect(hx + 2, hy - 1, 3, 2, P.catEye).px(hx - 4 + lx, hy - 1, P.catD).px(hx + 3 + lx, hy - 1, P.catD);
+    sp.px(hx - 1, hy + 2, P.catPink).px(hx, hy + 2, P.catPink);
+    return sp.c;
+  }
+
+  // Corazón de 5x4 (el gato ronronea)
+  function heart(g, x, y, c) { SN.Px.rect(g, x, y, 2, 1, c); SN.Px.rect(g, x + 3, y, 2, 1, c); SN.Px.rect(g, x, y + 1, 5, 1, c); SN.Px.rect(g, x + 1, y + 2, 3, 1, c); SN.Px.rect(g, x + 2, y + 3, 1, 1, c); }
 
   // ---------- Estado y animación ----------
   const H = SN.Hero = {
@@ -322,7 +387,7 @@
     click: 0,
     bounce: { y: 0, v: 0 },
     sweat: 0,
-    cat: { state: 'sleep', t: 0, tail: 0, tailT: 3, wakeT: 0 },
+    cat: { state: 'sleep', t: 0, tail: 0, tailT: 3, wakeT: 0, act: null, actT: 0, idleT: 9, fx: null, fxT: 0 },
 
     // El cursor sobre el monitor mueve un poco el ratón de la mesa
     pointAt(sx, sy) {
@@ -331,11 +396,25 @@
       this.mouse.ty = U.clamp((sy - (S.y + S.h / 2)) / (S.h / 2), -1.2, 1.2) * 5;
     },
     press() { this.click = 0.14; },
-    celebrate(big) { this.react = { kind: big ? 'bigwin' : 'win', t: big ? 2.2 : 1.5 }; this.bounce.v = big ? -70 : -50; if (big) this.wakeCat(2.5); },
-    flinch(big) { this.react = { kind: big ? 'bigloss' : 'loss', t: big ? 2.2 : 1.4 }; this.bounce.v = 34; this.shake = big ? 0.5 : 0.3; if (big) this.wakeCat(2); },
+    // Ganar mucho: el gato ronronea (corazones); perder mucho: se eriza y bufa
+    celebrate(big) { this.react = { kind: big ? 'bigwin' : 'win', t: big ? 2.2 : 1.5 }; this.bounce.v = big ? -70 : -50; if (big) this.catDo('purr', 2.6, 'heart'); },
+    flinch(big) { this.react = { kind: big ? 'bigloss' : 'loss', t: big ? 2.2 : 1.4 }; this.bounce.v = 34; this.shake = big ? 0.5 : 0.3; if (big) this.catDo('arch', 2, 'hiss'); },
     tapFinger() { this.fingers[Math.floor(Math.random() * 4)] = 0.12; },
     relief() { this.react = { kind: 'relief', t: 2.4 }; },
-    wakeCat(sec) { this.cat.state = 'awake'; this.cat.wakeT = sec; },
+    wakeCat(sec) { this.catDo('awake', sec); },
+    // El gato hace algo durante `sec` segundos (y luego vuelve a dormir). fx: corazones, bufido, destellos, "prr"...
+    catDo(state, sec, fx) {
+      const c = this.cat;
+      c.act = state; c.actT = sec; c.state = state;
+      if (fx) { c.fx = fx; c.fxT = Math.min(sec, 2.4); }
+      if (state === 'awake' || state === 'sit' || state === 'groom' || state === 'arch' || state === 'alert') c.wakeT = sec;
+    },
+    // Clic en el gato: dormido, mueve la oreja y ronronea (no se despierta); despierto, ronronea
+    petCat() {
+      const c = this.cat;
+      if (c.state === 'sleep' || c.state === 'ear') this.catDo('ear', 0.6, 'prr');
+      else { c.fx = 'heart'; c.fxT = 1.6; }
+    },
 
     // Expresión y pose según lo que pasa en el juego
     mood() {
@@ -380,13 +459,33 @@
       else if ((this.blinkT -= dt) <= 0) { this.blinking = 0.13; this.blinkT = U.rand(2.2, 5); }
       const md = this.mood();
       this.sweat = md.expr === 'nervous' || md.expr === 'shock' ? Math.min(1, this.sweat + dt * 2) : Math.max(0, this.sweat - dt);
-      // Gato
+      // Gato: duerme casi siempre, pero de vez en cuando hace algo (y reacciona a lo que pasa)
       const c = this.cat;
       c.t += dt;
-      if (c.wakeT > 0 && (c.wakeT -= dt) <= 0) c.state = 'sleep';
-      if (c.state === 'sleep' && SN.Drama && SN.Drama.active) c.state = 'peek';
-      if (c.state === 'peek' && !(SN.Drama && SN.Drama.active) && c.wakeT <= 0) c.state = 'sleep';
-      if ((c.tailT -= dt) <= 0) { c.tail = c.tail ? 0 : 2; c.tailT = c.tail ? 0.35 : U.rand(2, 6); }
+      c.fxT = Math.max(0, c.fxT - dt);
+      if (c.act && (c.actT -= dt) <= 0) { c.act = null; c.state = 'sleep'; c.wakeT = 0; }
+      if (c.wakeT > 0 && (c.wakeT -= dt) <= 0 && !c.act) c.state = 'sleep';
+      const drama = SN.Drama && SN.Drama.active;
+      // Alguien en la azotea: lo mira con las orejas hacia atrás
+      const hooded = SN.Desk && SN.Desk.windowEvents && SN.Desk.windowEvents.includes('encapuchado');
+      if (hooded && c.act !== 'alert' && c.act !== 'arch') this.catDo('alert', 2);
+      if (!c.act) {
+        if (c.state === 'sleep' && drama) c.state = 'peek';
+        if (c.state === 'peek' && !drama && c.wakeT <= 0) c.state = 'sleep';
+        // Cosas de gato cuando nadie le hace caso
+        if (c.state === 'sleep' && !drama && (c.idleT -= dt) <= 0) {
+          c.idleT = U.rand(8, 18);
+          const run = SN.State.run, lucky = SN.Luck && run && SN.Luck.today();
+          const pick = U.pick(['ear', 'ear', 'stretch', 'yawn', 'groom', 'sit', 'purr']);
+          const dur = { ear: 0.5, stretch: 2.2, yawn: 1.4, groom: 3, sit: 5, purr: 3 }[pick];
+          this.catDo(pick, dur, lucky ? 'gold' : pick === 'purr' ? 'prr' : null);
+        }
+      }
+      if ((c.tailT -= dt) <= 0) {
+        // Despierto mueve la cola más a menudo
+        const awake = c.state !== 'sleep' && c.state !== 'ear' && c.state !== 'purr';
+        c.tail = c.tail ? 0 : 2; c.tailT = c.tail ? 0.35 : awake ? U.rand(0.5, 1.5) : U.rand(2, 6);
+      }
     },
 
     // Manos en primera persona (g = lienzo de 320x180): teclado en (kx, ky), ratón en (mx, my)
@@ -417,16 +516,33 @@
 
     drawCat(g, x, y, phase) {
       const c = this.cat;
-      const breath = Math.sin(c.t * 1.6) > 0 ? 1 : 0;
-      const img = cached(`cat|${c.state}|${breath}|${c.tail}|${phase}`, () => buildCat(c.state, breath, c.tail, phase));
+      const breath = Math.sin(c.t * (c.state === 'purr' ? 3.2 : 1.6)) > 0 ? 1 : 0;
+      // Sentado o despierto, los ojos siguen al ratón
+      const look = c.state === 'sit' || c.state === 'awake' ? U.clamp(this.mouse.x / 8, -1, 1) : 0;
+      const lk = Math.round(look);
+      const img = cached(`cat|${c.state}|${breath}|${c.tail}|${phase}|${lk}`, () => buildCat(c.state, breath, c.tail, phase, lk));
       g.drawImage(img, x, y);
+      const Px = SN.Px;
       // Zzz mientras duerme
-      if (c.state === 'sleep') {
+      if (c.state === 'sleep' || c.state === 'ear') {
         const k = (c.t * 0.5) % 1;
         g.globalAlpha = Math.sin(k * Math.PI);
-        SN.Px.text(g, 'z', x + 56 + Math.round(k * 4), y + 8 - Math.round(k * 10), P.creamD);
+        Px.text(g, 'z', x + 56 + Math.round(k * 4), y + 8 - Math.round(k * 10), P.creamD);
         g.globalAlpha = 1;
       }
+      // Efectos encima: corazones (ronronea), "prr", bufido, destellos dorados (día de la suerte)
+      if (c.fxT > 0 && c.fx) {
+        const k = 1 - c.fxT / 2.4, a = Math.min(1, c.fxT * 2);
+        g.globalAlpha = a;
+        if (c.fx === 'heart') {
+          for (let i = 0; i < 2; i++) { const hy = y + 8 - Math.round(((k + i * 0.5) % 1) * 14); heart(g, x + 30 + i * 7, hy, P.coralL); }
+        } else if (c.fx === 'prr') Px.text(g, 'prr', x + 26, y + 10 - Math.round(k * 6), P.creamL);
+        else if (c.fx === 'hiss') Px.text(g, '¡fff!', x + 22 + (Math.sin(c.t * 40) > 0 ? 1 : 0), y + 4, P.coralL);
+        else if (c.fx === 'gold') for (let i = 0; i < 4; i++) { const sx = x + 14 + ((i * 13 + Math.floor(c.t * 6)) % 40), sy = y + 4 + ((i * 7) % 18); Px.rect(g, sx, sy, 1, 3, P.yellowL); Px.rect(g, sx - 1, sy + 1, 3, 1, P.yellowL); }
+        g.globalAlpha = 1;
+      }
+      // Alerta: un "!" sobre la cabeza
+      if (c.state === 'alert') Px.text(g, '!', x + 30, y + 2 + (Math.sin(c.t * 8) > 0 ? 0 : 1), P.yellow);
     },
 
     // Primer plano para las cinemáticas (búfer de 160x90): cabeza y hombros centrados, a escala 1:1

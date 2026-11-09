@@ -257,7 +257,7 @@
         }
       }
       if (this.state !== 'out') g.drawImage(hand, 0, 0, 40, 46, hx, hy, 160, 184);
-      if (this.state === 'out') { g.globalAlpha = Math.min(1, this.ot / 0.8); R(g, 0, 0, 640, 360, '#05040F'); g.globalAlpha = 1; if (this.ot > 0.6) Px.text(g, 'Vuelves a tu cuarto con el cerdito...', 320, 184, P.creamD, { align: 'center', size: 16 }); }
+      if (this.state === 'out') { g.globalAlpha = Math.min(1, this.ot / 0.8); R(g, 0, 0, 640, 360, '#05040F'); g.globalAlpha = 1; if (this.ot > 0.6) Px.text(g, 'Vuelves a tu cuarto con los ahorros de Timmy...', 320, 184, P.creamD, { align: 'center', size: 16 }); }
       // Indicaciones: barra de avance y qué hacer
       if (this.state === 'walk' || this.state === 'reach') {
         R(g, 160, 330, 320, 8, '#151229'); R(g, 162, 332, Math.round(316 * this.p), 4, tm.st === 'look' ? P.coral : P.yellow);

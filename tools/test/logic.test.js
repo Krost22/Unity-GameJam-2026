@@ -10,11 +10,11 @@ const ROOT = path.join(__dirname, '..', '..');
 const FILES = [
   'js/core/sn.js', 'js/core/events.js',
   'js/data/markets.js', 'js/data/events.js', 'js/data/simulation.js', 'js/data/progression.js', 'js/data/luck.js',
-  'js/data/cipher.js', 'js/data/story.js',
+  'js/data/cipher.js', 'js/data/academy.js', 'js/data/story.js',
   'js/core/state.js',
-  'js/systems/economy.js', 'js/systems/time.js', 'js/systems/debt.js', 'js/systems/market-sim.js',
+  'js/systems/economy.js', 'js/systems/academy.js', 'js/systems/time.js', 'js/systems/debt.js', 'js/systems/market-sim.js',
   'js/systems/trading.js', 'js/systems/unlocks.js', 'js/systems/upgrades.js', 'js/systems/save.js',
-  'js/systems/cipher.js', 'js/systems/luck.js',
+  'js/systems/cipher.js', 'js/systems/luck.js', 'js/systems/shopwatch.js', 'js/ui/keywords.js',
 ];
 const SCRIPTS = FILES.map((f) => new vm.Script(fs.readFileSync(path.join(ROOT, f), 'utf8'), { filename: f }));
 
@@ -232,7 +232,8 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
   ok(resolved >= 1 && !m.events.includes(shock), 'los shocks se aplican y se publican (con su foto) en las velas siguientes');
 }
 
-// 11) Escalera de progresión: lineal, una deuda a la vez, objetos clave con la oferta de FUTURO.exe
+// 11) Escalera de progresión: una cadena de deudas (al pagar una llega la siguiente), objetos clave con la
+// oferta de FUTURO.exe
 {
   const SN = load();
   SN.State.newRun();
@@ -243,7 +244,8 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
   ok(!U.canBuyItem('tele').ok && U.canBuyItem('tele').locked, 'la tele no se puede comprar antes de su paso');
   SN.Debt.pay();
   ok(drain() === 'done,gift', 'tras la Pleyzeta llega el primer regalo');
-  ok(!U.done('g1000') && !U.isUnlocked('tecno'), 'la meta de $1,000 no salta antes de su paso, aunque tengas el dinero');
+  ok(SN.Data.chain.slice(0, -1).every((st) => st.kind !== 'goal'), 'no hay metas de dinero entre deudas: solo la final');
+  ok(!U.isUnlocked('tecno'), 'Tecnología no se abre antes de su regalo, aunque tengas el dinero');
   SN.Debt.pay();
   ok(drain() === 'done' && U.step().id === 'tele', 'pagado el regalo, el siguiente paso es comprar la tele');
   ok(!U.canBuyItem('movil').ok && U.canBuyItem('movil').locked, 'los objetos clave van en orden');
@@ -251,12 +253,19 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
   const before = JSON.stringify([run.capital, run.owned, run.debt, run.step]);
   ok(U.canBuyItem('tele').ok && before === JSON.stringify([run.capital, run.owned, run.debt, run.step]), 'mirar (o rechazar) la oferta no cambia nada');
   const o = U.offer('tele'), cap0 = run.capital;
-  ok(o.now === 60 && o.debt === 900, `la oferta: $60 hoy y $900 después (${o.now} / ${o.debt})`);
+  ok(o.now === 60 && o.debt === 900 && o.need === 225, `la oferta: $60 hoy, $900 después y hay que tener $225 (${o.now} / ${o.debt} / ${o.need})`);
+  run.capital = 200;
+  const poor = U.canBuyItem('tele');
+  ok(!poor.ok && poor.short === 25, 'sin el 25% de la deuda en la cuenta, FUTURO.exe no la financia (y dice cuánto falta)');
+  run.capital = 230;
+  ok(U.canBuyItem('tele').ok, 'no hace falta el precio completo: basta con el 25% de lo que vas a deber');
+  run.capital = cap0;
   ok(U.acceptOffer('tele') && run.owned.tele && run.capital === cap0 - o.now && SN.Debt.active() && run.debt.amount === o.debt && U.isUnlocked('salud_negro'),
     'aceptar la oferta: pagas la entrada, debes el resto y se abre Salud negro');
   ok(U.acceptOffer('tele') === null, 'no se puede comprar dos veces');
   SN.Debt.pay();
-  ok(drain() === 'done,goal,gift' && U.isUnlocked('tecno') && SN.Upgrades.isUnlocked('analisis'), 'pagada la tele: meta $1,000 (Tecnología) y el regalo de ANÁLISIS');
+  ok(drain() === 'done,gift' && U.isUnlocked('tecno') && SN.Upgrades.isUnlocked('analisis') && SN.Debt.active(),
+    'pagada la tele llega la siguiente deuda al momento: el regalo de ANÁLISIS, que abre Tecnología');
   // El resto de la escalera con dinero de sobra: termina en la meta final con los 8 mercados abiertos
   run.capital = 1e7;
   for (let i = 0; i < 80 && U.step(); i++) {
@@ -402,12 +411,13 @@ const sized = strategy('apuesta según la fuerza de la pista', (SN) => {
   return h.power ? { dir: h.dir, frac: [0, 0.3, 0.6, 1][h.power], lev: [1, 2, 2, 5][h.power] } : null;
 });
 ok(coin < 0.2, 'jugar al azar casi nunca basta');
-ok(follow > 0.55 && follow < 0.9, 'seguir la pista con la apuesta por defecto suele bastar (sin regalarlo)');
+ok(follow > 0.55 && follow < 0.75, `seguir la pista con la apuesta por defecto suele bastar, pero el inicio es difícil (${(follow * 100).toFixed(0)}%, entre 55 y 75)`);
 ok(sized > follow, 'leer la fuerza de la pista y ajustar la apuesta da aún más ventaja');
 
 // 15) La partida entera: un bot sensato (sigue la pista, opera en el mercado abierto de mayor tope, paga en
-// cuanto puede, compra los objetos clave con la oferta y alguna mejora). Al perder hace lo mismo que el
-// juego: rompe el cerdito (una vez por paso) o vuelve al punto de control. Sirve para ajustar la escalera.
+// cuanto puede, acepta las ofertas en cuanto FUTURO.exe le deja, compra alguna mejora y nodos de la Academia).
+// Al perder hace lo mismo que el juego: rompe los ahorros de Timmy (una vez por paso) o vuelve al punto de
+// control. Sirve para ajustar la cadena de deudas.
 function fullRun(maxDays) {
   const SN = load();
   SN.State.newRun();
@@ -423,6 +433,11 @@ function fullRun(maxDays) {
     const st = U.step();
     if (!st) break;
     if (st.kind === 'item' && U.canBuyItem(st.item).ok) { U.acceptOffer(st.item); continue; }
+    if (run.flags.debtPaid) run.flags.academy = true; // Bravo Fines se presenta tras la Pleyzeta
+    for (const n of SN.Academy.buyable()) {
+      const keep = SN.Debt.active() ? run.debt.amount : 0;
+      if (run.capital - n.cost >= Math.max(keep, run.capital * 0.6)) SN.Academy.buy(n.id);
+    }
     for (const id of ['limite', 'analisis', 'suerte', 'resistencia']) {
       const c = SN.Upgrades.canBuy(id), keep = SN.Debt.active() ? run.debt.amount : 0;
       if (c.ok && run.capital - c.cost >= Math.max(keep, run.capital * 0.7)) SN.Upgrades.buy(id);
@@ -471,6 +486,101 @@ function fullRun(maxDays) {
   ok(done.length / N >= 0.5, 'un jugador sensato puede terminar la escalera');
   ok(avg(runs, (r) => r.rewinds + r.piggies) >= 0.5, 'pero no es un paseo: alguna vez se pierde');
   ok(runs.every((r) => r.rewinds < 25), `nunca se queda atascado volviendo al mismo punto de control (máx. ${Math.max(...runs.map((r) => r.rewinds))})`);
+}
+
+// 19) La Academia de Bravo Fines: en orden, negocios que pagan cada mañana, tiburón, Plan B y letra pequeña
+{
+  const SN = load();
+  SN.State.newRun();
+  const run = SN.State.run, A = SN.Academy;
+  SN.Luck.today = () => null; // sin bonificaciones de la suerte
+  run.capital = 100000;
+  ok(!A.canBuy('limonada').ok, 'la Academia está cerrada hasta que Bravo se presenta');
+  run.flags.academy = true;
+  ok(!A.canBuy('chicles').ok && A.canBuy('chicles').locked, 'cada nodo necesita el anterior de su rama');
+  ok(!A.canBuy('foodtruck').ok && A.canBuy('foodtruck').soon, 'los avances futuros salen como "Próximamente"');
+  ok(A.buy('limonada') && A.buy('chicles') && run.capital === 100000 - 200 - 1200, 'se compran con dinero, en orden');
+  ok(A.buy('limonada') === false, 'no se compra dos veces');
+  let inc = null;
+  SN.Events.on('academy:income', (d) => { inc = d; });
+  run.debt.paid = true; run.flags.debtPaid = true;
+  const c0 = run.capital;
+  for (let i = 0; i < 3; i++) SN.Trading.skipTurn();
+  ok(inc && inc.amount === 140 && run.capital === c0 + 140, `los negocios pagan cada mañana (+$${inc && inc.amount})`);
+  // Tiburón: +5% en cada ganancia; Plan B: la primera pérdida del día, a la mitad
+  A.buy('tiburon'); A.buy('planb');
+  ok(A.bonus(1000) === 50 && A.bonus(-1000) === 0, 'Mentalidad de tiburón: +5% solo si ganas');
+  run.planBDay = 0;
+  ok(A.halve(-400) === -200 && A.halve(-400) === -400 && A.halve(300) === 300, 'Plan B: solo la primera pérdida del día, a la mitad');
+  const before = SN.Unlocks.offer('tele').debt;
+  A.buy('letrapeq');
+  ok(SN.Unlocks.offer('tele').debt === Math.round(before * 0.9), 'leer la letra pequeña: las ofertas traen un 10% menos de deuda');
+  ok(SN.Data.academy.branches.every((b) => b.nodes.some((n) => n.soon)), 'cada rama deja hueco para futuras versiones');
+}
+
+// 20) Palabras clave: dinero en dorado (con sus 7 en arcoíris), "siete", suerte en verde y FUTURO.exe cifrado
+{
+  const SN = load();
+  SN.State.newRun();
+  const K = SN.KW, h = (t) => K.html(t);
+  ok(/<span class="kw kw-gold">\$250<\/span>/.test(h('Debes $250 hoy.')), 'una cantidad sale en dorado');
+  ok(/kw-gold">\$1,<span class="kw-7 in"><i style="--i:0">7<\/i><\/span>50<\/span>/.test(h('Te faltan $1,750.')), 'el 7 de una cantidad sale en arcoíris dentro del dorado');
+  ok(h('$60.').endsWith('</span>.'), 'el punto final no forma parte de la cantidad');
+  ok(/kw-7/.test(h('Día 17')) && /kw-7/.test(h('Siete pavos')) && /kw-gold">pavos/.test(h('Siete pavos')), 'cada 7 y la palabra "siete" en arcoíris; "pavos" es dinero');
+  ok(/kw-luck/.test(h('¡Qué suerte!')) && /kw-luck/.test(h('Estás afortunada')) && !/kw-luck/.test(h('suertes')), 'la suerte sale en verde');
+  ok(!/kw/.test(h('EL DIARIO DEL FUTURO')) && !/kw/.test(h('Nada que pintar')), 'sin palabras clave, el texto no cambia');
+  ok(h('<b>$5</b>').startsWith('&lt;b&gt;'), 'el texto se escapa (no se cuela HTML)');
+  const brand = h('FUTURO.exe ha encontrado algo');
+  ok(brand.includes('cx-brand') && !brand.includes('FUTURO') && brand.includes(SN.Data.cipher.alphabet.F), 'FUTURO.exe sale en el idioma secreto');
+  ['F', 'U', 'T', 'R', 'O'].forEach((l) => { SN.Cipher.state().known[l] = true; });
+  ok(SN.Cipher.brandText() === 'FUTURO.exe' && SN.Cipher.brandify('Abre FUTURO.EXE') === 'Abre FUTURO.EXE', 'con sus 5 letras descubiertas, FUTURO se lee');
+  ok(SN.Cipher.clue('acerca') && SN.Cipher.clue('acerca').letter === 'F' && SN.Cipher.total() === 16, 'la F tiene su pista ("Acerca de"): 16 letras');
+}
+
+// 21) Números rojos: lo que se puede comprar y todavía no has visto; la oferta salta sola al quedar pendiente
+{
+  const SN = load();
+  SN.State.newRun();
+  const run = SN.State.run, W = SN.ShopWatch;
+  run.capital = 45;
+  ok(W.badge('shop') === 1 && W.badge('upgrades') === 0, 'con $45 se puede comprar la taza: un número rojo en la Tienda');
+  W.markSeen('shop');
+  ok(W.badge('shop') === 0, 'al abrir la Tienda, lo visto deja de contar');
+  run.capital = 130;
+  ok(W.badge('shop') === 1, 'algo nuevo que ya te alcanza vuelve a contar');
+  let news = null, prompt = null;
+  SN.Events.on('shop:new', (d) => { news = d; });
+  SN.Events.on('offer:prompt', (d) => { prompt = d; });
+  W.afterTurn();
+  ok(news && news.items.some((x) => x.key === 'shop:planta'), 'y se avisa (una vez)');
+  news = null; W.afterTurn();
+  ok(!news, 'el mismo aviso no se repite');
+  run.capital = 500; SN.Debt.pay(); while (SN.Unlocks.check());
+  SN.Debt.pay(); while (SN.Unlocks.check());
+  W.afterTurn();
+  ok(prompt && prompt.item.id === 'tele' && prompt.why === 'new', 'pagada la deuda anterior, la oferta de la tele salta sola');
+  prompt = null; W.afterTurn();
+  ok(!prompt, 'no vuelve a saltar en el mismo turno');
+}
+
+// 22) Noticias que se entienden: cada noticia de mercado tiene su foto propia (que existe), su texto de
+// primera plana y palabras sencillas; y salen los presidentes de parodia
+{
+  const SN = load();
+  const all = Object.entries(SN.Data.marketEvents).flatMap(([m, list]) => list.map((e) => Object.assign({ market: m }, e)));
+  const art = fs.readFileSync(path.join(ROOT, 'js/render/news-art.js'), 'utf8');
+  const scenes = new Set([...art.matchAll(/\n    (\w+)\(g\) \{/g)].map((m) => m[1]));
+  ok(all.every((e) => e.more && e.more.length > 10), 'todas las noticias de mercado tienen su "más información"');
+  ok(all.every((e) => scenes.has(e.art)), `todas las fotos existen (${all.filter((e) => !scenes.has(e.art)).map((e) => e.art).join(', ') || 'sí'})`);
+  ok(new Set(all.map((e) => e.art)).size === all.length, `cada noticia tiene su propia foto (${new Set(all.map((e) => e.art)).size} de ${all.length})`);
+  const hard = ['auditoría', 'financiación', 'censo', 'yacimiento', 'colectiva', 'suministro', 'reforma', 'patente', 'ensayos', 'filtración', 'escasez', 'redada', 'acontecimientos', 'alcaldía', 'fármaco', 'prometedor', 'investigador', 'encuestados', 'tesis', 'doctorado', 'autoridades'];
+  const texts = all.flatMap((e) => [e.title, e.text, e.more, e.yesText, e.noText]).concat(SN.Data.story.fillerNews.flatMap((n) => [n.title, n.text, n.more]))
+    .concat(Object.values(SN.Data.story.darkNews).flat()).filter(Boolean).map((t) => t.toLowerCase());
+  const found = hard.filter((w) => texts.some((t) => t.includes(w)));
+  ok(!found.length, `las noticias no usan palabras difíciles (${found.join(', ') || 'ninguna'})`);
+  const pres = all.filter((e) => /Trompa|Patín/.test(e.title));
+  ok(pres.length >= 5 && !all.some((e) => /Trump|Putin/i.test(e.title + e.text + e.more)), `noticias de Trompa y Patín, con nombres de parodia (${pres.length})`);
+  ok(SN.Data.story.fillerNews.every((n) => scenes.has(n.art)) && SN.Data.luck.events.every((e) => scenes.has(e.art) && e.more), 'las de la ciudad y las de la suerte también tienen foto');
 }
 
 // 16) Puntos de control: nunca en un momento sin dinero para apostar

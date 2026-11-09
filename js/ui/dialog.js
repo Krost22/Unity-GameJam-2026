@@ -22,7 +22,7 @@
     },
 
     // Muestra una lista de frases; devuelve una promesa que se resuelve al cerrar la última.
-    // opts: { pos, name, demo, glitchy, smile, voice, portrait, sticky }
+    // opts: { pos, name, demo, glitchy, smile, voice, portrait ('bravo' | 'none'), sticky }
     show(lines, opts = {}) {
       this.hide();
       this.opts = opts;
@@ -59,7 +59,9 @@
     },
 
     startLine() {
-      this.full = this.lines[this.idx] || '';
+      // FUTURO.exe se escribe en el idioma secreto (ya cifrado: así no se lee mientras va saliendo)
+      const raw = this.lines[this.idx] || '';
+      this.full = SN.Cipher ? SN.Cipher.brandify(raw) : raw;
       this.shown = 0;
       this.txt.textContent = '';
       this.el.querySelector('.next').style.visibility = 'hidden';
@@ -79,10 +81,13 @@
       } else this.startLine();
     },
 
+    // Las palabras clave salen ya con su color mientras se escribe; se mueven cuando la frase termina
     renderText() {
       if (!this.el) return;
-      this.txt.textContent = this.full.slice(0, Math.floor(this.shown));
-      if (this.shown >= this.full.length) this.el.querySelector('.next').style.visibility = 'visible';
+      const done = this.shown >= this.full.length;
+      this.txt.classList.toggle('typing', !done);
+      this.txt.innerHTML = SN.KW ? SN.KW.html(this.full.slice(0, Math.floor(this.shown))) : this.full.slice(0, Math.floor(this.shown));
+      if (done) this.el.querySelector('.next').style.visibility = 'visible';
     },
 
     hide() {
@@ -108,7 +113,8 @@
       // Retrato
       const g = Px.ctx(this.portrait);
       Px.rect(g, 0, 0, 40, 40, P.coalD);
-      if (this.opts.portrait !== 'none') {
+      if (this.opts.portrait === 'bravo') g.drawImage(SN.Chars.bravoCanvas(this.t), 0, 0);
+      else if (this.opts.portrait !== 'none') {
         g.drawImage(SN.Chars.hoodedCanvas(this.t, { look: Math.sin(this.t * 0.8) > 0.7 ? 1 : 0, smile: this.opts.smile }), 0, 0);
         if (this.opts.glitchy && Math.random() < 0.08) Px.rect(g, 0, U.randi(0, 38), 40, 2, U.pick([P.coral, P.cyan, P.creamL]));
         if (this.opts.glitchy && SN.Data.cipher) {

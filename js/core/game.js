@@ -296,6 +296,7 @@
       if (!run.checkpoint) S.checkpoint(SN.Narrative.stepLabel(SN.Unlocks.step()));
       if (run.piggy == null) run.piggy = 'ready';
       SN.Desktop.reset();
+      SN.HeroSay.clear();
       SN.Sneak.abort();
       if (SN.Bankruptcy.active) SN.Bankruptcy.reset();
       this.resetTime();
@@ -430,6 +431,7 @@
       }
       await SN.Narrative.afterTurn();
       await this.advanceSteps();
+      if (!SN.Tutorial.active) SN.ShopWatch.afterTurn();
       if (!run.flags.debtPaid && SN.Debt.canPay() && !run.flags.payHintShown && !SN.Tutorial.active) {
         run.flags.payHintShown = true;
         // El botón se ve (busy = false) pero no se puede pulsar hasta cerrar el aviso (allow vacío)
@@ -457,6 +459,8 @@
       await this.advanceSteps();
       SN.Save.saveRun();
       SN.UI.setBusy(false);
+      // Pagada una deuda, salta la siguiente: si es un objeto clave, su oferta aparece sola
+      SN.ShopWatch.afterTurn();
     },
 
     // La escalera avanza todo lo que pueda (paso completado, regalo, meta) y la narrativa lo cuenta
@@ -465,7 +469,7 @@
       while ((ev = SN.Unlocks.check())) await SN.Narrative.onStep(ev);
     },
 
-    // Comprar un objeto clave con la oferta de FUTURO.exe (desde la tienda)
+    // Comprar un objeto clave con la oferta de FUTURO.exe
     async buyKeyItem(id) {
       if (SN.UI.busy) return false;
       const ev = SN.Unlocks.acceptOffer(id);
