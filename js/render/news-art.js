@@ -833,24 +833,80 @@
     rows.forEach((row, j) => { for (let i = 0; i < row.length; i++) if (row[i] === '#') R(g, x + 2 + i, y + 2 + j, 1, 1, P.coal); });
   }
 
+  // ---------- Pasada de calidad ----------
+  // Las escenas se dibujan con bloques planos a 64x40. Para que se vean mejor sin rehacer cada una, se pintan
+  // al DOBLE de resolución y se pulen: esquinas redondeadas, volumen (borde de arriba con luz cálida, el de abajo
+  // con sombra fría) y una luz de ambiente tramada (más luz arriba, más sombra abajo). Solo en formas de 3px o
+  // más: las líneas finas y las letras se quedan como están (si no, dejarían de leerse).
+  const Q = 2, QW = W * Q, QH = H * Q;
+  const WARM = hex('#FFF6E0'), COOL = hex('#1F0F3F');
+  const mixc = (c, t, k) => [c[0] + (t[0] - c[0]) * k, c[1] + (t[1] - c[1]) * k, c[2] + (t[2] - c[2]) * k];
+  function polish(g) {
+    const im = g.getImageData(0, 0, QW, QH), d = im.data;
+    const src = new Uint32Array(d.buffer.slice(0));
+    const at = (a, x, y) => (x < 0 || y < 0 || x >= QW || y >= QH ? -1 : a[y * QW + x]);
+    // 1) Esquinas redondeadas: una esquina convexa de un bloque grueso toma el color de lo que la rodea
+    const round = new Uint32Array(src);
+    for (let y = 0; y < QH; y++) for (let x = 0; x < QW; x++) {
+      const A = at(src, x, y);
+      for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+        const B = at(src, x + sx, y);
+        if (B < 0 || B === A || at(src, x, y + sy) !== B || at(src, x + sx, y + sy) !== B) continue;
+        // (solo bloques grandes: las ventanitas y los detalles de 2px siguen cuadrados)
+        let big = true;
+        for (let k = 1; k <= 4 && big; k++) big = at(src, x - k * sx, y) === A && at(src, x, y - k * sy) === A;
+        if (big) { round[y * QW + x] = B; break; }
+      }
+    }
+    // 2) Volumen y 3) luz de ambiente
+    const out = new Uint32Array(d.buffer);
+    const px = new Uint8ClampedArray(round.buffer);
+    for (let y = 0; y < QH; y++) for (let x = 0; x < QW; x++) {
+      const i = y * QW + x, A = round[i];
+      let c = [px[i * 4], px[i * 4 + 1], px[i * 4 + 2]];
+      const thickV = at(round, x, y + 1) === A && at(round, x, y + 2) === A, thickV2 = at(round, x, y - 1) === A && at(round, x, y - 2) === A;
+      const thickH = at(round, x + 1, y) === A && at(round, x + 2, y) === A, thickH2 = at(round, x - 1, y) === A && at(round, x - 2, y) === A;
+      const up = at(round, x, y - 1), dn = at(round, x, y + 1), lf = at(round, x - 1, y), rt = at(round, x + 1, y);
+      if (up >= 0 && up !== A && thickV) c = mixc(c, WARM, 0.32);
+      else if (lf >= 0 && lf !== A && thickH) c = mixc(c, WARM, 0.16);
+      if (dn >= 0 && dn !== A && thickV2) c = mixc(c, COOL, 0.32);
+      else if (rt >= 0 && rt !== A && thickH2) c = mixc(c, COOL, 0.18);
+      // (suave y solo en la mitad de abajo: en las zonas claras grandes una trama fuerte parecería ruido)
+      const shade = BAYER[(y % 4) * 4 + (x % 4)] / 16;
+      if (shade < (y / QH) * 0.42 - 0.2) c = mixc(c, COOL, 0.07);
+      out[i] = (255 << 24) | (Math.round(c[2]) << 16) | (Math.round(c[1]) << 8) | Math.round(c[0]);
+    }
+    g.putImageData(im, 0, 0);
+  }
+  // La escena, al doble de resolución y pulida
+  function render(id) {
+    const c = Px.canvas(QW, QH), g = Px.ctx(c);
+    g.setTransform(Q, 0, 0, Q, 0, 0);
+    (SCENES[id] || SCENES.ciudad)(g);
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    polish(g);
+    return c;
+  }
+  // Marco de la foto (1px de la foto original = Q px reales)
+  function frame(g, w, h) { R(g, 0, 0, w, Q, P.coal); R(g, 0, h - Q, w, Q, P.coal); R(g, 0, 0, Q, h, P.coal); R(g, w - Q, 0, Q, h, P.coal); }
+
   const cache = new Map();
   const NewsArt = SN.NewsArt = {
     W, H,
     has(id) { return !!SCENES[id]; },
 
-    // Foto impresa (64x40, en caché). tone: pos | neg | neu. dark: noticia extraña (0 = no, 1..n = cuánto)
+    // Foto impresa (64x40 a doble resolución, en caché). tone: pos | neg | neu. dark: noticia extraña (0 = no, 1..n = cuánto)
     photo(id, tone = 'neu', dark = 0) {
       const key = `${id}|${tone}|${dark}`;
       if (cache.has(key)) return cache.get(key);
-      const src = Px.canvas(W, H), sg = Px.ctx(src);
-      (SCENES[id] || SCENES.ciudad)(sg);
-      const out = Px.canvas(W, H), og = Px.ctx(out);
-      const data = sg.getImageData(0, 0, W, H);
-      const img = og.createImageData(W, H);
+      const src = render(id), sg = Px.ctx(src);
+      const out = Px.canvas(QW, QH), og = Px.ctx(out);
+      const data = sg.getImageData(0, 0, QW, QH);
+      const img = og.createImageData(QW, QH);
       const inks = (dark ? INKS.dark : INKS[tone] || INKS.neu).map(hex);
-      for (let y = 0; y < H; y++) {
-        for (let x = 0; x < W; x++) {
-          const i = (y * W + x) * 4;
+      for (let y = 0; y < QH; y++) {
+        for (let x = 0; x < QW; x++) {
+          const i = (y * QW + x) * 4;
           const raw = (0.3 * data.data[i] + 0.59 * data.data[i + 1] + 0.11 * data.data[i + 2]) / 255;
           const lum = Math.max(0, Math.min(1, (raw - 0.5) * 1.3 + 0.5));
           const lv = lum > 0.88 ? 3 : lum < 0.14 ? 0 : Math.max(0, Math.min(3, Math.floor(lum * 3 + BAYER[(y % 4) * 4 + (x % 4)] / 16 - 0.2)));
@@ -861,13 +917,14 @@
       og.putImageData(img, 0, 0);
       if (dark) {
         // Interferencias y alguien que mira desde el fondo
+        og.setTransform(Q, 0, 0, Q, 0, 0);
         const rng = new SN.RNG(id.length * 97 + dark * 13);
         for (let i = 0; i < 3; i++) R(og, 0, rng.int(0, H - 2), W, 1, rng.next() < 0.5 ? P.coralD : P.creamDD);
         const s = dark >= 6 ? 2 : 1;
         lurker(og, rng.int(4, W - 12), rng.int(6, H - 14 * s), s);
+        og.setTransform(1, 0, 0, 1, 0, 0);
       }
-      // Borde de la foto
-      R(og, 0, 0, W, 1, P.coal); R(og, 0, H - 1, W, 1, P.coal); R(og, 0, 0, 1, H, P.coal); R(og, W - 1, 0, 1, H, P.coal);
+      frame(og, QW, QH);
       cache.set(key, out);
       return out;
     },
@@ -876,23 +933,23 @@
     color(id) {
       const key = `color|${id}`;
       if (cache.has(key)) return cache.get(key);
-      const out = Px.canvas(W, H), og = Px.ctx(out);
-      (SCENES[id] || SCENES.ciudad)(og);
-      R(og, 0, 0, W, 1, P.coal); R(og, 0, H - 1, W, 1, P.coal); R(og, 0, 0, 1, H, P.coal); R(og, W - 1, 0, 1, H, P.coal);
+      const out = render(id);
+      frame(Px.ctx(out), QW, QH);
       cache.set(key, out);
       return out;
     },
 
-    // Elemento <canvas> listo para el DOM. crop: recorte centrado [w, h].
-    // opts: { color: foto a color, sticker: { color, sym } } (sym: up | down | rumor | vol)
+    // Elemento <canvas> listo para el DOM (a doble resolución: el CSS le da su tamaño). crop: recorte
+    // centrado [w, h] en píxeles de la foto. opts: { color: foto a color, sticker: { color, sym } }
+    // (sym: up | down | rumor | vol)
     node(id, tone, dark, crop, opts = {}) {
       const ph = opts.color ? this.color(id) : this.photo(id, tone, dark);
       const [w, h] = crop || [W, H];
-      const c = Px.canvas(w, h);
+      const c = Px.canvas(w * Q, h * Q);
       const g = Px.ctx(c);
-      g.drawImage(ph, Math.floor((W - w) / 2), Math.floor((H - h) / 2), w, h, 0, 0, w, h);
-      if (crop) { R(g, 0, 0, w, 1, P.coal); R(g, 0, h - 1, w, 1, P.coal); R(g, 0, 0, 1, h, P.coal); R(g, w - 1, 0, 1, h, P.coal); }
-      if (opts.sticker) sticker(g, w, h, opts.sticker);
+      g.drawImage(ph, Math.floor((W - w) / 2) * Q, Math.floor((H - h) / 2) * Q, w * Q, h * Q, 0, 0, w * Q, h * Q);
+      if (crop) frame(g, w * Q, h * Q);
+      if (opts.sticker) { g.setTransform(Q, 0, 0, Q, 0, 0); sticker(g, w, h, opts.sticker); g.setTransform(1, 0, 0, 1, 0, 0); }
       c.className = 'photo';
       return c;
     },

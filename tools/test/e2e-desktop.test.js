@@ -19,9 +19,10 @@ const ok = (c, msg) => { if (c) pass++; else fail++; console.log(`  ${c ? 'ok   
   const center = (sel) => ev(`(() => { const e = document.querySelector(${JSON.stringify(sel)}); if (!e) return null; const r = e.getBoundingClientRect(); return r.width ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; })()`);
   const clickSel = async (sel) => { const p = await center(sel); if (!p) return false; await b.click(p.x, p.y); return true; };
   try {
-    await wait('SN.Game && SN.Game.state === "MENU"');
+    await wait('(document.querySelector("#boot .thanks button")?.click(), SN.Game && SN.Game.state === "MENU")');
     await ev(`localStorage.setItem('saldonegro.profile.v1', JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV: 4, runs: 0, bestCapital: 0, settings: { music: false, sfx: false } })); SN.Save.loadProfile(); true`);
     await clickSel('#btn-new');
+    await wait('SN.Game.state === "INTRO"'); await ev('SN.Cine.skip(); true');
     await wait('SN.Game.state === "GAMEPLAY" && !SN.UI.busy');
 
     ok(await ev('!!document.querySelector("#btn-min") && /D/.test(document.querySelector("#btn-min kbd").textContent)'), 'FUTURO.exe tiene botón de minimizar con su tecla (D)');
@@ -142,14 +143,21 @@ const ok = (c, msg) => { if (c) pass++; else fail++; console.log(`  ${c ? 'ok   
       D.flag('piggy'); ch.clock += 1;
       out.cerdito = start(ids.indexOf('hospital'));
       ch.sideDone.piggy = true;
+      // Volver a un punto de control: Kevo reacciona... mientras no haya desaparecido
+      D.flag('rewind'); ch.clock += 1;
+      out.rebobinaAntes = start(ids.indexOf('ventana'));
+      out.goneAntes = D.kevoGone();
       D.flag('regalo4'); ch.clock += 5;
       out.madre = start(ids.indexOf('madre'));
+      out.goneDespues = D.kevoGone();
       out.ultima = ids[ids.length - 1];
       return out;
     })()`);
     ok(arc.esperaDeuda === null && arc.libre === 'libre', 'las conversaciones de después de la deuda esperan a que la pagues');
     ok(arc.saltaPlazo === 'libre', 'si ya pagaste, Kevo no te pregunta por el plazo');
     ok(arc.cerdito === 'piggy', 'si rompes los ahorros de Timmy, Kevo reacciona antes de seguir la historia');
+    ok(arc.rebobinaAntes === 'rewind' && !arc.goneAntes, 'mientras Kevo sigue ahí, reacciona a lo que te pasa (volver a un punto de control)');
+    ok(arc.goneDespues && arc.madre === 'madre', 'desaparecido Kevo, ya no reacciona ("no contestas desde ayer"...): la historia sigue con su madre');
     ok(arc.madre === 'madre' && arc.ultima === 'mira', 'Kevo sigue hasta el final (su madre escribe tras el regalo que abre Minería)');
   } catch (e) {
     fail++;

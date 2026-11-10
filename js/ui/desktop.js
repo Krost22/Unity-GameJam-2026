@@ -97,6 +97,8 @@
       if (this.open) { if (then) this.launch(then); return; }
       if (!this.canMinimize()) { SN.Audio.sfx('error'); return; }
       this.open = true;
+      // El aviso de mensaje de Kevo sobra en el escritorio: el chat ya muestra lo que no has leído
+      const tst = document.querySelector('.msg-toast:not(.shop)'); if (tst) tst.remove();
       SN.Audio.sfx('close');
       $('app').classList.add('minimizing');
       $('desktop').classList.remove('hidden');
@@ -189,7 +191,11 @@
       if (e.code === 'Escape') { if (top) this.closeWin(top); else this.restore(); return true; }
       if (top === 'chat' && this.contact !== 'ser' && this.chat().phase === 'reply') {
         if (e.code === 'Enter' && this.replyDone()) this.send();
-        else if (!e.repeat || Math.random() < 0.35) this.typeChunk();
+        else if (!e.repeat || Math.random() < 0.35) {
+          // (con la tecla mantenida, los dedos también se mueven: el primer toque ya lo hace ui.js)
+          if (e.repeat) SN.Hands.tapKey(e.code);
+          this.typeChunk();
+        }
         return true;
       }
       if (e.code === 'KeyD' && !top) this.restore();
@@ -217,6 +223,11 @@
       if (!S.run || ch.flags[name] != null) return;
       ch.flags[name] = ch.clock;
     },
+    // ¿Ya pasó la conversación en la que Kevo desaparece? (desde ahí no reacciona a lo que te pasa)
+    kevoGone() {
+      const ch = this.chat(), at = C().convos.findIndex((c) => c.gone);
+      return at >= 0 && ch.i > at;
+    },
     ready(c) {
       const ch = this.chat(), r = S.run;
       if (c.when) return ch.flags[c.when] != null && ch.clock >= ch.flags[c.when] + (c.delay || 0);
@@ -228,8 +239,8 @@
       const ch = this.chat();
       if (!S.run || S.run.over || SN.Game.state !== 'GAMEPLAY') return;
       if (ch.phase !== 'wait') { this.pump(); return; }
-      // Primero las reacciones a lo que acaba de pasar; luego la historia principal
-      const side = C().side.find((c) => !ch.sideDone[c.id] && this.ready(c));
+      // Primero las reacciones a lo que acaba de pasar (si Kevo no ha desaparecido); luego la historia principal
+      const side = !this.kevoGone() && C().side.find((c) => !ch.sideDone[c.id] && this.ready(c));
       if (side) ch.side = side.id;
       else {
         ch.side = null;
@@ -261,13 +272,15 @@
         SN.Save.saveRun();
         this.renderChat();
         this.refresh();
-        if (ch.phase === 'wait') this.check();
+        // Un respiro antes de que empiece otra conversación encadenada
+        if (ch.phase === 'wait') this.timer = setTimeout(() => { this.timer = null; this.check(); }, 2600);
         return;
       }
       const line = lines[ch.k];
       // '>evento': pasa algo al otro lado de la ventana (sin mensaje en el chat)
       if (line.startsWith('>')) { ch.k++; SN.Desk.windowEvent(line.slice(1)); this.pump(); return; }
-      const delay = line.startsWith('*') || line === '!zumbido' ? 500 : 450 + Math.min(1400, line.length * 38);
+      // Tiempo de "escribir" cada línea: lo bastante largo para leer la anterior con calma
+      const delay = line.startsWith('*') || line === '!zumbido' ? 900 : 900 + Math.min(2200, line.length * 45);
       this.typing = !line.startsWith('*') && line !== '!zumbido';
       this.renderChat();
       this.timer = setTimeout(() => {
@@ -538,7 +551,7 @@
       const cb = this.bravo(), g = B().guru;
       if (this.topWin() === 'chat') cb.unread = 0;
       const ava = w.querySelector('.ch-ava');
-      if (ava.dataset.who !== 'bravo') { ava.innerHTML = ''; ava.appendChild(SN.Sprites.node('avaBravo', 2)); ava.dataset.who = 'bravo'; ava.classList.remove('ser'); ava.classList.add('bravo'); }
+      if (ava.dataset.who !== 'bravo') { ava.innerHTML = ''; ava.appendChild(SN.Chars.bravoFace()); ava.dataset.who = 'bravo'; ava.classList.remove('ser'); ava.classList.add('bravo'); }
       w.querySelector('.ch-nick').textContent = g.nick;
       const st = w.querySelector('.ch-status');
       st.textContent = 'Conectado · cerrando tratos';

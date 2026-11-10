@@ -62,7 +62,7 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
   };
 
   try {
-    await waitFor('SN.Game && SN.Game.state === "MENU"', 8000);
+    await waitFor('(document.querySelector("#boot .thanks button")?.click(), SN.Game && SN.Game.state === "MENU")', 8000);
     ok(await ev('SN.Game.state') === 'MENU', 'arranca en el menú');
     ok(await ev('!document.getElementById("btn-continue").offsetParent'), 'sin partida guardada no aparece CONTINUAR');
 
@@ -81,7 +81,7 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
     ok(await ev('SN.Game.state') === 'TUTORIAL', 'tras la intro empieza el tutorial');
 
     // --- Tutorial, solo con el ratón ---
-    let sawCone = false, sawBuy = false, sawCash = false, sawDrama = false, sawErrata = false, sawUpg = false, sawShop = false, sawBadge = false;
+    let sawCone = false, sawBuy = false, sawCash = false, sawDrama = false, sawErrata = false, sawShop = false, sawBadge = false;
     for (let i = 0; i < 300 && await ev('SN.Tutorial.active'); i++) {
       const st = await ev('({ allow: SN.UI.allow, spot: SN.UI.spotSel, dlg: SN.Dialog.active, drama: SN.Drama.active })');
       if (st.spot === '#chart-wrap' && !sawCone) { sawCone = true; await b.sleep(700); await shot('04-tutorial-pista'); }
@@ -90,9 +90,8 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
         sawErrata = await ev('/[ЖДФЯИЛШБЭЦГЮЩПЧ]/.test(document.querySelector(".np-hero.cipher .h").textContent)');
         await b.sleep(300); await shot('07b-tutorial-errata');
       }
-      // Mejoras y Tienda: el número rojo y cada ventana por dentro
+      // La Tienda: el número rojo y la ventana por dentro
       if (!sawBadge && st.spot === '#nav-shop') sawBadge = await ev('!document.getElementById("shop-badge").classList.contains("hidden")');
-      if (!sawUpg && st.spot === '.win' && await ev('SN.Windows.current === "upgrades"')) { sawUpg = true; await b.sleep(300); await shot('07c-tutorial-mejoras'); }
       if (!sawShop && st.spot === '.win' && await ev('SN.Windows.current === "shop"')) { sawShop = true; await b.sleep(300); await shot('07d-tutorial-tienda'); }
       if (st.dlg) { await b.sleep(200); await advance(); await b.sleep(120); continue; }
       if (st.allow && st.allow.includes('buy')) {
@@ -112,7 +111,7 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
     ok(sawCone && sawBuy && sawCash, 'el tutorial enseña la pista, SUBE y COBRAR');
     ok(sawDrama, 'el tutorial enseña el susto de las últimas velas (cámara lenta)');
     ok(sawErrata, 'el tutorial enseña las noticias con una "errata" en el idioma secreto');
-    ok(sawUpg && sawShop, 'el tutorial enseña MEJORAS y la TIENDA por dentro');
+    ok(sawShop, 'el tutorial enseña la TIENDA por dentro (mejoras incluidas)');
     ok(sawBadge, 'el tutorial enseña el número rojo de lo que se puede comprar');
     ok(await ev('!SN.Windows.current'), 'al acabar el tutorial no queda ninguna ventana abierta');
     ok(!await ev('SN.Tutorial.active') && await ev('SN.Game.state') === 'GAMEPLAY', 'el tutorial termina');
@@ -175,12 +174,14 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
     ok(await ev('SN.Game.timeScale === 1 && SN.Game.focus.k === 0 && !SN.Drama.active'), 'todo vuelve a la normalidad tras el golpe');
     await ev('SN.Data.markets[0].twist.chance = 0.26; true');
 
-    // --- Mejoras: al empezar no hay ninguna (llegan como "regalo" del encapuchado) ---
-    await mouse('#nav-upgrades');
+    // --- Mejoras (en la Tienda): al empezar no hay ninguna (llegan como "regalo" del encapuchado) ---
+    await mouse('#nav-shop');
+    await b.sleep(400);
+    await mouse('.sh-nb[data-cat="mejoras"]');
     await b.sleep(500);
     await shot('13-mejoras');
-    ok(await ev('document.querySelectorAll(".up-row").length === 4 && document.querySelectorAll(".up-row.locked").length === 4 && !document.querySelector(".up-row .btn")'),
-      'al empezar las 4 mejoras están bloqueadas');
+    ok(await ev('document.querySelectorAll(".sh-row").length === 4 && document.querySelectorAll(".sh-row.locked").length === 4'),
+      'al empezar las 4 mejoras están bloqueadas (categoría Mejoras de la Tienda)');
     await mouse('.win-x');
     await b.sleep(300);
 
@@ -216,39 +217,48 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
       'el "regalo" del encapuchado: LÍMITE para comprar... y una deuda nueva');
     await b.sleep(500);
     await shot('18-regalo');
-    // El regalo solo desbloquea: LÍMITE se compra con dinero (y MEJORAS lo avisa con un número rojo)
+    // El regalo solo desbloquea: LÍMITE se compra en la TIENDA, a crédito (y la Tienda lo avisa con un número rojo)
     await waitFor('!SN.UI.busy', 10000);
     await ev('SN.Economy.add(200, "test"); SN.UI.renderNav(); true');
     await b.sleep(300);
-    ok(await ev('!document.getElementById("up-badge").classList.contains("hidden")'), 'MEJORAS avisa con un número rojo de que ya puedes comprar algo');
-    await mouse('#nav-upgrades');
+    ok(await ev('!document.getElementById("nav-upgrades") && !!document.getElementById("nav-shop")'), 'un solo botón: TIENDA (ya no hay MEJORAS aparte)');
+    ok(await ev('!document.getElementById("shop-badge").classList.contains("hidden")'), 'la TIENDA avisa con un número rojo de que ya puedes comprar algo');
+    const debt0 = await ev('SN.State.run.debt.amount'), cap0 = await ev('SN.State.run.capital'), cred = await ev('SN.Upgrades.creditCost("limite")');
+    await mouse('#nav-shop');
     await b.sleep(400);
-    ok(await ev('document.getElementById("up-badge").classList.contains("hidden")'), 'al abrir MEJORAS el número rojo desaparece');
-    await mouse('.up-row .btn');
+    ok(await ev('document.getElementById("shop-badge").classList.contains("hidden")'), 'al abrir la TIENDA el número rojo desaparece');
+    await mouse('.sh-nb[data-cat="mejoras"]');
     await b.sleep(400);
-    ok(await ev('SN.Upgrades.level("limite")') === 1, 'tras el regalo, LÍMITE se compra en MEJORAS');
+    await mouse('.sh-row[data-id="limite"]');
+    await b.sleep(300);
+    await mouse('.sh-buy');
+    await b.sleep(400);
+    ok(await ev(`SN.Upgrades.level("limite") === 1 && SN.State.run.capital === ${cap0} && SN.State.run.debt.amount === ${debt0 + cred}`),
+      `LÍMITE se compra en la TIENDA a crédito: hoy $0 y +$${cred} a la deuda`);
     await mouse('.win-x');
     await b.sleep(300);
 
     // --- Pagar el regalo: la oferta de la tele salta SOLA (sin ir a la tienda) ---
     await waitFor('!SN.UI.busy', 10000);
-    await ev('SN.Economy.add(800, "test"); SN.UI.renderAll(); true');
+    await ev('SN.Economy.add(SN.State.run.debt.amount, "test"); SN.UI.renderAll(); true');
     await b.sleep(300);
     await mouse('#btn-pay');
     for (let i = 0; i < 60 && await ev('SN.UI.busy'); i++) { await advance(); await b.sleep(250); }
     ok(await ev('!SN.Debt.active() && SN.Unlocks.step().id === "tele"'), 'pagado el regalo: toca la tele');
     ok(await waitFor('SN.Windows.current === "offer" && !!document.querySelector(".offer")', 4000), 'la oferta de FUTURO.exe salta sola al pagar la deuda, sin abrir la tienda');
     await shot('19-oferta');
-    await mouse('.offer .of-no');
+    // Es el siguiente paso de la historia: sin "No, gracias", y no se cierra con ESC ni pulsando fuera
+    ok(await ev('!document.querySelector(".offer .of-no") && document.querySelectorAll(".offer .of-row .btn").length === 1'), 'la oferta solo tiene un botón: ¡Lo quiero!');
+    ok(await ev('!document.querySelector(".offer .of-short") && !document.querySelector(".offer .of-yes").disabled'), 'no pide tener dinero en la cuenta');
+    await ev('document.dispatchEvent(new KeyboardEvent("keydown", { code: "Escape", key: "Escape" })); true');
+    await ev('document.querySelector(".win-back").click(); true'); // (el centro del fondo lo tapa la oferta)
     await b.sleep(300);
-    ok(await ev('!document.querySelector(".offer") && !SN.State.run.owned.tele && !SN.Debt.active()'), '"No, gracias" la cierra sin comprar nada');
-    ok(await ev('!document.getElementById("btn-item").classList.contains("hidden")'), 'el HUD sigue enseñando la oferta pendiente');
-    await mouse('#btn-item');
-    await b.sleep(400);
-    ok(await ev('SN.Windows.current') === 'offer', 'el botón del HUD vuelve a abrir la oferta');
+    ok(await ev('SN.Windows.current') === 'offer', 'ni ESC ni un clic fuera la cierran');
+    const capT = await ev('SN.State.run.capital');
     await mouse('.offer .of-yes');
     for (let i = 0; i < 80 && await ev('SN.UI.busy'); i++) { await advance(); await b.sleep(300); }
-    ok(await ev('SN.State.run.owned.tele && SN.Debt.active() && SN.Unlocks.isUnlocked("salud_negro")'), 'aceptar: la tele es tuya, debes el resto y se abre Salud negro');
+    ok(await ev(`SN.State.run.owned.tele && SN.Debt.active() && SN.State.run.debt.amount === SN.Unlocks.offer("tele").debt && SN.State.run.capital === ${capT} && SN.Unlocks.isUnlocked("salud_negro")`),
+      'aceptar: la tele es tuya, hoy no pagas nada, lo debes todo y se abre Salud negro');
     ok(await ev('!!document.querySelector(".mtab-negro")'), 'aparece la pestaña del mercado negro');
     await mouse('.mcard[data-id="salud_negro"]');
     await b.sleep(600);

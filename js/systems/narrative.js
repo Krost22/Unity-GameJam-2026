@@ -92,7 +92,20 @@
         this.addNews({ title: `Deuda saldada: ${debt.label}`, tone: 'pos', art: 'sello' });
         SN.Events.emit('chat:flag', { flag: 'paid-' + debt.id });
       }
+      if (debt && debt.bonus) await this.payBonus(debt.bonus);
       SN.UI.renderAll();
+    },
+
+    // Bono por usar la app: el encapuchado premia cada deuda saldada (así nunca empiezas la siguiente a cero)
+    async payBonus(bonus) {
+      const lines = this.fill(story().payBonus, { bonus: U.money(bonus) });
+      await this.hoodedScene([U.pick(lines)], { smile: true });
+      const cap = SN.UI.posIn(document.getElementById('hud-capital'));
+      SN.FX.coins(cap.x + 60, cap.y + 14, 12, 1.2);
+      SN.FX.float(`+${U.money(bonus)} bono`, cap.x + cap.w / 2, cap.y + cap.h + 6, 'gain');
+      SN.Audio.sfx('coin');
+      SN.UI.renderHUD();
+      await SN.UI.stamp('BONO DE LA APP', 'green', `+${U.money(bonus)} por usar FUTURO.exe`, 1.4);
     },
 
     // Cuenta en pantalla lo que devuelve SN.Unlocks.check() o la compra de un objeto clave
@@ -164,7 +177,7 @@
       SN.Hands.celebrate();
       SN.FX.confetti(30);
       SN.Desk.dirty();
-      await SN.UI.stamp('¡ES TUYO!', '', `${it.name} · pagaste ${U.money(ev.offer.now)} · debes ${U.money(ev.offer.debt)}`, 1.8);
+      await SN.UI.stamp('¡ES TUYO!', '', `${it.name} · hoy $0 · debes ${U.money(ev.offer.debt)} en ${ev.offer.days} días`, 1.8);
       const lines = story().hoodedEvents[ev.step.story];
       if (lines) await this.hoodedScene(lines, { smile: true });
       SN.Audio.sfx('unlock');
@@ -183,7 +196,7 @@
       run.flags.academy = true;
       SN.Audio.sfx('unlock');
       SN.FX.confetti(30);
-      await SN.UI.stamp('ACADEMIA DE BRAVO FINES', 'bravo', 'En MEJORAS (tecla M), pestaña Academia', 1.8);
+      await SN.UI.stamp('ACADEMIA DE BRAVO FINES', 'bravo', 'En la TIENDA (tecla T): Academia', 1.8);
       this.addNews({ title: 'UN GURÚ DEL TRADING ABRE SU ACADEMIA: "EL DINERO SE MANIFIESTA"', text: 'Bravo Fines promete hacerte rico. Él ya lo es, dice. Sus tres Lambos son alquilados.', tone: 'neu', art: 'bravo' });
       SN.Events.emit('chat:flag', { flag: 'bravo' });
       SN.Events.emit('academy:open');

@@ -1,10 +1,11 @@
-// Ventanas modales dentro del monitor: MEJORAS, NOTICIAS (un periódico con fotos), TIENDA, AJUSTES,
+// Ventanas modales dentro del monitor: TIENDA (con las mejoras y la Academia), NOTICIAS (un periódico con fotos), AJUSTES,
 // la RULETA de los días de la suerte y la OFERTA de FUTURO.exe (que salta sola, sin pasar por la tienda).
 (function (SN) {
   'use strict';
   const U = SN.Util, S = SN.State, D = SN.Data;
 
-  const TITLES = { upgrades: 'Mejoras', news: 'Noticias', shop: 'Tienda · MEGATIENDA.COM', settings: 'Ajustes', ruleta: 'Ruleta de la Fortuna', offer: '', about: 'Acerca de FUTURO.exe' };
+  // 'upgrades' es ahora la Academia de Bravo Fines (se entra desde la Tienda: todo se compra allí)
+  const TITLES = { upgrades: 'Tienda · Academia de Bravo Fines', news: 'Noticias', shop: 'Tienda · MEGATIENDA.COM', settings: 'Ajustes', ruleta: 'Ruleta de la Fortuna', offer: '', about: 'Acerca de FUTURO.exe' };
 
   const W = SN.Windows = {
     current: null, back: null, win: null,
@@ -17,14 +18,16 @@
       this.current = kind;
       this.opts = opts;
       if (kind === 'news') this.newsFocus = opts.focus || null; // abrir una noticia directamente en primera plana
+      if (kind === 'shop') this.shopSel = null; // al entrar, Destacados enseña el objeto clave de la historia
       const layer = document.getElementById('layer-windows');
       this.back = U.el('div', 'win-back');
-      this.back.addEventListener('click', () => this.close());
+      // La oferta de FUTURO.exe es el siguiente paso de la historia: no se cierra pulsando fuera
+      if (kind !== 'offer') this.back.addEventListener('click', () => this.close());
       this.win = U.el('div', 'win' + (kind === 'news' ? ' wide paper' : kind === 'offer' ? ' offer-win' : kind === 'shop' ? ' big sh-win' : ''));
       if (kind === 'offer') this.win.innerHTML = '<div class="win-body"></div>';
       else {
         this.win.innerHTML = `<div class="win-head"><span>${TITLES[kind]}</span><button class="win-x">X<kbd>ESC</kbd></button></div><div class="win-body"></div>`;
-        SN.KW.apply(this.win.querySelector('.win-head span'));
+        SN.KW.apply(this.win.querySelector('.win-head span'), { terms: false });
         this.win.querySelector('.win-x').addEventListener('click', () => this.close());
       }
       layer.appendChild(this.back);
@@ -34,7 +37,7 @@
       this.refresh();
       SN.Events.emit('window:opened', { kind });
       if (kind === 'news' && S.run) { S.run.newsSeen = S.run.news.length; SN.Events.emit('news:read'); }
-      if ((kind === 'upgrades' || kind === 'shop') && S.run && SN.ShopWatch) { SN.ShopWatch.markSeen(kind); SN.Events.emit('shop:seen', { kind }); }
+      if ((kind === 'upgrades' || kind === 'shop') && S.run && SN.ShopWatch) { SN.ShopWatch.markSeen('shop'); SN.Events.emit('shop:seen', { kind: 'shop' }); }
     },
     // La oferta de FUTURO.exe de un objeto clave
     offer(id, why = 'shop') { this.open('offer', { item: id, why }); },
@@ -57,74 +60,24 @@
       const body = this.win.querySelector('.win-body');
       body.innerHTML = '';
       ({ upgrades: buildUpgrades, news: buildNews, shop: buildShop, settings: buildSettings, ruleta: buildWheel, offer: buildOffer, about: buildAbout })[this.current](body);
-      // Palabras clave con color (dinero, 7, suerte) y FUTURO.exe en el idioma secreto
-      SN.KW.apply(body);
+      // Palabras clave con color y FUTURO.exe en el idioma secreto. En la tienda y las mejoras, solo dinero, 7 y
+      // suerte: ahí cada nombre es una mejora o un regalo y, si todo se mueve, nada destaca
+      SN.KW.apply(body, { terms: this.current !== 'shop' && this.current !== 'upgrades' });
     },
   };
 
-  function icon(name) {
-    const c = SN.Sprites.node(name, 1);
-    c.className = 'ico';
-    c.style.width = '12px'; c.style.height = '12px';
-    return c;
-  }
-
-  // Mejoras (los "regalos" del encapuchado) y, cuando Bravo Fines se presenta, la pestaña de su Academia
+  // La Academia de Bravo Fines, dentro de la Tienda (las mejoras se compran en la Tienda misma).
+  // Un botón para volver a la Tienda y, debajo, el árbol de la Academia.
   function buildUpgrades(body) {
-    const acOpen = SN.Academy && SN.Academy.open();
-    if (!acOpen) W.tab = 'mejoras';
-    const tab = W.tab || 'mejoras';
-    W.win.classList.toggle('big', tab === 'academia');
-    W.win.classList.toggle('ac-win', tab === 'academia');
-    if (acOpen) {
-      const tabs = U.el('div', 'up-tabs');
-      const n = SN.Academy.buyable().length;
-      for (const [id, label] of [['mejoras', 'Mejoras'], ['academia', `Academia de Bravo Fines${n ? `<b class="badge">${n}</b>` : ''}`]]) {
-        const b = U.el('button', 'up-tab' + (tab === id ? ' on' : '') + (id === 'academia' ? ' ac' : ''), label);
-        b.dataset.tab = id;
-        b.addEventListener('click', (e) => { e.stopPropagation(); if (W.tab === id) return; W.tab = id; SN.Audio.sfx('select'); W.refresh(); });
-        tabs.appendChild(b);
-      }
-      body.appendChild(tabs);
-    }
-    if (tab === 'academia') { buildAcademy(body); return; }
-    body.appendChild(U.el('div', 'win-note', 'Se pagan con tu capital. Ninguna garantiza nada.'));
-    for (const d of D.upgrades) {
-      const unlocked = SN.Upgrades.isUnlocked(d.id);
-      const lv = SN.Upgrades.level(d.id);
-      const next = SN.Upgrades.next(d.id);
-      const row = U.el('div', 'up-row' + (unlocked ? '' : ' locked'));
-      row.title = d.desc;
-      row.appendChild(icon(d.icon));
-      const pips = d.levels.map((_, i) => `<i class="${i < lv ? 'on' : ''}"></i>`).join('');
-      const eff = next ? `→ ${d.effect(next.value)}` : (unlocked && d.levels.length ? `${d.effect(SN.Upgrades.value(d.id))} · MÁXIMO` : '');
-      row.insertAdjacentHTML('beforeend', `
-        <div class="t">${d.name}<span class="lv">${unlocked && d.levels.length ? `NV.${lv}` : ''}</span></div>
-        <div class="d">${unlocked ? d.desc : (d.unlock.label || 'Bloqueado')}</div>
-        ${unlocked && d.levels.length ? `<div class="e">${eff}</div><div class="pips">${pips}</div>` : ''}`);
-      if (unlocked && next) {
-        const can = SN.Upgrades.canBuy(d.id);
-        const b = U.el('button', 'btn btn-green', U.money(next.cost, { cents: false }));
-        b.disabled = !can.ok;
-        if (!can.ok && can.reason) b.title = can.reason;
-        b.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (SN.Upgrades.buy(d.id)) {
-            SN.Audio.sfx('unlock');
-            const p = SN.UI.posIn(b);
-            SN.FX.burst(p.x + p.w / 2, p.y, { n: 18, colors: [SN.PAL.green, SN.PAL.yellow, SN.PAL.creamL] });
-            SN.FX.ring(p.x + p.w / 2, p.y + 5, SN.PAL.green, 40);
-            W.refresh();
-          } else SN.Audio.sfx('error');
-        });
-        row.appendChild(b);
-      } else if (!unlocked) {
-        const lock = SN.Sprites.node('lock', 1);
-        lock.style.position = 'absolute'; lock.style.right = '6px'; lock.style.top = '6px';
-        row.appendChild(lock);
-      }
-      body.appendChild(row);
-    }
+    if (!(SN.Academy && SN.Academy.open())) { SN.after(0, () => W.open('shop')); return; }
+    W.win.classList.add('big', 'ac-win');
+    const tabs = U.el('div', 'up-tabs');
+    const back = U.el('button', 'up-tab', '◀ Tienda');
+    back.addEventListener('click', (e) => { e.stopPropagation(); SN.Audio.sfx('select'); W.open('shop'); });
+    tabs.appendChild(back);
+    tabs.appendChild(U.el('button', 'up-tab on ac', 'Academia de Bravo Fines'));
+    body.appendChild(tabs);
+    buildAcademy(body);
   }
 
   // ---------- La Academia de Bravo Fines: árbol de habilidades (js/data/academy.js) ----------
@@ -155,7 +108,7 @@
     // Encabezado: Bravo, sus negocios y tu dinero
     const head = U.el('div', 'ac-top');
     const ava = U.el('i', 'ac-ava');
-    ava.appendChild(big('avaBravo', 2));
+    ava.appendChild(SN.Chars.bravoFace());
     head.appendChild(ava);
     head.insertAdjacentHTML('beforeend', `<div class="ac-ttl"><b>Academia de Bravo Fines</b><span>"El dinero no se gana. Se manifiesta."</span></div>
       <div class="ac-inc"><span>Negocios</span><b>+${U.money(A.income())}/día</b></div>
@@ -248,7 +201,7 @@
     const next = br.nodes.find((x) => x.soon);
     const bar = U.el('div', 'ac-bot');
     bar.innerHTML = `<div class="ac-prog"><i class="ac-pi"></i><div class="ac-pt"><b>Progreso</b><div class="ac-bar"><i style="width:${pct}%"></i></div></div><em>${done} / ${real.length}</em></div>
-      <div class="ac-rew"><div class="ac-rt"><b>Siguiente en ${br.name}</b><span>${next ? `${next.name}: próximamente` : 'Rama completa'}</span></div><i class="ac-ri"></i></div>`;
+      <div class="ac-rew"><div class="ac-rt"><b>Siguiente en ${br.name}</b><span>${next ? `${next.name} (pronto)` : 'Rama completa'}</span></div><i class="ac-ri"></i></div>`;
     bar.querySelector('.ac-pi').appendChild(big('estrella', 1));
     bar.querySelector('.ac-ri').appendChild(big('cofre', 1));
     if (W.acPct != null && W.acPct !== pct) bar.querySelector('.ac-bar i').classList.add('grow');
@@ -380,8 +333,10 @@
   // Una tienda de pixel art: cabecera con tu dinero, categorías a la izquierda, productos en el centro y el
   // detalle del producto elegido a la derecha. Todo sale de los sistemas de siempre (SN.Unlocks para los
   // objetos clave y su oferta, SN.Upgrades, SN.Luck, SN.ShopWatch): aquí solo cambia cómo se ve.
-  const SHOP_CATS = [['destacados', 'Destacados', 'estrella'], ['mejoras', 'Mejoras', 'flecha'], ['clave', 'Objetos clave', 'llave'],
-    ['estilo', 'Estilo de vida', 'taza'], ['coleccion', 'Coleccionables', 'gema'], ['mercados', 'Mercados', 'grafica']];
+  // (los objetos clave, la historia, van antes que las mejoras)
+  const SHOP_CATS = [['destacados', 'Destacados', 'estrella'], ['clave', 'Objetos clave', 'llave'], ['mejoras', 'Mejoras', 'flecha'],
+    ['estilo', 'Estilo de vida', 'taza'], ['coleccion', 'Colección', 'gema'], ['mercados', 'Mercados', 'grafica'],
+    ['academia', 'Academia', 'tiburon']]; // la Academia de Bravo Fines (solo cuando se ha presentado)
   // Icono de cada producto (los de la tienda, los objetos clave y los dorados de Don Siete)
   const ITEM_ICON = { taza: 'taza', planta: 'planta', lampara: 'lampara', poster: 'poster', alfombrilla: 'alfombra', teclado: 'teclado',
     cascos: 'cascos', trofeo: 'toro', tele: 'tele', movil: 'movil', moto: 'moto', reloj: 'reloj', maneki: 'maneki', herradura: 'herradura',
@@ -407,9 +362,12 @@
       const d = SN.Upgrades.def(sel.id);
       if (!d) return null;
       const unlocked = SN.Upgrades.isUnlocked(d.id), lv = SN.Upgrades.level(d.id), next = SN.Upgrades.next(d.id), can = SN.Upgrades.canBuy(d.id);
-      return { sel, icon: d.icon, name: d.name, desc: unlocked ? d.desc : d.unlock.label || 'Bloqueado', price: next ? next.cost : null,
+      // A crédito: el precio que se ve es lo que se suma a tu deuda (con intereses); hoy no pagas nada
+      const credit = next ? SN.Upgrades.creditCost(d.id) : null;
+      return { sel, icon: d.icon, name: d.name, desc: unlocked ? d.desc : d.unlock.label || 'Bloqueado', price: credit,
         level: `Nv. ${lv} / ${d.levels.length}`, effect: next ? d.effect(next.value) : unlocked ? `${d.effect(SN.Upgrades.value(d.id))} · máximo` : '',
-        state: !unlocked ? 'locked' : !next ? 'own' : can.ok ? 'can' : 'poor', note: !unlocked ? 'Llega como "regalo"' : !next ? 'Al máximo' : can.ok ? '' : cap1(can.reason || 'NO TE ALCANZA'),
+        sub: unlocked && next ? `A crédito: hoy $0 · ${SN.Debt.active() ? 'se suma a tu deuda' : `deuda nueva, ${D.credit.days} días`}` : '',
+        state: !unlocked ? 'locked' : !next ? 'own' : can.ok ? 'can' : 'poor', note: !unlocked ? 'Llega como "regalo"' : !next ? 'Al máximo' : can.ok ? '' : cap1(can.reason || 'TODAVÍA NO'),
         action: unlocked && next ? 'up' : null };
     }
     if (sel.kind === 'key') {
@@ -417,9 +375,10 @@
       if (!it) return null;
       const can = SN.Unlocks.canBuyItem(it.id), owned = !!run.owned[it.id], pend = SN.Unlocks.pendingItem();
       const o = SN.Unlocks.offer(it), mine = pend && pend.id === it.id;
-      return { sel, icon: ITEM_ICON[it.id], name: it.name, desc: it.desc, price: o.now, old: it.price,
+      // Hoy no se paga nada: el precio que se ve es la deuda que deja
+      return { sel, icon: ITEM_ICON[it.id], name: it.name, desc: it.desc, price: o.debt,
         state: owned ? 'own' : mine ? (can.ok ? 'can' : 'poor') : 'locked', note: owned ? 'En tu habitación' : can.reason ? cap1(can.reason) : '',
-        action: mine ? 'offer' : null, sub: mine ? `Hoy ${U.money(o.now)} · luego debes ${U.money(o.debt)}` : '' };
+        action: mine ? 'offer' : null, sub: `Hoy $0 · luego debes ${U.money(o.debt)} en ${o.days} días` };
     }
     if (sel.kind === 'ruleta') {
       const l = SN.Luck.today();
@@ -468,9 +427,11 @@
     const cat = W.shopCat || 'destacados';
     const list = shopList(cat);
     const pend = SN.Unlocks.pendingItem();
-    // Lo elegido: si ya no está en la categoría, el destacado o la primera tarjeta
+    // El objeto clave por donde va la historia: el de la oferta pendiente o, si no, el siguiente que llegará
+    const storyItem = pend || D.keyItems.find((it) => !run.owned[it.id]);
+    // Lo elegido: en Destacados, al entrar, el objeto clave de la historia; si no, la primera tarjeta
     const inCat = (s) => s && (list.some((x) => x.kind === s.kind && x.id === s.id) || (cat === 'destacados' && s.kind === 'key'));
-    if (!inCat(W.shopSel)) W.shopSel = cat === 'destacados' && pend ? { kind: 'key', id: pend.id } : list[0] || null;
+    if (!inCat(W.shopSel)) W.shopSel = cat === 'destacados' && storyItem ? { kind: 'key', id: storyItem.id } : list[0] || null;
     const box = U.el('div', 'sh');
 
     // Cabecera: carrito, título y tu dinero
@@ -484,11 +445,19 @@
     // Categorías
     const nav = U.el('div', 'sh-nav');
     for (const [id, label, ic] of SHOP_CATS) {
+      if (id === 'academia' && !(SN.Academy && SN.Academy.open())) continue;
       const b = U.el('button', 'sh-nb' + (cat === id ? ' on' : ''));
       b.dataset.cat = id;
       b.appendChild(big(ic, 1));
-      b.insertAdjacentHTML('beforeend', `<span>${label}</span>`);
-      b.addEventListener('click', (e) => { e.stopPropagation(); if (W.shopCat === id) return; W.shopCat = id; W.shopSel = null; W.shopAnim = true; SN.Audio.sfx('select'); W.refresh(); });
+      const n = id === 'academia' ? SN.Academy.buyable().length : 0;
+      b.insertAdjacentHTML('beforeend', `<span>${label}</span>${n ? `<b class="badge">${n}</b>` : ''}`);
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        SN.Audio.sfx('select');
+        if (id === 'academia') { W.open('upgrades'); return; }
+        if (W.shopCat === id) return;
+        W.shopCat = id; W.shopSel = null; W.shopAnim = true; W.refresh();
+      });
       nav.appendChild(b);
     }
     box.appendChild(nav);
@@ -520,7 +489,7 @@
         art.appendChild(big(p.icon, 3));
         ban.appendChild(art);
         ban.insertAdjacentHTML('beforeend', `<div class="sh-btxt"><b>${p.name}</b><span>${p.desc}</span>
-          <div class="sh-bpr"><s>${U.money(p.old)}</s><b>${U.money(p.price)}</b><em>−90%</em></div>
+          <div class="sh-bpr"><b>Hoy $0</b><em>Debes ${U.money(p.price)}</em></div>
           ${pend ? '' : `<small>${p.note}</small>`}</div>`);
         if (pend) {
           const b = U.el('button', 'btn btn-green sh-bbtn', 'Ver oferta');
@@ -575,7 +544,7 @@
         ${p.price != null && p.state !== 'own' && !p.free ? `<div class="sh-dp">${p.old ? `<s>${U.money(p.old)}</s>` : ''}<b class="${p.state === 'poor' ? 'poor' : ''}">${U.money(p.price)}</b></div>` : ''}
         ${p.note ? `<div class="sh-dnote ${p.state}">${p.note}</div>` : ''}`);
       if (p.action) {
-        const label = { buy: 'Comprar', up: 'Mejorar', offer: 'Ver oferta', ruleta: '¡Girar!' }[p.action];
+        const label = { buy: 'Comprar', up: 'Mejorar a crédito', offer: 'Ver oferta', ruleta: '¡Girar!' }[p.action];
         const b = U.el('button', `btn ${p.action === 'offer' ? 'btn-cyan' : 'btn-green'} sh-buy`, label);
         b.disabled = !!run.position || (p.action === 'buy' && p.state !== 'can') || (p.action === 'up' && p.state !== 'can');
         b.addEventListener('click', (e) => { e.stopPropagation(); shopAct(p, b); });
@@ -603,6 +572,7 @@
       SN.Audio.sfx('unlock');
       SN.Save.saveRun();
       cheer(SN.PAL.green);
+      SN.UI.renderHUD();
       return;
     }
     // Estilo de vida y objetos dorados: igual que siempre (precio con la rebaja de Don Siete, sin quedarte a cero)
@@ -698,17 +668,16 @@
     const o = SN.Unlocks.offer(it), st = D.story.offer, run = S.run;
     const fill = (t) => t.replace('{item}', it.name).replace(/\{now\}/g, U.money(o.now)).replace('{debt}', U.money(o.debt)).replace('{days}', o.days);
     const can = SN.Unlocks.canBuyItem(it.id);
-    const short = !can.ok && can.short ? `<div class="of-short">${st.short.replace('{need}', U.money(o.need)).replace('{left}', U.money(can.short))}</div>` : '';
+    // Es el siguiente paso de la historia: un solo botón, nada que pagar hoy y la deuda en la letra pequeña
     const pop = U.el('div', 'offer');
     pop.innerHTML = `<div class="of-head"><i class="of-ico"></i>${SN.Cipher.brand(true)}<span>${W.opts.why === 'insist' ? st.insist : 'Oferta encontrada'}</span></div>
       <div class="of-title">${st.title}</div>
       <div class="of-line">${fill(st.line)}</div>
-      <div class="of-price"><s>${U.money(it.price)}</s><b>${U.money(o.now)}</b><em>${st.save}</em></div>
+      <div class="of-price"><s>${U.money(it.price)}</s><b>${st.free}</b><em>${st.save}</em></div>
       <div class="of-later">${fill(st.later)}</div>
       <button class="of-small">${st.small} ▼</button>
       <div class="of-fine hidden">${fill(st.smallText)} <b class="cx of-clue" title="">${D.cipher.alphabet.D}</b></div>
-      ${short}
-      <div class="of-row"><button class="btn btn-yellow of-yes">${st.yes}</button><button class="btn btn-cream of-no">${st.no}</button></div>`;
+      <div class="of-row"><button class="btn btn-yellow of-yes">${st.yes}</button></div>`;
     pop.querySelector('.of-ico').style.backgroundImage = `url(${SN.Sprites.url('app', 1)})`;
     const yes = pop.querySelector('.of-yes');
     yes.disabled = !can.ok || !!(run && run.position);
@@ -722,7 +691,6 @@
       SN.Events.emit('offer:fineprint', { item: it.id, el: pop.querySelector('.of-fine') });
     });
     pop.querySelector('.of-clue').addEventListener('click', () => SN.Cipher.discover('letra'));
-    pop.querySelector('.of-no').addEventListener('click', () => { W.close(); SN.Events.emit('offer:declined', { item: it.id }); });
     yes.addEventListener('click', () => { if (SN.Unlocks.canBuyItem(it.id).ok) SN.Game.buyKeyItem(it.id); else SN.Audio.sfx('error'); });
   }
   // Compatibilidad: abrir la oferta de un objeto

@@ -115,6 +115,12 @@
     if (opts.wink) R(g, 21, y + 15, 6, 1, P.skin);
     return bravoCanvas;
   };
+  // Avatar de 24x24 (Mensajín, la Academia): un recorte de ese mismo retrato, para que sea la misma cara
+  Chars.bravoFace = function () {
+    const c = Px.canvas(24, 24);
+    Px.ctx(c).drawImage(Chars.bravoCanvas(0), 8, 1, 24, 24, 0, 0, 24, 24);
+    return c;
+  };
 
   // ---------- Protagonista: cabeza y hombros (coordenadas de un búfer de 160x90) ----------
   // expr: neutral | happy | star | confused | worried | shocked | relieved
@@ -279,37 +285,83 @@
   };
 
   // ---------- PLEYZETA 6 ULTRA (arte del producto, 130x120) ----------
+  // Torre blanca y lavanda con el núcleo negro y la luz azul, el mando blanco y la caja de Vice Bahía.
+  // La parte quieta se dibuja una vez (sprite en caché); cada fotograma solo cambian la luz y los destellos.
+  let consoleArt = null;
+  const WHITE = [P.creamDD, P.creamD, P.creamM, P.cream, P.creamL];
+  const INK = [P.coalDD, P.coalD, P.coal, P.coalL];
+  function buildConsoleArt() {
+    const sp = new SN.PK.Sprite(130, 120);
+    const g = sp.g;
+    // Sombra en el suelo
+    sp.part(sp.mask().ellipse(62, 109, 52, 4), [P.creamDD, P.creamD], { outline: false, flat: true });
+    // Torre: dos alas blancas curvadas (más estrechas en el centro) y el núcleo negro entre ellas
+    sp.part(sp.mask().rect(29, 12, 14, 94), INK, { light: [-1, -1], lit: 2, sh: 2 });
+    const wingL = sp.mask().poly([[13, 10], [30, 6], [30, 106], [15, 108], [18, 84], [19, 56], [17, 30]]);
+    const wingR = sp.mask().poly([[42, 6], [59, 10], [55, 30], [53, 56], [54, 84], [57, 108], [42, 106]]);
+    sp.part(wingL, WHITE, { light: [-1, -1], lit: 3, sh: 2, base: 3 });
+    sp.part(wingR, WHITE, { light: [-1, -1], lit: 2, sh: 3, base: 2 });
+    sp.rim(wingL, P.creamL, [-1, 0]);
+    // Ranuras de ventilación arriba y el logo P6 en el núcleo
+    for (let i = 0; i < 4; i++) sp.rect(32, 16 + i * 3, 8, 1, P.coalM);
+    Px.text(g, 'P6', 36, 64, P.violetL, { align: 'center' });
+    // Peana
+    sp.part(sp.mask().rect(22, 106, 28, 3), INK, { light: [-1, -1], flat: true });
+    // Caja del juego: GRAN ROBO DE AUTOS VI · VICE BAHÍA
+    const bx = 78, by = 30, bw = 42, bh = 64;
+    sp.part(sp.mask().rect(bx, by, bw, bh), [P.coalDD, P.coalD, P.coal, P.coalL], { light: [-1, -1], flat: true });
+    // Cielo de atardecer en franjas (magenta -> naranja -> amarillo)
+    const sky = [P.violetD, P.violet, P.magenta, P.coralD, P.coral, P.orange, P.orangeL, P.yellow];
+    sky.forEach((c, i) => sp.rect(bx + 2, by + 13 + i * 4, bw - 4, 4, c));
+    sp.part(sp.mask().ellipse(bx + 27, by + 40, 8, 8), [P.yellow, P.yellowL, P.creamL], { light: [0, -1], outline: false });
+    for (let i = 0; i < 3; i++) sp.rect(bx + 18, by + 37 + i * 3, 18, 1, sky[5 + (i % 2)]);
+    sp.rect(bx + 2, by + 45, bw - 4, 4, P.coalD);
+    // Palmeras en contraluz
+    const palm = (px, ph) => {
+      sp.line(px, by + 45, px + 2, by + 45 - ph, P.coalDD, 2);
+      const tx = px + 2, ty = by + 45 - ph;
+      sp.line(tx, ty, tx - 6, ty + 3, P.coalDD).line(tx, ty, tx + 6, ty + 2, P.coalDD).line(tx, ty, tx - 4, ty - 3, P.coalDD).line(tx, ty, tx + 4, ty - 4, P.coalDD).line(tx, ty, tx + 1, ty + 5, P.coalDD);
+    };
+    palm(bx + 8, 20); palm(bx + 14, 13);
+    // Título
+    sp.rect(bx + 2, by + 2, bw - 4, 11, P.coalD);
+    Px.text(g, 'VICE', bx + bw / 2, by + 10, P.cyan, { align: 'center' });
+    sp.rect(bx + 2, by + 49, bw - 4, 13, P.coalD);
+    Px.text(g, 'BAHÍA', bx + bw / 2, by + 59, P.magentaL, { align: 'center' });
+    sp.rect(bx + bw - 13, by + 14, 11, 9, P.coalD);
+    Px.text(g, 'VI', bx + bw - 7, by + 22, P.yellow, { align: 'center' });
+    // Mando blanco delante de la torre
+    const pad = sp.mask().ellipse(57, 97, 15, 6).capsule(46, 98, 42, 105, 4.2).capsule(68, 98, 72, 105, 4.2);
+    sp.part(pad, WHITE, { light: [-1, -1], lit: 2, sh: 2, base: 3, cast: 1 });
+    sp.part(sp.mask().rect(52, 93, 10, 4), INK, { flat: true, outline: false });
+    sp.rect(46, 96, 3, 1, P.coalL).rect(47, 95, 1, 3, P.coalL);                       // cruceta
+    sp.px(67, 95, P.cyan).px(69, 96, P.coral).px(65, 96, P.magentaL).px(67, 97, P.green); // botones
+    sp.part(sp.mask().ellipse(52, 101, 2.2, 2.2).ellipse(62, 101, 2.2, 2.2), INK, { light: [-1, -1], outline: false });
+    return sp.c;
+  }
+  // Destello de 4 puntas (crece y mengua)
+  function sparkle(g, x, y, k) {
+    if (k <= 0.1) return;
+    const r = Math.round(1 + k * 3);
+    R(g, x - r, y, r * 2 + 1, 1, P.yellow); R(g, x, y - r, 1, r * 2 + 1, P.yellow);
+    R(g, x, y, 1, 1, P.creamL);
+    if (r >= 3) { R(g, x - 1, y, 3, 1, P.yellowL); R(g, x, y - 1, 1, 3, P.yellowL); }
+  }
   Chars.console = function (g, x, y, t) {
-    // Suelo y sombra
-    R(g, x + 10, y + 104, 110, 4, P.creamD);
-    // Torre de la consola
-    Px.box(g, x + 18, y + 30, 46, 76, P.coal, P.coalDD);
-    R(g, x + 20, y + 32, 42, 2, P.coalL);
-    R(g, x + 24, y + 40, 34, 4, P.coalM); R(g, x + 24, y + 48, 34, 4, P.coalM); R(g, x + 24, y + 56, 34, 4, P.coalM);
-    R(g, x + 28, y + 70, 26, 10, P.creamL); Px.text(g, 'P6', x + 41, y + 79, P.coal, { align: 'center' });
-    R(g, x + 24, y + 92, 6, 3, P.green); R(g, x + 33, y + 92, 18, 2, P.coalL);
-    // Llamas encima ("edición horno doméstico")
-    for (let i = 0; i < 5; i++) {
-      const fh = 10 + Math.round(Math.abs(Math.sin(t * 9 + i * 1.7)) * 9);
-      const fx = x + 22 + i * 8;
-      R(g, fx, y + 30 - fh, 6, fh, P.orange);
-      R(g, fx + 1, y + 30 - fh + 4, 4, fh - 4, P.yellow);
-      R(g, fx + 2, y + 30 - fh + 8, 2, Math.max(0, fh - 8), P.creamL);
+    if (!consoleArt) consoleArt = buildConsoleArt();
+    g.drawImage(consoleArt, x, y);
+    // Luz azul a los dos lados del núcleo: un pulso que sube y baja
+    const ly = Math.round((Math.sin(t * 2) * 0.5 + 0.5) * 60);
+    for (const lx of [x + 30, x + 41]) {
+      R(g, lx, y + 30, 1, 72, P.cyanDD);
+      R(g, lx, y + 30 + ly, 1, 14, P.cyanD);
+      R(g, lx, y + 34 + ly, 1, 6, P.cyan);
     }
-    // Caja del juego
-    Px.box(g, x + 74, y + 52, 40, 54, P.creamL, P.coal);
-    R(g, x + 76, y + 54, 36, 30, P.orange);
-    R(g, x + 76, y + 68, 36, 16, P.yellow);
-    Px.ellipse(g, x + 94, y + 70, 7, 7, P.yellowL);
-    R(g, x + 76, y + 78, 36, 6, P.orangeD);
-    // Palmera y coche
-    R(g, x + 82, y + 62, 2, 16, P.coal); R(g, x + 78, y + 61, 10, 2, P.coal); R(g, x + 79, y + 60, 3, 1, P.coal); R(g, x + 85, y + 60, 3, 1, P.coal);
-    R(g, x + 92, y + 78, 16, 4, P.coal); R(g, x + 95, y + 75, 8, 3, P.coal);
-    R(g, x + 76, y + 85, 36, 19, P.coal);
-    Px.text(g, 'GRAN', x + 94, y + 93, P.yellow, { align: 'center' });
-    Px.text(g, 'ROBO VI', x + 94, y + 102, P.creamL, { align: 'center' });
     // Destellos de oferta
-    if (Math.sin(t * 6) > 0) { R(g, x + 8, y + 40, 1, 5, P.yellowD); R(g, x + 6, y + 42, 5, 1, P.yellowD); }
-    if (Math.sin(t * 6 + 2) > 0) { R(g, x + 118, y + 44, 1, 5, P.yellowD); R(g, x + 116, y + 46, 5, 1, P.yellowD); }
+    const tw = (o) => Math.max(0, Math.sin(t * 3.2 + o));
+    sparkle(g, x + 8, y + 18, tw(0));
+    sparkle(g, x + 70, y + 12, tw(1.6));
+    sparkle(g, x + 6, y + 84, tw(3.1));
+    sparkle(g, x + 124, y + 24, tw(4.4));
   };
 })(window.SN);

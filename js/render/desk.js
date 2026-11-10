@@ -137,6 +137,8 @@
         deadline: run && run.debt ? run.debt.deadlineDay : 7,
         defaulted: run && run.debt ? run.debt.defaulted : false,
         owe: run && SN.Debt.active() ? run.debt.amount : 0,
+        // La consola: en la intro no aparece hasta que se compra (js/render/cinematic.js)
+        console: !this.hideConsole,
       };
     },
 
@@ -373,27 +375,36 @@
     }
   }
 
-  // La PLEYZETA 6 ULTRA sin abrir: el motivo de la deuda (y el toro de oro encima si lo compraste)
+  // La PLEYZETA 6 ULTRA: la misma consola de la tienda (js/render/characters.js, Chars.console) en pequeño:
+  // torre de alas blancas curvadas, núcleo negro con la luz azul y el mando blanco al lado. Es el motivo de la
+  // deuda (y lleva el toro de oro encima si lo compraste). En la intro no está hasta que se compra.
   function drawConsoleBox(g, st) {
+    if (!st.console) return;
     const sp = new PK.Sprite(40, 44);
-    const box = sp.mask().rect(3, 6, 32, 34);
-    sp.part(box, [P.creamDD, P.creamD, P.cream, P.creamL], { light: [1, -1], lit: 2, sh: 2 });
-    sp.rect(3, 6, 5, 34, P.coal).rect(9, 6, 26, 8, P.coralD);
-    sp.rect(4, 9, 3, 1, P.yellow).rect(4, 11, 2, 1, P.yellow);
-    mini(sp.g, 'P6', 17, 7, P.creamL);
-    const fire = sp.mask().ellipse(21, 26, 7, 6.5).poly([[16, 22], [18, 15], [21, 21]]).poly([[21, 20], [24, 13], [26, 22]]);
-    sp.part(fire, [P.orangeD, P.orange, P.orangeL, P.yellowL], { light: [0, -1], outline: false });
-    const core = sp.mask().ellipse(21, 28, 3.5, 3.5);
-    sp.part(core, [P.yellow, P.yellowL, P.creamL], { light: [0, -1], outline: false });
-    sp.rect(9, 34, 26, 4, P.coal);
-    for (let i = 0; i < 5; i++) sp.rect(11 + i * 5, 35, 3, 2, P.yellow);
-    g.drawImage(sp.c, 280, 100);
+    const WHITE = [P.creamDD, P.creamD, P.creamM, P.cream, P.creamL], INK = [P.coalDD, P.coalD, P.coal, P.coalL];
+    // Núcleo negro entre las alas, con la luz azul a los dos lados
+    sp.part(sp.mask().rect(13, 6, 6, 34), INK, { light: [-1, -1], lit: 1, sh: 1 });
+    sp.rect(13, 12, 1, 24, P.cyanD).rect(18, 12, 1, 24, P.cyanD).px(13, 20, P.cyan).px(18, 20, P.cyan);
+    for (let i = 0; i < 3; i++) sp.rect(14, 8 + i * 2, 4, 1, P.coalM);
+    // Alas blancas: anchas arriba y abajo, más estrechas en el centro
+    const wingL = sp.mask().poly([[5, 5], [13, 3], [13, 41], [6, 42], [8, 30], [8, 17]]);
+    const wingR = sp.mask().poly([[19, 3], [27, 5], [24, 17], [24, 30], [26, 42], [19, 41]]);
+    sp.part(wingL, WHITE, { light: [-1, -1], lit: 2, sh: 1, base: 3 });
+    sp.part(wingR, WHITE, { light: [-1, -1], lit: 1, sh: 2, base: 2 });
+    sp.rim(wingL, P.creamL, [-1, 0]);
+    // Peana
+    sp.rect(10, 41, 12, 2, P.coalD);
+    // Mando blanco apoyado al lado
+    const pad = sp.mask().ellipse(33, 38, 6, 2.6).capsule(29, 39, 28, 42, 1.8).capsule(37, 39, 38, 42, 1.8);
+    sp.part(pad, WHITE, { light: [-1, -1], lit: 1, sh: 1, base: 3 });
+    sp.rect(31, 37, 4, 1, P.coal).px(29, 38, P.coalL).px(37, 37, P.cyan).px(38, 38, P.coral);
+    g.drawImage(sp.c, 278, 98);
     if (st.owned.trofeo) {
       const tp = new PK.Sprite(26, 14);
       const m = tp.mask().ellipse(12, 7, 8, 4).ellipse(19, 5, 4, 3).poly([[17, 2], [16, -1], [19, 2]]).poly([[21, 2], [23, -1], [23, 3]]);
       tp.part(m, [P.yellowDD, P.yellowD, P.yellow, P.yellowL], { light: [1, -1] });
       tp.rect(5, 10, 3, 3, P.yellowD).rect(15, 10, 3, 3, P.yellowD);
-      g.drawImage(tp.c, 286, 93);
+      g.drawImage(tp.c, 281, 89);
     }
   }
 
@@ -687,9 +698,9 @@
       }
     }
     g.globalAlpha = 1;
-    // Ondas de calor sobre la caja de la consola ("también calienta la habitación")
-    for (let i = 0; i < 4; i++) {
-      const hx = 288 + i * 7;
+    // Ondas de calor sobre la consola ("también calienta la habitación")
+    for (let i = 0; i < 4 && st.console; i++) {
+      const hx = 284 + i * 5;
       for (let yy = 0; yy < 12; yy += 2) {
         const off = Math.round(Math.sin(t * 3 + yy * 0.5 + i) * 1.2);
         g.globalAlpha = 0.32 - yy * 0.022;

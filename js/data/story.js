@@ -60,8 +60,8 @@
         lines: ['Y esto son las noticias. Mueven el precio: léelas siempre.', '¿Eso? Una errata de la imprenta.', 'No es relevante. Mira la gráfica, no el periódico.'] },
       // buy: enseña Mejoras y Tienda. acts: qué se abre y qué se resalta en cada frase
       { id: 'compras', buy: true,
-        acts: [{ spot: '#nav' }, { spot: '#nav-shop' }, { open: 'upgrades', spot: '.win' }, { open: 'shop', spot: '.win' }],
-        lines: ['Con lo que ganes puedes comprar MEJORAS (tecla M) y cosas en la TIENDA (tecla T).', 'Cuando haya algo que puedas comprar, saldrá un número rojo. Como ese.', '¿Las mejoras? Bloqueadas. Ya te iré haciendo... regalos.', 'Y en la tienda, de todo. A veces, hasta ofertas que no podrás rechazar.'] },
+        acts: [{ spot: '#nav' }, { spot: '#nav-shop' }, { open: 'shop', spot: '.win' }, { open: 'shop', spot: '.win' }],
+        lines: ['Todo se compra en la TIENDA (tecla T): mejoras, objetos y caprichos.', 'Cuando haya algo que puedas comprar, saldrá un número rojo. Como ese.', '¿Las mejoras? Bloqueadas. Ya te iré haciendo... regalos. Y se pagan a crédito: hoy nada, después con intereses.', 'A veces, hasta ofertas que no podrás rechazar.'] },
       { id: 'meta', target: '#hud-goal', lines: ['Junta $250 antes del día 7 y paga la deuda.', 'Si te quedas sin dinero... tendrás que sacarlo de otra parte. Suerte.'] },
     ],
     tutorialPayHint: ['¡Ya tienes para pagar!', 'Pulsa PAGAR DEUDA. O sigue jugando... tú sabrás.'],
@@ -82,17 +82,22 @@
       darkNews: ['¿Lees las noticias? No te preocupes por eso.', 'El dinero no sale de la nada. Pero eso no es asunto tuyo.'],
       goal100000: ['Cien mil. Ya casi estás listo.', 'Pronto tendrás que decidir de qué lado del mercado estás.'],
     },
+    // Bono por usar la app: el encapuchado, al saldar cada deuda. {bonus}
+    payBonus: [
+      'Pagas lo que debes. Eso me gusta. Toma {bonus}: un bono por usar la app.',
+      'Deuda saldada. FUTURO.exe premia a los buenos clientes: {bonus} para que sigas jugando.',
+      'Mira qué responsable. {bonus} de bono. No te lo gastes todo... o sí.',
+    ],
     // La oferta de FUTURO.exe al comprar un objeto clave. {item} {now} {debt} {days}
     offer: {
       title: '¡ESPERA!',
-      line: 'FUTURO.exe ha encontrado {item} por solo {now}.',
-      save: '−90%',
-      later: 'Hoy pagas {now}. El resto, después.',
+      line: 'FUTURO.exe te consigue {item} sin pagar nada hoy.',
+      free: '$0 HOY',
+      save: '−100%',
+      later: 'Hoy no pagas nada. Todo, después.',
       small: 'Letra pequeña',
-      smallText: 'El resto, con intereses: {debt} en {days} días. FUTURO.exe no se hace responsable de lo que pase después.',
+      smallText: 'Todo, con intereses: {debt} en {days} días. FUTURO.exe no se hace responsable de lo que pase después.',
       yes: '¡Lo quiero!',
-      no: 'No, gracias',
-      short: 'FUTURO.exe necesita ver {need} en tu cuenta. Te faltan {left}: te aviso en cuanto los tengas.',
       insist: 'FUTURO.exe insiste',
     },
     // Nombres de cada deuda (lo que se ve en el HUD y en las notas)

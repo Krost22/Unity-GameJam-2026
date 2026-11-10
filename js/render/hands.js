@@ -9,9 +9,12 @@
     drumming: false, // compatibilidad: el protagonista ya sabe por el juego cuándo hay una operación abierta
     pointAt(sx, sy) { SN.Hero.pointAt(sx, sy); },
     press() { SN.Hero.press(); },
+    // La tecla se hunde en el teclado de la mesa y el dedo que le toca se mueve (por columnas: de la
+    // izquierda a la derecha del teclado, del meñique al índice; el espacio, cualquiera)
     tapKey(code) {
       const k = SN.Desk.keyFor(code);
       if (k) k.press = 0.14;
+      SN.Hero.tapFinger(k && code !== 'Space' ? Math.min(3, Math.floor(k.c / 4)) : null);
     },
     celebrate(big) { SN.Hero.celebrate(big); },
     flinch(big) { SN.Hero.flinch(big); },

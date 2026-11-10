@@ -25,9 +25,6 @@
     // LOS PAGADOS: una capucha vacía (no se le ve la cara)
     avaSer: ['....kkkk....', '...kllllk...', '..kllllllk..', '..klKKKKlk..', '..lKKKKKKl..', '..lKKyyKKl..', '..lKKKKKKl..',
       '..llKKKKll..', '.kllllllllk.', '.kllllllllk.', 'kllllllllllk', 'kllllllllllk'],
-    // Bravo Fines: tupé, gafas de sol, sonrisa de anuncio y cadena de oro
-    avaBravo: ['...OOOOOO...', '..OOOOOOOOO.', '..OssssssO..', '..kxkkkkxkk.', '..ssssssssS.', '..sswwwwwsS.', '...ssssssS..',
-      '....SSSS....', '.wwwyyyywww.', 'wwwwsyysswww', 'wwwwssssswww', 'wwwwwsswwwww'],
     // --- Academia de Bravo Fines (12x12) ---
     limonada: ['......kk....', '.....kuk....', '..kkkkkkkk..', '..kwwwwwwk..', '..kuyuuyuk..', '..kuyyyyuk..', '..kuuyuuuk..',
       '..kuuuuuyk..', '..kyuuyuuk..', '..kuuuuuuk..', '...kkkkkk...', '............'],

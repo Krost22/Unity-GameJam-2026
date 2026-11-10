@@ -3,8 +3,9 @@
 //   debt -> la deuda inicial (la Pleyzeta). El paso termina al pagarla.
 //   gift -> "regalo" del encapuchado: desbloquea una mejora (que luego hay que comprar), abre los mercados
 //           de `markets` y crea una deuda. El paso termina al pagarla.
-//   item -> objeto clave de la tienda: FUTURO.exe lo ofrece en cuanto pagas la deuda anterior (un poco hoy y
-//           el resto en unos días: una deuda nueva) y abre un mercado negro. El paso termina al pagarla.
+//   item -> objeto clave de la tienda: FUTURO.exe lo ofrece en cuanto pagas la deuda anterior (nada hoy, todo
+//           en unos días: una deuda nueva) y abre un mercado negro. El paso termina al pagarla.
+// Cada deuda saldada trae un BONO de la app (D.payBonus): así nunca empiezas la siguiente a cero.
 //   goal -> meta de capital: solo la final (el fin de la demo).
 // Para cambiar el ritmo de la partida basta con tocar importes y plazos aquí (la prueba de equilibrio avisa).
 (function (SN) {
@@ -12,7 +13,7 @@
   const D = SN.Data;
 
   // Objetos clave de la tienda (nombres de parodia). Se compran en orden y solo con la oferta de FUTURO.exe,
-  // que salta sola al pagar la deuda anterior: un poco hoy (la entrada) y el resto, en `days` días.
+  // que salta sola al pagar la deuda anterior: nada hoy y todo, con intereses, en `days` días.
   D.keyItems = [
     { id: 'tele', name: 'Tele SAMSONG 98"', short: 'la tele', price: 600, days: 5, market: 'salud_negro',
       desc: 'Curva, plana y tan grande que tapa media pared.' },
@@ -25,10 +26,21 @@
   ];
   D.keyItemById = (id) => D.keyItems.find((k) => k.id === id);
 
-  // La oferta de FUTURO.exe: pagas un 10% hoy y debes el 150% del precio (la letra pequeña).
-  // solvency: FUTURO.exe solo financia a quien tiene en la cuenta al menos un 25% de lo que va a deber
-  // (si no, quien acepta nada más pagar la deuda anterior no llega nunca y repite lo mismo para siempre).
-  D.offer = { upfront: 0.1, debt: 1.5, solvency: 0.25 };
+  // La oferta de FUTURO.exe: hoy no pagas nada y debes el 150% del precio (la letra pequeña). Es el paso de la
+  // historia: no se puede rechazar ni pide tener dinero en la cuenta (la deuda se paga después).
+  D.offer = { upfront: 0, debt: 1.5, solvency: 0 };
+
+  // Bono por usar la app: al saldar cada deuda, el encapuchado te devuelve una parte (nunca te quedas a cero
+  // justo antes de que llegue la siguiente deuda). frac: parte de la deuda pagada; min: lo mínimo que da;
+  // ready: además, te deja con al menos esta parte de la SIGUIENTE deuda (si no, las deudas crecen x5 en cada
+  // escalón y empezar casi a cero sería imposible de remontar).
+  D.payBonus = { frac: 0.3, min: 60, ready: 0.12 };
+  D.payBonusFor = (amount, next = 0, capital = 0) =>
+    Math.max(D.payBonus.min, Math.round(amount * D.payBonus.frac), Math.round(next * D.payBonus.ready - capital));
+
+  // Mejoras a crédito: no pagas nada hoy; su precio, con estos intereses, se suma a la deuda que tengas.
+  // Si no debes nada, abren su propia deuda con `days` días de plazo.
+  D.credit = { interest: 0.4, days: 4 };
 
   D.chain = [
     { id: 'pleyzeta', kind: 'debt', label: 'la deuda de la Pleyzeta' },

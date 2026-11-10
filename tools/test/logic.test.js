@@ -187,7 +187,7 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
   let paid = null;
   SN2.Events.on('debt:paid', (d) => { paid = d; });
   for (let i = 0; i < 21; i++) SN2.Trading.skipTurn();
-  ok(paid && paid.auto && SN2.State.run.capital === 50, 'si te alcanza al vencer, se cobra sola');
+  ok(paid && paid.auto && SN2.State.run.capital === 50 + 75, 'si te alcanza al vencer, se cobra sola (y llega el bono de la app)');
 
   const SN3 = load();
   SN3.State.newRun();
@@ -198,7 +198,7 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
   Object.assign(r3, { day: 7, turn: 2, capital: 90 });
   ok(!SN3.Debt.hopeless(), 'día 7, noche, con $90: todavía hay una última oportunidad');
   r3.capital = 260;
-  ok(SN3.Debt.pay() && r3.debt.paid && r3.capital === 10 && !SN3.Debt.hopeless(), 'pago anticipado de la deuda');
+  ok(SN3.Debt.pay() && r3.debt.paid && r3.capital === 10 + 75 && !SN3.Debt.hopeless(), 'pago anticipado de la deuda (+ bono de $75)');
   // La escalera: Pleyzeta pagada -> paso completado -> primer regalo (LÍMITE + una deuda)
   let ev = SN3.Unlocks.check();
   ok(ev && ev.type === 'done' && ev.step.id === 'pleyzeta', 'pagar la Pleyzeta completa el primer paso');
@@ -216,11 +216,15 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
   ok(!SN.Upgrades.isUnlocked('suerte') && !SN.Upgrades.buy('suerte'), 'al empezar no hay mejoras: llegan como "regalo"');
   run.gifts.suerte = true;
   run.capital = 500;
-  ok(SN.Upgrades.buy('suerte') && run.capital === 100 && SN.Upgrades.value('suerte') === 1, 'tras el regalo, Suerte nivel 1 se compra ($400)');
+  const cred = Math.round(400 * (1 + SN.Data.credit.interest));
+  ok(SN.Upgrades.buy('suerte') && run.capital === 500 && SN.Upgrades.value('suerte') === 1 && run.debt.id === 'pleyzeta' && run.debt.amount === 250 + cred,
+    `tras el regalo, Suerte nivel 1 se compra a crédito: hoy $0 y $${cred} ($400 + intereses) se suman a la deuda abierta`);
   ok(!SN.Upgrades.buy('limite'), 'Límite bloqueado hasta su regalo');
   ok(SN.Trading.limit() === 250, 'límite base de inversión: $250');
   run.capital = 30;
-  ok(!SN.Upgrades.canBuy('suerte').ok, 'una mejora no te puede dejar por debajo de la apuesta mínima');
+  run.debt.deadlineDay = run.day;
+  ok(!SN.Upgrades.canBuy('suerte').ok && SN.Upgrades.canBuy('suerte').reason === 'YA NO PODRÍAS PAGAR A TIEMPO', 'no se compra a crédito lo que ya no se podría pagar a tiempo');
+  run.debt.amount = 0; run.debt.paid = true;
   run.capital = 75;
   const m = run.markets.salud;
   const shock = SN.Market.addEvent(m, SN.Data.marketEvents.salud[1]); // shock
@@ -242,26 +246,26 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
   run.capital = 5000; // con dinero de sobra tampoco se salta ningún paso
   ok(drain() === '', 'con la Pleyzeta sin pagar no avanza nada (aunque tengas $5,000)');
   ok(!U.canBuyItem('tele').ok && U.canBuyItem('tele').locked, 'la tele no se puede comprar antes de su paso');
+  run.capital = 253;
   SN.Debt.pay();
+  ok(run.capital === 3 + 75 && run.debts.length === 0 && run.debt.bonus === 75, `al saldar la Pleyzeta con $253 te quedan $3... y el bono de la app (30%): $78 (${run.capital})`);
+  run.capital = 5000;
   ok(drain() === 'done,gift', 'tras la Pleyzeta llega el primer regalo');
   ok(SN.Data.chain.slice(0, -1).every((st) => st.kind !== 'goal'), 'no hay metas de dinero entre deudas: solo la final');
   ok(!U.isUnlocked('tecno'), 'Tecnología no se abre antes de su regalo, aunque tengas el dinero');
   SN.Debt.pay();
   ok(drain() === 'done' && U.step().id === 'tele', 'pagado el regalo, el siguiente paso es comprar la tele');
   ok(!U.canBuyItem('movil').ok && U.canBuyItem('movil').locked, 'los objetos clave van en orden');
-  // "No, gracias" solo cierra la ventana: comprobar si se puede comprar no cambia nada
+  // Comprobar si se puede comprar no cambia nada
   const before = JSON.stringify([run.capital, run.owned, run.debt, run.step]);
-  ok(U.canBuyItem('tele').ok && before === JSON.stringify([run.capital, run.owned, run.debt, run.step]), 'mirar (o rechazar) la oferta no cambia nada');
-  const o = U.offer('tele'), cap0 = run.capital;
-  ok(o.now === 60 && o.debt === 900 && o.need === 225, `la oferta: $60 hoy, $900 después y hay que tener $225 (${o.now} / ${o.debt} / ${o.need})`);
-  run.capital = 200;
-  const poor = U.canBuyItem('tele');
-  ok(!poor.ok && poor.short === 25, 'sin el 25% de la deuda en la cuenta, FUTURO.exe no la financia (y dice cuánto falta)');
-  run.capital = 230;
-  ok(U.canBuyItem('tele').ok, 'no hace falta el precio completo: basta con el 25% de lo que vas a deber');
-  run.capital = cap0;
-  ok(U.acceptOffer('tele') && run.owned.tele && run.capital === cap0 - o.now && SN.Debt.active() && run.debt.amount === o.debt && U.isUnlocked('salud_negro'),
-    'aceptar la oferta: pagas la entrada, debes el resto y se abre Salud negro');
+  ok(U.canBuyItem('tele').ok && before === JSON.stringify([run.capital, run.owned, run.debt, run.step]), 'mirar la oferta no cambia nada');
+  const o = U.offer('tele');
+  ok(o.now === 0 && o.debt === 900 && o.need === 0, `la oferta: $0 hoy, $900 después y no pide dinero en la cuenta (${o.now} / ${o.debt} / ${o.need})`);
+  run.capital = 12;
+  ok(U.canBuyItem('tele').ok, 'la oferta se puede aceptar aunque casi no tengas dinero: la deuda se paga después');
+  ok(U.acceptOffer('tele') && run.owned.tele && run.capital === 12 && SN.Debt.active() && run.debt.amount === o.debt && U.isUnlocked('salud_negro'),
+    'aceptar la oferta: hoy no pagas nada, lo debes todo y se abre Salud negro');
+  run.capital = 5000;
   ok(U.acceptOffer('tele') === null, 'no se puede comprar dos veces');
   SN.Debt.pay();
   ok(drain() === 'done,gift' && U.isUnlocked('tecno') && SN.Upgrades.isUnlocked('analisis') && SN.Debt.active(),
@@ -341,7 +345,7 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
   let paid = null;
   SN3.Events.on('debt:paid', (d) => { paid = d; });
   for (let i = 0; i < 15 && !paid; i++) SN3.Trading.skipTurn();
-  ok(paid && paid.auto && paid.debt.id === 'regalo1' && r3.capital === 350, 'si al vencer te alcanza, el regalo se cobra solo');
+  ok(paid && paid.auto && paid.debt.id === 'regalo1' && r3.capital === 350 + 60, 'si al vencer te alcanza, el regalo se cobra solo (bono mínimo: $60)');
 }
 
 // 14) RESISTENCIA: menos giros en las últimas velas
@@ -438,9 +442,10 @@ function fullRun(maxDays) {
       const keep = SN.Debt.active() ? run.debt.amount : 0;
       if (run.capital - n.cost >= Math.max(keep, run.capital * 0.6)) SN.Academy.buy(n.id);
     }
+    // Mejoras a crédito: cuando lo que tiene ya cubre lo que la mejora suma a la deuda (y se puede pagar a tiempo)
     for (const id of ['limite', 'analisis', 'suerte', 'resistencia']) {
-      const c = SN.Upgrades.canBuy(id), keep = SN.Debt.active() ? run.debt.amount : 0;
-      if (c.ok && run.capital - c.cost >= Math.max(keep, run.capital * 0.7)) SN.Upgrades.buy(id);
+      const c = SN.Upgrades.canBuy(id);
+      if (c.ok && run.capital >= c.debt) SN.Upgrades.buy(id);
     }
     // ¿Se ha perdido? Cerdito (con 2 días más si era por el plazo) o vuelta al punto de control
     const late = (run.debt && run.debt.defaulted) || SN.Debt.hopeless();
@@ -528,6 +533,12 @@ function fullRun(maxDays) {
   ok(h('$60.').endsWith('</span>.'), 'el punto final no forma parte de la cantidad');
   ok(/kw-7/.test(h('Día 17')) && /kw-7/.test(h('Siete pavos')) && /kw-gold">pavos/.test(h('Siete pavos')), 'cada 7 y la palabra "siete" en arcoíris; "pavos" es dinero');
   ok(/kw-luck/.test(h('¡Qué suerte!')) && /kw-luck/.test(h('Estás afortunada')) && !/kw-luck/.test(h('suertes')), 'la suerte sale en verde');
+  const gift1 = h('Toma un regalo de bienvenida: ya puedes comprar LÍMITE. Y un multiplicador ×10.');
+  ok(/kw-gift/.test(gift1) && /kw-up">(<i[^>]*>.<\/i>){6}/.test(gift1) && /kw-up">.*×/.test(gift1), 'regalo en magenta; LÍMITE, multiplicador y ×10 como mejora');
+  ok(/kw-risk/.test(h('Tienes una deuda con plazo')) && /kw-risk/.test(h('¡Liquidado!')) && /kw-gift/.test(h('Se abre el Mercado Dorado')), 'deuda, plazo y liquidado en peligro; el Mercado Dorado como regalo');
+  ok(/kw-act/.test(h('Pulsa COBRAR ya')) && !/kw-act/.test(h('vas a cobrar mañana')), 'las acciones solo cuentan en mayúsculas, como el botón');
+  ok(/kw-up/.test(h('apuesta x2')) && !/kw-up/.test(h('max2 y xbox')), 'x2 es un multiplicador; dentro de una palabra, no');
+  ok(!/kw-gift|kw-up/.test(K.html('Regalo: Límite', { terms: false })), 'en la tienda y las mejoras solo se marca dinero, 7 y suerte');
   ok(!/kw/.test(h('EL DIARIO DEL FUTURO')) && !/kw/.test(h('Nada que pintar')), 'sin palabras clave, el texto no cambia');
   ok(h('<b>$5</b>').startsWith('&lt;b&gt;'), 'el texto se escapa (no se cuela HTML)');
   const brand = h('FUTURO.exe ha encontrado algo');
@@ -560,7 +571,9 @@ function fullRun(maxDays) {
   W.afterTurn();
   ok(prompt && prompt.item.id === 'tele' && prompt.why === 'new', 'pagada la deuda anterior, la oferta de la tele salta sola');
   prompt = null; W.afterTurn();
-  ok(!prompt, 'no vuelve a saltar en el mismo turno');
+  ok(prompt && prompt.why === 'insist', 'es el siguiente paso de la historia: vuelve a salir cada turno hasta que la aceptas');
+  SN.Unlocks.acceptOffer('tele'); prompt = null; W.afterTurn();
+  ok(!prompt, 'aceptada, ya no sale');
 }
 
 // 22) Noticias que se entienden: cada noticia de mercado tiene su foto propia (que existe), su texto de
@@ -590,9 +603,11 @@ function fullRun(maxDays) {
   const run = SN.State.run;
   SN.State.checkpoint('inicio');
   run.capital = 250;
-  SN.Debt.pay(); // te quedas con $0
-  ok(SN.State.checkpoint('después de pagar') === false && run.checkpoint.label === 'inicio' && run.checkpoint.capital === 100,
-    'pagar y quedarte sin nada no guarda un punto de control (sigue el anterior)');
+  SN.Debt.pay(); // te quedarías con $0... pero llega el bono de la app
+  ok(run.capital >= SN.Data.sim.bankruptcyThreshold, `pagar justo lo que debes ya no te deja a cero: el bono de la app (${run.capital})`);
+  run.capital = 3;
+  ok(SN.State.checkpoint('sin dinero') === false && run.checkpoint.label === 'inicio' && run.checkpoint.capital === 100,
+    'sin dinero para apostar no se guarda un punto de control (sigue el anterior)');
 }
 function SN0() { return load(); }
 

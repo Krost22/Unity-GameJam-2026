@@ -12,7 +12,7 @@
   --orange: #FF8F3F; --orangeL: #FFC27E; --orangeD: #D3502F; --orangeDD: #842B33;
   --cream: #E8E0FA; --creamL: #F8F4FF; --creamM: #D4CAEE; --creamD: #AEA3D2; --creamDD: #8378AC;
   --coal: #231838; --coalL: #3F2F60; --coalM: #2F2249; --coalD: #180F2A; --coalDD: #0E0A1C;
-  --violetD: #3A1E6A; --violet: #6B3FC4; --violetL: #A880FF; --magenta: #D33F9C; --magentaL: #FF82CB;
+  --violetDD: #1F0F3F; --violetD: #3A1E6A; --violet: #6B3FC4; --violetL: #A880FF; --magenta: #D33F9C; --magentaL: #FF82CB;
   --navyDD: #070A17; --navyD: #0C1025; --navy: #121835; --navyM: #1A2148; --navyL: #262F62; --navyLL: #38448C;
   /* Interfaz de FUTURO.exe */
   --bg: var(--navyD); --panel: var(--navy); --panel2: var(--navyM); --panel3: var(--navyL); --line: var(--navyLL);
@@ -144,13 +144,30 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
     repeating-linear-gradient(90deg, rgba(168, 128, 255, .07) 0 1px, transparent 1px 12px),
     repeating-linear-gradient(0deg, rgba(168, 128, 255, .07) 0 1px, transparent 1px 12px);
 }
-#boot { position: absolute; inset: 0; background: var(--navyDD); color: var(--ink2); padding: 10px 12px; line-height: 10px; }
-#boot .ok { color: var(--green); }
-#boot .bar { margin-top: 6px; width: 160px; height: 6px; background: var(--navyD); box-shadow: 0 0 0 1px var(--line); }
-#boot .bar i { display: block; height: 100%; width: 0; background: var(--magenta); }
+#boot { position: absolute; inset: 0; background: rgba(7, 5, 18, .62); display: flex; align-items: center; justify-content: center; line-height: 10px; }
+/* Ventana de agradecimiento al arrancar (sustituye a la antigua carga simulada) */
+#boot .thanks { width: 268px; background: var(--panel); color: var(--ink);
+  box-shadow: 0 -1px 0 0 var(--violetL), 0 1px 0 0 var(--violetL), -1px 0 0 0 var(--violetL), 1px 0 0 0 var(--violetL), 0 3px 0 0 rgba(0, 0, 0, .45);
+  animation: winin .28s cubic-bezier(.2, 1.5, .4, 1) .35s both; }
+#boot .thanks { position: relative; }
+#boot .thanks.closing { animation: winout .15s ease-in forwards; }
+/* Sello de la jam en la esquina: el cubo de Unity en pixel art */
+#boot .jam-logo { position: absolute; top: -14px; right: -14px; width: 41px; height: 44px; padding: 5px; background: var(--navyDD);
+  box-shadow: 0 -1px 0 0 var(--violetL), 0 1px 0 0 var(--violetL), -1px 0 0 0 var(--violetL), 1px 0 0 0 var(--violetL), 0 2px 0 0 rgba(0, 0, 0, .45); }
+#boot .jam-logo svg { display: block; }
+#boot .win-head { justify-content: center; }
+#boot .thanks-body { padding: 6px 8px 7px; }
+#boot .thanks-body p { margin: 0 0 5px; color: var(--ink2); }
+#boot .thanks-body .hi { color: var(--cyan); }
+#boot .thanks-body .y { color: var(--yellow); }
+#boot .thanks-body .warn { color: var(--coralL); }
+#boot .thanks-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+#boot .thanks-foot .sign { color: var(--ink3); }
 #menu { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; padding-top: 30px; }
 #menu .logo { display: flex; flex-direction: column; align-items: center; animation: logo-in .6s cubic-bezier(.2, 1.6, .4, 1) both; text-transform: uppercase; }
-#menu .logo span { font-size: 32px; line-height: 32px; letter-spacing: 2px; }
+/* padding-left: compensa los 6px vacíos que dejan a la derecha el letter-spacing y el margen de la última letra,
+   así la tinta queda centrada con los botones */
+#menu .logo span { font-size: 32px; line-height: 32px; letter-spacing: 2px; padding-left: 6px; }
 #menu .logo .l1 { color: var(--yellow); text-shadow: 2px 0 0 var(--navyDD), -2px 0 0 var(--navyDD), 0 2px 0 var(--navyDD), 0 -2px 0 var(--navyDD), 0 4px 0 var(--magenta), 2px 4px 0 var(--magenta), -2px 4px 0 var(--magenta); }
 #menu .logo .l2 { color: var(--cyan); margin-top: 2px; text-shadow: 0 4px 0 var(--violet); }
 @keyframes logo-in { 0% { transform: translateY(-40px) scale(.6, 1.4); opacity: 0; } 60% { transform: translateY(2px) scale(1.12, .9); opacity: 1; } 100% { transform: none; } }
@@ -165,7 +182,7 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 #webshop .shop-bar .url { flex: 1; height: 9px; background: var(--creamL); line-height: 9px; padding: 0 3px; color: var(--coalL); box-shadow: 0 0 0 1px var(--violetD); }
 #webshop .shop-logo { color: var(--yellow); }
 #webshop .shop-main { position: absolute; left: 0; right: 0; top: 14px; bottom: 0; display: flex; padding: 6px 8px; gap: 8px; }
-#webshop .prod-img { width: 130px; height: 120px; background: var(--cream); box-shadow: 0 0 0 1px var(--creamD); position: relative; flex: none; }
+#webshop .prod-img { width: 130px; height: 120px; background: radial-gradient(ellipse at 35% 40%, var(--violet) 0%, var(--violetD) 55%, var(--violetDD) 100%); box-shadow: 0 0 0 1px var(--violetL); position: relative; flex: none; }
 #webshop .prod-img canvas { position: absolute; left: 0; top: 0; }
 #webshop .prod-img .tag { position: absolute; top: 4px; right: -6px; background: var(--coral); color: var(--creamL); padding: 1px 3px; animation: wiggle .7s infinite; }
 #webshop .prod-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
@@ -318,7 +335,7 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 .big-btn { position: relative; width: 100%; height: 34px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 0; }
 .big-btn small { font-size: 8px; line-height: 8px; opacity: .8; text-shadow: none; }
 /* Números: fuente propia en negrita y de ancho fijo (las cifras no bailan); el resto de signos los pone SaldoPixel */
-#capital, #amount, #live-pnl, #close-amt, #goal-text, .px-price, .float, .num { font-family: 'SaldoNum', 'SaldoPixel', monospace; text-shadow: none; }
+#capital, #amount, #live-pnl, #goal-text, .px-price, .float, .num { font-family: 'SaldoNum', 'SaldoPixel', monospace; text-shadow: none; }
 .big-btn span { font-size: 16px; line-height: 16px; }
 .big-btn kbd { position: absolute; right: 3px; top: 3px; background: rgba(7, 10, 23, .55); color: var(--creamL); box-shadow: none; }
 #btn-sell { --bg: #FF4F8B; --bgH: #FF8FB4; }
@@ -342,7 +359,6 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 #live-steps i.ghost { opacity: .45; }
 #btn-close { position: relative; height: 50px; margin-top: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 0; }
 #btn-close #close-lbl { font-size: 16px; line-height: 16px; letter-spacing: 1px; }
-#btn-close #close-amt { font-weight: normal; }
 #btn-close kbd { position: absolute; left: 50%; bottom: -15px; transform: translateX(-50%); margin: 0; }
 #btn-close.losing { --bg: var(--panel3); --bgH: var(--line); --ink: var(--ink); }
 #btn-close.hot { animation: pulse .5s steps(2) infinite; }
@@ -418,8 +434,9 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 
 /* ---------- Diálogos (dentro del monitor) ---------- */
 .dlg {
-  position: absolute; width: 292px; height: 54px; background: var(--navyDD); color: var(--ink);
-  padding: 4px 6px 4px 50px; line-height: 10px; cursor: pointer;
+  /* Alto según el texto (como mínimo el retrato) y una franja propia abajo para CLIC / ESPACIO: nunca tapa la lectura */
+  position: absolute; width: 292px; min-height: 54px; background: var(--navyDD); color: var(--ink);
+  padding: 4px 6px 15px 50px; line-height: 10px; cursor: pointer;
   box-shadow: 0 -1px 0 0 var(--violetL), 0 1px 0 0 var(--violetL), -1px 0 0 0 var(--violetL), 1px 0 0 0 var(--violetL),
     0 -2px 0 0 var(--navyDD), 0 2px 0 0 var(--navyDD), -2px 0 0 0 var(--navyDD), 2px 0 0 0 var(--navyDD), 0 4px 0 0 rgba(0, 0, 0, .4);
   animation: dlgin .3s cubic-bezier(.2, 1.5, .4, 1); z-index: 3;
@@ -654,7 +671,10 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 /* Mensajín */
 .ch-who { flex: none; display: flex; align-items: center; gap: 4px; padding: 3px 4px; background: var(--panel2); }
 .ch-ava { width: 24px; height: 24px; flex: none; background: var(--cyan); box-shadow: 0 0 0 1px var(--navyDD); }
-.ch-who b { display: block; color: var(--ink); font-weight: normal; text-shadow: 1px 0 0 currentColor; white-space: nowrap; }
+/* (un apodo largo se corta con "…" en vez de salirse de la ventana) */
+.ch-who > div { flex: 1; min-width: 0; }
+.ch-who b { display: block; color: var(--ink); font-weight: normal; text-shadow: 1px 0 0 currentColor; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ch-ava canvas, .ac-ava canvas { display: block; width: 24px; height: 24px; image-rendering: pixelated; }
 .ch-status { color: var(--green); }
 .ch-status::before { content: '● '; }
 .ch-status.off { color: var(--ink3); }
@@ -683,8 +703,11 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 /* Aviso de mensaje nuevo dentro de FUTURO.exe */
 .msg-toast { position: absolute; left: 89px; bottom: 5px; width: 218px; display: flex; align-items: center; gap: 4px; padding: 3px 4px; text-align: left;
   background: var(--panel); color: var(--ink); box-shadow: 0 0 0 1px var(--green), 0 0 0 2px var(--navyDD); }
+/* Con el escritorio del PC a la vista, el aviso sube por encima de la barra de tareas */
+#desktop:not(.hidden) ~ #layer-top .msg-toast { bottom: 19px; }
 .msg-toast.show { animation: notifin .25s steps(4); }
-.msg-toast i { flex: none; width: 16px; height: 16px; }
+/* (solo el icono, hijo directo: las letras animadas de las palabras clave también son <i>) */
+.msg-toast > i { flex: none; width: 16px; height: 16px; }
 .msg-toast b { color: var(--green); font-weight: normal; }
 .msg-toast span { line-height: 10px; }
 .msg-toast:hover { box-shadow: 0 0 0 1px var(--greenL), 0 0 0 2px var(--navyDD); }
@@ -728,7 +751,7 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 #mkt-head .cap { font-style: normal; color: var(--ink3); margin-left: 5px; }
 
 /* El tope del mercado */
-#live-pnl.capped, #btn-close.capped #close-amt { color: var(--yellow); animation: pulse .8s steps(2) infinite; }
+#live-pnl.capped { color: var(--yellow); animation: pulse .8s steps(2) infinite; }
 .result-card .rc-cap { color: var(--yellow); }
 
 /* Tienda: objetos clave en orden */
@@ -764,7 +787,7 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 .offer-win .win-body { position: static; overflow: visible; padding: 0; }
 /* Aviso de "ya puedes comprar..." (mismo aviso que Mensajín, en amarillo) */
 .msg-toast.shop b { color: var(--yellow); }
-.msg-toast.shop i { display: flex; align-items: center; justify-content: center; }
+.msg-toast.shop > i { display: flex; align-items: center; justify-content: center; }
 
 /* ---------- 1.6: la Academia de Bravo Fines (pestaña de Mejoras) ---------- */
 .up-tabs { display: flex; gap: 2px; margin: -2px 0 4px; }
@@ -776,6 +799,8 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 /* ---------- 1.6: palabras clave con color y movimiento (js/ui/keywords.js) ---------- */
 /* Dinero en dorado con un brillo que lo cruza, el 7 en arcoíris (letra a letra) y la suerte en verde que ondula */
 .kw i { font-style: normal; display: inline-block; }
+/* Las letras van sueltas (para animarlas): sin esto, una palabra clave se podía partir entre dos líneas */
+.kw { white-space: nowrap; }
 .kw-gold { --g1: #FFC22E; --g2: #FFF6C2; color: var(--g1);
   background: linear-gradient(100deg, var(--g1) 0 42%, var(--g2) 47% 53%, var(--g1) 58% 100%); background-size: 300% 100%;
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: kwshine 2.4s steps(12) infinite; }
@@ -786,12 +811,30 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 .kw-luck { color: var(--green); }
 .kw-luck i { animation: kwwave 1.1s steps(2) infinite; animation-delay: calc(var(--i) * -.14s); }
 @keyframes kwwave { 50% { transform: translateY(-1px); } }
+/* Mejoras (cian que se enciende letra a letra), regalos (magenta con destello que salta), peligro (coral que
+   tiembla) y acciones (amarillo subrayado que late, como el botón que nombran) */
+.kw-up { color: var(--cyan); }
+.kw-up i { animation: kwglow 1.2s steps(2) infinite; animation-delay: calc(var(--i) * -.1s); }
+@keyframes kwglow { 50% { color: var(--cyanL); } }
+.kw-gift { color: var(--magentaL); }
+.kw-gift i { animation: kwgift 1.3s steps(2) infinite; animation-delay: calc(var(--i) * -.16s); }
+@keyframes kwgift { 50% { transform: translateY(-1px); color: var(--violetL); } }
+.kw-risk { color: var(--coral); }
+.kw-risk i { animation: kwshake 1.6s steps(1) infinite; animation-delay: calc(var(--i) * -.07s); }
+@keyframes kwshake { 0%, 70%, 100% { transform: none; } 76% { transform: translateX(-1px); } 84% { transform: translateX(1px); } 92% { transform: translateY(1px); } }
+.kw-act { color: var(--yellow); box-shadow: inset 0 -1px 0 0 var(--yellowD); animation: kwact 1s steps(2) infinite; }
+@keyframes kwact { 50% { color: var(--yellowL); } }
+.paper .kw-up, .nt .kw-up, #hero-say .kw-up { color: var(--cyanD); }
+.paper .kw-gift, .nt .kw-gift, #hero-say .kw-gift { color: var(--magentaD); }
+.paper .kw-risk, .nt .kw-risk, #hero-say .kw-risk { color: var(--coralD); }
+.paper .kw-act, .nt .kw-act, #hero-say .kw-act { color: var(--yellowDD); }
+.paper .kw i, .nt .kw i, #hero-say .kw i { animation-name: kwwave; }
 /* Sobre papel claro (periódico, notas): tonos más oscuros para que se lean */
 .paper .kw-gold, .nt .kw-gold { --g1: #B07800; --g2: #F2B53A; }
 .paper .kw-luck, .nt .kw-luck { color: var(--greenD); }
 /* Mientras el diálogo escribe, los colores ya están pero no se mueven (si no, se reiniciarían con cada letra) */
-.dlg .txt.typing .kw-gold, .dlg .txt.typing .kw i { animation: none; }
-@media (prefers-reduced-motion: reduce) { .kw-gold, .kw i { animation: none !important; } }
+.dlg .txt.typing .kw-gold, .dlg .txt.typing .kw-act, .dlg .txt.typing .kw i { animation: none; }
+@media (prefers-reduced-motion: reduce) { .kw-gold, .kw-act, .kw i { animation: none !important; } }
 /* FUTURO.exe en el idioma secreto: el nombre lleva el color de donde esté */
 .cx-brand .cx { color: inherit; }
 .cx-brand .cx-k { color: var(--cyan); }
@@ -855,13 +898,15 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 .ac-cash b { color: var(--yellow); font-weight: normal; }
 .ac-nav { grid-column: 1; grid-row: 2; display: flex; flex-direction: column; gap: 3px; padding: 3px; }
 .ac-nb, .sh-nb { display: flex; align-items: center; gap: 3px; min-height: 18px; padding: 2px 3px; text-align: left; line-height: 9px; color: var(--ink2);
-  background: var(--panel2); box-shadow: inset 0 0 0 1px var(--violetD); transition: transform .06s; }
+  background: var(--panel2); box-shadow: inset 0 0 0 1px var(--violetD); transition: transform .06s; position: relative; }
+/* El número rojo va dentro de SU botón (antes se colocaba respecto al menú y saltaba de uno a otro al pasar el ratón) */
+.ac-nb .badge, .sh-nb .badge { position: static; margin-left: auto; flex: none; }
 .ac-nb:hover, .sh-nb:hover { color: var(--creamL); transform: translateX(1px); box-shadow: inset 0 0 0 1px var(--violetL); }
 .ac-nb.on, .sh-nb.on { color: var(--navyD); background: var(--green); box-shadow: inset 0 0 0 1px var(--greenL), 0 0 0 1px var(--greenDD); }
 .ac-tree { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; justify-content: space-around; padding: 2px 4px; overflow: hidden; }
 .ac-tree.in, .sh-main.in { animation: slidein .15s steps(3); }
 .ac-br { display: flex; align-items: center; }
-.ac-bl { flex: none; width: 62px; display: grid; grid-template-columns: 13px 1fr; gap: 0 2px; align-items: center; line-height: 9px; }
+.ac-bl { flex: none; width: 67px; display: grid; grid-template-columns: 13px 1fr; gap: 0 2px; align-items: center; line-height: 9px; }
 .ac-bl b { font-weight: normal; text-shadow: 1px 0 0 currentColor; }
 .ac-bl span { grid-column: 1 / 3; color: var(--ink3); }
 .ac-br.orange .ac-bl b { color: var(--orange); }
@@ -888,9 +933,13 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 .ac-list p b { color: var(--creamL); font-weight: normal; }
 .ac-list p.own b { color: var(--greenL); }
 .ac-list p.soon { opacity: .6; }
-.ac-dt { grid-column: 3; grid-row: 2 / 4; display: flex; flex-direction: column; align-items: center; padding: 0 4px 4px; text-align: center; line-height: 9px; overflow: hidden; }
+.ac-dt { grid-column: 3; grid-row: 2 / 4; display: flex; flex-direction: column; align-items: center; padding: 0 4px 4px; text-align: center; line-height: 9px; overflow-x: hidden; overflow-y: auto; }
 .ac-dt > *, .sh-dt > * { flex: none; }
-.ac-dt .ac-dd, .sh-dt .sh-dd { flex: 0 1 auto; min-height: 9px; overflow: hidden; }
+/* El texto del detalle se ve entero: si no cabe, el panel se desplaza (y el botón de comprar queda fijo abajo) */
+.ac-dt .ac-dd, .sh-dt .sh-dd { flex: none; }
+.ac-dt .ac-buy, .sh-dt .sh-buy { position: sticky; bottom: 0; z-index: 1; }
+/* En la Academia, lo que hace (el efecto) va antes que la descripción: es lo que hay que ver sin desplazar */
+.ac-dt .ac-dd { order: 1; } .ac-dt .ac-why, .ac-dt .ac-buy { order: 2; }
 .ac-dt .px-ico, .sh-dt .px-ico { margin: 0 auto; }
 .ac-dh, .sh-dh { align-self: stretch; margin: 0 -4px 3px; padding: 2px 4px 1px; background: var(--violet); color: var(--creamL); text-align: left; }
 .ac-dico, .sh-dico { padding: 2px; background: var(--panel2); box-shadow: inset 0 0 0 1px var(--violetL); }
@@ -902,7 +951,7 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 .ac-de b { color: var(--green); font-weight: normal; }
 .ac-de b.none { color: var(--ink3); }
 .ac-de.nx b { color: var(--cyan); }
-.ac-de i { font-style: normal; color: var(--ink3); }
+.ac-de i:not([style]) { font-style: normal; color: var(--ink3); } /* (no las letras de las palabras clave) */
 .ac-buy, .sh-buy { white-space: nowrap; }
 .ac-buy, .sh-buy { margin-top: auto; padding: 3px 6px 2px; }
 .ac-why { margin-top: 2px; color: var(--coralL); }
@@ -951,7 +1000,7 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 .sh-card { position: relative; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 3px 1px 2px; min-height: 62px;
   background: var(--panel2); box-shadow: inset 0 0 0 1px var(--violet), 0 2px 0 0 rgba(0, 0, 0, .4); transition: transform .06s; }
 .sh-card:hover, .sh-row:hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1px var(--violetL), 0 0 5px 0 rgba(168, 128, 255, .5); }
-.sh-card .nm { flex: 1; width: 100%; color: var(--ink); line-height: 9px; text-align: center; overflow: hidden; max-height: 18px; }
+.sh-card .nm { flex: 1; width: 100%; color: var(--ink); line-height: 9px; text-align: center; overflow: hidden; max-height: 27px; } /* hasta 3 líneas: el nombre entero */
 .sh-card .pr, .sh-row .pr { padding: 1px 3px 0; line-height: 9px; color: var(--navyD); background: var(--yellow); font-weight: normal; white-space: nowrap; }
 .sh-card.poor .pr, .sh-row.poor .pr { background: var(--coralD); color: var(--creamL); }
 .sh-card.own { background: var(--greenDD); box-shadow: inset 0 0 0 1px var(--green); }
@@ -970,7 +1019,7 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 .sh-rt span { color: var(--green); }
 .sh-row.locked .sh-rt span { color: var(--ink3); }
 .sh-row.own .pr { background: var(--green); }
-.sh-dt { grid-column: 3; grid-row: 2; display: flex; flex-direction: column; align-items: center; padding: 0 4px 4px; text-align: center; line-height: 9px; overflow: hidden; }
+.sh-dt { grid-column: 3; grid-row: 2; display: flex; flex-direction: column; align-items: center; padding: 0 4px 4px; text-align: center; line-height: 9px; overflow-x: hidden; overflow-y: auto; }
 .sh-de { color: var(--green); margin-top: 1px; }
 .sh-dp { margin-top: 3px; display: flex; flex-direction: column; align-items: center; }
 .sh-dp s { color: var(--ink3); }

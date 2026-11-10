@@ -178,33 +178,88 @@
       this.setState('BOOT');
       const screen = $('screen'), boot = $('boot');
       SN.Desk.phaseOverride = 'evening';
+      SN.Desk.hideConsole = !S.profile.introSeen;
       screen.classList.add('off');
       await SN.wait(0.6);
       screen.classList.remove('off');
       screen.classList.add('poweron');
       $('os').classList.remove('hidden');
       boot.classList.remove('hidden');
-      let skipped = false;
-      const skip = () => { skipped = true; };
-      boot.addEventListener('pointerdown', skip);
-      const lines = [
-        'KROST OS V2.1',
-        'MEMORIA: 640 KB (DEBERÍA BASTAR)',
-        'COMPROBANDO SALDO......... <span class="ok">$100</span>',
-        'COMPROBANDO DEUDAS........ <span style="color:#F05B54">CALCULANDO...</span>',
-        'BUSCANDO FUTURO........... <span style="color:#F28B43">NO ENCONTRADO</span>',
-        'INICIANDO SALDO NEGRO..... <span class="ok">OK</span>',
-      ];
+      // Ventana de bienvenida: agradecimiento por jugar (juego de game jam). Se cierra con el botón o Enter.
+      boot.innerHTML = `<div class="thanks">
+        <div class="win-head"><span>¡GRACIAS POR JUGAR!</span></div>
+        <div class="jam-logo" title="Official 2026 Unity Game Jam">${this.unityLogo()}</div>
+        <div class="thanks-body">
+          <p class="hi">¡Hola! Qué bueno tenerte aquí.</p>
+          <p>Saldo Negro nació en la <b class="y">Official 2026 Unity Game Jam</b>, con el tema <b class="y">Lucky Number</b>: aquí la suerte también cotiza en bolsa.</p>
+          <p>Puede que encuentres algún bug suelto. Si pasa, cuéntanoslo: tus comentarios nos ayudan muchísimo.</p>
+          <p class="warn">Recuerda: aquí nada es consejo financiero. El dinero fácil casi nunca lo es.</p>
+          <div class="thanks-foot">
+            <span class="sign">— Por KrostGames y Adrede</span>
+            <button class="btn btn-yellow">¡A jugar!<kbd>Enter</kbd></button>
+          </div>
+        </div>
+      </div>`;
+      const box = boot.querySelector('.thanks');
+      await new Promise((resolve) => {
+        const done = () => {
+          document.removeEventListener('keydown', onKey);
+          SN.Audio.sfx('click');
+          resolve();
+        };
+        const onKey = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); done(); } };
+        box.querySelector('button').addEventListener('click', (e) => { e.stopPropagation(); done(); }, { once: true });
+        document.addEventListener('keydown', onKey);
+      });
+      box.classList.add('closing');
+      await SN.wait(0.15);
       boot.innerHTML = '';
-      for (const l of lines) {
-        boot.insertAdjacentHTML('beforeend', `<div>${l}</div>`);
-        if (!skipped) await SN.wait(0.22);
-      }
-      boot.insertAdjacentHTML('beforeend', '<div class="bar"><i></i></div>');
-      const bar = boot.querySelector('.bar i');
-      for (let i = 0; i <= 10 && !skipped; i++) { bar.style.width = i * 10 + '%'; await SN.wait(0.06); }
-      boot.removeEventListener('pointerdown', skip);
       this.showMenu();
+    },
+
+    // Logo de Unity en pixel art (31x34, a partir del oficial): cubo con el hueco de arriba y el tallo central
+    unityLogo() {
+      const map = [
+        '............##...##............',
+        '...........###...###...........',
+        '.........#####...#####.........',
+        '.......#######...#######.......',
+        '.....#########...#########.....',
+        '....##########...##########....',
+        '..##########.......##########..',
+        '##########...........##########',
+        '#########.............#########',
+        '########..............#########',
+        '##########...........##########',
+        '############.......############',
+        '##############....#############',
+        '###############################',
+        '#####..#################..#####',
+        '#####....#############....#####',
+        '#####.....###########.....#####',
+        '#####.......#######.......#####',
+        '#####........#####........#####',
+        '#####........#####........#####',
+        '#####........#####........#####',
+        '####.........#####.........####',
+        '##...........#####...........##',
+        '.............#####.............',
+        '.....###.....#####.....###.....',
+        '...#######...#####...#######...',
+        '..##########.#####.##########..',
+        '...########################....',
+        '.....#####################.....',
+        '.......#################.......',
+        '.........#############.........',
+        '..........###########..........',
+        '............#######............',
+        '..............###..............',
+      ];
+      let rects = '';
+      map.forEach((row, y) => [...row].forEach((ch, x) => {
+        if (ch === '#') rects += `<rect x="${x}" y="${y}" width="1" height="1"/>`;
+      }));
+      return `<svg width="31" height="34" viewBox="0 0 31 34" fill="#F8F4FF" shape-rendering="crispEdges">${rects}</svg>`;
     },
 
     bindMenu() {
@@ -243,6 +298,8 @@
       $('menu').classList.remove('hidden');
       $('btn-continue').classList.toggle('hidden', !SN.Save.hasRun());
       $('btn-intro').classList.toggle('hidden', !S.profile.introSeen);
+      // Quien no ha visto la intro todavía no ha comprado la Pleyzeta
+      SN.Desk.hideConsole = !S.profile.introSeen;
       SN.Desk.phaseOverride = 'evening';
       SN.Desk.led = 'idle';
       SN.Desk.dirty();
@@ -254,15 +311,15 @@
     async newGame() {
       SN.Audio.unlock();
       SN.Audio.startMusic();
+      // La intro sale en cada partida nueva; SALTAR solo si ya hay algo guardado (partida o intro vista)
+      const firstTime = !S.profile.introSeen;
+      const canSkip = !firstTime || SN.Save.hasRun();
       SN.Save.clearRun();
       $('menu').classList.add('hidden');
       const tutorial = S.profile.tutorialV !== SN.Tutorial.VERSION;
-      if (!S.profile.introSeen) {
-        await SN.Cine.playIntro();
-        await this.startRun({ tutorial: true });
-      } else {
-        await this.startRun({ tutorial, greeting: !tutorial && S.profile.runs > 0 });
-      }
+      await SN.Cine.playIntro({ canSkip });
+      if (firstTime) await this.startRun({ tutorial: true });
+      else await this.startRun({ tutorial, greeting: !tutorial && S.profile.runs > 0 });
     },
 
     continueGame() {
@@ -415,7 +472,15 @@
 
     async afterTurn(result) {
       const UI = SN.UI, run = S.run;
-      if (result) { await SN.wait(0.6); await UI.resultCard(result); } else await SN.wait(0.15);
+      if (result) {
+        // SEGUIR (botón o ESPACIO) corta la espera y el resultado
+        let skipped = false, skip;
+        const skipP = new Promise((res) => { skip = res; });
+        UI.onContinue = () => { if (skipped) return; skipped = true; SN.Audio.sfx('click'); skip(); };
+        await Promise.race([SN.wait(0.6), skipP]);
+        if (!skipped) await UI.resultCard(result, skipP);
+        UI.onContinue = null;
+      } else await SN.wait(0.15);
       UI.endTrade();
       if (this.lost()) { await this.checkLoss(); return; }
       if (this.dayChanged) {

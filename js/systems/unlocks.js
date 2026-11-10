@@ -34,9 +34,9 @@
       const st = this.step();
       if (!st) return null;
       if (st.kind === 'item') {
-        // La oferta de FUTURO.exe está esperando: la barra mide lo que hace falta en la cuenta para aceptarla
+        // La oferta de FUTURO.exe está esperando (no pide dinero): la barra enseña lo que vas a deber
         const it = D.keyItemById(st.item), o = this.offer(it);
-        return { type: 'item', amount: o.need, title: `OFERTA: ${it.name}`, label: it.short, item: it, offer: o };
+        return { type: 'item', amount: o.debt, title: `OFERTA: ${it.name}`, label: it.short, item: it, offer: o };
       }
       if (st.kind === 'goal') return Object.assign({ type: 'goal', title: `OBJETIVO ${U.short(st.amount)}` }, st);
       return null;
@@ -89,7 +89,7 @@
     },
 
     // ---------- Objetos clave (tienda) ----------
-    // La oferta de FUTURO.exe: un 10% hoy y el resto, con intereses, en unos días
+    // La oferta de FUTURO.exe: nada hoy y todo, con intereses, en unos días
     // (la Academia de Bravo Fines enseña a leer la letra pequeña: menos deuda)
     offer(item) {
       const it = typeof item === 'string' ? D.keyItemById(item) : item;
@@ -99,6 +99,14 @@
       // más, el 25% de lo que vas a deber)
       return { item: it, now, debt, days: it.days, need: Math.max(now, Math.round(debt * (D.offer.solvency || 0))) };
     },
+    // Lo que vas a deber en el siguiente paso de la escalera (para el bono de la app al saldar una deuda)
+    nextDebtAmount() {
+      const run = S.run, st = run.stepOpen ? D.chain[run.step + 1] : D.chain[run.step];
+      if (!st) return 0;
+      if (st.kind === 'gift') return st.debt;
+      if (st.kind === 'item') return this.offer(st.item).debt;
+      return 0;
+    },
     // El objeto clave que está esperando su oferta (o null): el paso actual, sin deudas pendientes
     pendingItem() {
       const run = S.run, st = this.step();
@@ -106,7 +114,7 @@
       return D.keyItemById(st.item);
     },
 
-    // ¿Se puede comprar ya? Solo el del paso actual, sin deudas pendientes y con dinero para la ENTRADA
+    // ¿Se puede comprar ya? Solo el del paso actual y sin deudas pendientes (no pide dinero: se paga después)
     canBuyItem(id) {
       const run = S.run, st = this.step(), it = D.keyItemById(id);
       if (!it) return { ok: false };
@@ -122,16 +130,14 @@
       }
       if (run.position) return { ok: false, reason: 'HAY UNA OPERACIÓN EN CURSO' };
       if (run.debt && !run.debt.paid) return { ok: false, reason: 'PRIMERO PAGA LO QUE DEBES' };
-      const need = this.offer(it).need;
-      if (run.capital < need) return { ok: false, reason: `TE FALTAN ${U.money(need - run.capital)}`, short: need - run.capital };
       return { ok: true };
     },
 
-    // Aceptar la oferta: pagas la entrada, el objeto es tuyo, debes el resto y se abre su mercado negro
+    // Aceptar la oferta: el objeto es tuyo, lo debes todo (con intereses) y se abre su mercado negro
     acceptOffer(id) {
       if (!this.canBuyItem(id).ok) return null;
       const run = S.run, st = this.step(), o = this.offer(id), it = o.item;
-      SN.Economy.spend(o.now, 'shop');
+      if (o.now) SN.Economy.spend(o.now, 'shop');
       run.owned[id] = true;
       SN.Debt.open({ id: st.id, kind: 'item', label: it.short, amount: o.debt, days: o.days });
       run.stepOpen = true;

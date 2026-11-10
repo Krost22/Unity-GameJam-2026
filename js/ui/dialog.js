@@ -63,6 +63,10 @@
       const raw = this.lines[this.idx] || '';
       this.full = SN.Cipher ? SN.Cipher.brandify(raw) : raw;
       this.shown = 0;
+      // Reserva ya el alto de la frase entera: la caja no crece a saltos mientras se escribe
+      this.txt.style.minHeight = '';
+      this.txt.innerHTML = SN.KW ? SN.KW.html(this.full) : this.full;
+      this.txt.style.minHeight = this.txt.offsetHeight + 'px';
       this.txt.textContent = '';
       this.el.querySelector('.next').style.visibility = 'hidden';
       if (this.opts.onLine) this.opts.onLine(this.idx);

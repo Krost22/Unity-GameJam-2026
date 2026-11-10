@@ -123,6 +123,9 @@
         reply: 'No abras. Llama a tu madre. ¿Kevo? ¿Sigues ahí?',
         after: ['*Kevo se ha desconectado.'],
         offline: true,
+        // Aquí Kevo desaparece: desde ahora ya no reacciona a lo que te pasa (las conversaciones de `side`).
+        // Solo vuelve en las escenas de la historia (el "Kevo [PAGADO]", su madre, el final).
+        gone: true,
       },
       // ---------- 4º regalo: Minería ----------
       {
@@ -150,6 +153,7 @@
         offline: true,
       },
     ],
+    // Reacciones de Kevo a lo que te pasa. Solo mientras Kevo sigue ahí (antes de la conversación con `gone`).
     side: [
       {
         id: 'piggy', when: 'piggy', delay: 1,

@@ -263,7 +263,8 @@
     const ANG = [-16, -7, 0, 7], LEN = [4.5, 6, 7, 6], R0 = [1.9, 2.3, 2.4, 2.3], R1 = [1.6, 1.9, 2, 1.9];
     const tips = K.map(([x, y], i) => {
       const down = (mask >> i) & 1;
-      const len = clench ? 2 : LEN[i] - down * 1.5;
+      // El dedo que pulsa se dobla hacia la tecla (más corto): se tiene que ver al escribir
+      const len = clench ? 2 : LEN[i] - down * 3.2;
       return finger(hand, x, y, ANG[i], len, R0[i], R1[i]);
     });
     sp.part(hand, RAMP.skin, { light: HAND_LIGHT, hi: 1, lit: 3, sh: 3, cast: 1 });
@@ -293,16 +294,16 @@
     const lying = state === 'sleep' || state === 'ear' || state === 'purr' || state === 'peek';
     const up = lying ? 0 : -2;
     const st = state === 'stretch';
-    // Cola: rodeando el cuerpo (o estirada hacia atrás al desperezarse)
-    const tailM = st ? sp.mask().capsule(12, 22, 5, 18, 2.4).capsule(5, 18, 3, 11, 2.2)
+    // Cola: rodeando el cuerpo (o tendida por el suelo hacia atrás al desperezarse)
+    const tailM = st ? sp.mask().capsule(12, 26, 6, 30, 2.5).capsule(6, 30, 2, 28 - (tail > 1 ? 1 : 0), 2.3)
       : sp.mask().capsule(10, 22, 7, 27, 2.6).capsule(7, 27, 16, 30, 2.6).capsule(16, 30, 32 + tail, 30 - (tail > 1 ? 1 : 0), 2.4);
     sp.part(tailM, RAMP.cat, { light: LIGHT });
-    // Cuerpo: al estirarse, más largo y con el lomo bajo delante
-    const body = st ? sp.mask().ellipse(27, 21, 19, 8).ellipse(19, 18, 9, 8) : sp.mask().ellipse(31, 21, 19, 10 + breath * 0.6);
+    // Cuerpo: al estirarse, más largo y bajo, con la grupa un poco más alta que los hombros
+    const body = st ? sp.mask().ellipse(30, 23, 21, 8).ellipse(21, 21, 11, 8.5) : sp.mask().ellipse(31, 21, 19, 10 + breath * 0.6);
     sp.part(body, RAMP.cat, { light: LIGHT, lit: 3, sh: 3 });
     sp.rim(body, rim, [-1, -1]);
-    // Cabeza a la derecha, apoyada en las patas (más baja y adelantada al estirarse)
-    const hx = st ? 51 : 49, hy = st ? 24 : 21 + up;
+    // Cabeza a la derecha, apoyada en las patas (un poco adelantada al estirarse)
+    const hx = st ? 50 : 49, hy = st ? 22 : 21 + up;
     const earL = state === 'ear' || state === 'groom' ? [[41, hy - 3], [41, hy - 9], [47, hy - 6]] : [[hx - 8, hy - 4], [hx - 6, hy - 13], [hx - 1, hy - 6]];
     const head = sp.mask().ellipse(hx, hy, 9, 7.5).poly(earL).poly([[hx + 1, hy - 6], [hx + 7, hy - 13], [hx + 8, hy - 3]]);
     sp.part(head, RAMP.cat, { light: LIGHT, lit: 2, cast: 1 });
@@ -310,7 +311,7 @@
     if (state !== 'ear' && state !== 'groom') sp.px(hx - 3, hy - 9, P.catPink);
     sp.px(hx + 5, hy - 9, P.catPink);
     // Patas: estiradas hacia delante al desperezarse; una levantada hasta la cara al lavarse
-    const paws = st ? sp.mask().ellipse(58, 30, 5, 2.2).ellipse(61, 27, 3, 2)
+    const paws = st ? sp.mask().ellipse(57, 30, 5, 2.2).ellipse(59, 28, 4, 2)
       : state === 'groom' ? sp.mask().ellipse(44, 28, 5, 2.4).ellipse(hx + 2, hy + 4, 3, 3.4)
         : sp.mask().ellipse(44, 28, 5, 2.4).ellipse(53, 28, 4, 2.2);
     sp.part(paws, RAMP.cat, { light: LIGHT, base: 3 });
@@ -399,7 +400,8 @@
     // Ganar mucho: el gato ronronea (corazones); perder mucho: se eriza y bufa
     celebrate(big) { this.react = { kind: big ? 'bigwin' : 'win', t: big ? 2.2 : 1.5 }; this.bounce.v = big ? -70 : -50; if (big) this.catDo('purr', 2.6, 'heart'); },
     flinch(big) { this.react = { kind: big ? 'bigloss' : 'loss', t: big ? 2.2 : 1.4 }; this.bounce.v = 34; this.shake = big ? 0.5 : 0.3; if (big) this.catDo('arch', 2, 'hiss'); },
-    tapFinger() { this.fingers[Math.floor(Math.random() * 4)] = 0.12; },
+    // Levanta un dedo un momento (i: cuál, 0-3; sin i, uno al azar)
+    tapFinger(i) { this.fingers[i != null ? i : Math.floor(Math.random() * 4)] = 0.12; },
     relief() { this.react = { kind: 'relief', t: 2.4 }; },
     wakeCat(sec) { this.catDo('awake', sec); },
     // El gato hace algo durante `sec` segundos (y luego vuelve a dormir). fx: corazones, bufido, destellos, "prr"...
@@ -476,8 +478,9 @@
         if (c.state === 'sleep' && !drama && (c.idleT -= dt) <= 0) {
           c.idleT = U.rand(8, 18);
           const run = SN.State.run, lucky = SN.Luck && run && SN.Luck.today();
-          const pick = U.pick(['ear', 'ear', 'stretch', 'yawn', 'groom', 'sit', 'purr']);
-          const dur = { ear: 0.5, stretch: 2.2, yawn: 1.4, groom: 3, sit: 5, purr: 3 }[pick];
+          // (Sin estirarse ni lavarse: a este tamaño esas poses se leían como un fallo del dibujo)
+          const pick = U.pick(['ear', 'ear', 'yawn', 'peek', 'sit', 'purr']);
+          const dur = { ear: 0.5, yawn: 1.4, peek: 2.5, sit: 5, purr: 3 }[pick];
           this.catDo(pick, dur, lucky ? 'gold' : pick === 'purr' ? 'prr' : null);
         }
       }
@@ -501,7 +504,8 @@
       const pr = this.click > 0 ? 1 : 0;
       const mouseHand = cached(`mhand|${pr}|${phase}`, () => buildMouseHand(pr, phase));
       // Celebrar: la mano del teclado salta; perder: respingo
-      const lift = md.expr === 'star' || md.expr === 'happy' ? -2 : 0;
+      // (al pulsar una tecla, la mano baja un píxel: se nota que escribe)
+      const lift = md.expr === 'star' || md.expr === 'happy' ? -2 : mask ? 1 : 0;
       g.drawImage(keyHand, kx - 21 + sx, ky - 14 + by + lift);
       // El reloj RÓLEZ (objeto clave): en la muñeca izquierda, brillando
       const run = SN.State.run;

@@ -34,7 +34,7 @@
     },
 
     skip() {
-      if (!this.running) return;
+      if (!this.running || !this.canSkip) return;
       this.skipping = true;
       if (this.skipNow) this.skipNow();
       this.advance();
@@ -82,13 +82,18 @@
     },
 
     // ---------- Introducción ----------
-    async playIntro() {
+    // canSkip: con partida guardada (o la intro ya vista) se puede SALTAR; la primera vez se ve entera
+    async playIntro({ canSkip = true } = {}) {
       const G = SN.Game;
       this.running = true;
       this.skipping = false;
+      this.canSkip = canSkip;
       this.skipSignal = new Promise((r) => { this.skipNow = r; });
       G.setState('INTRO');
-      $('btn-skip').classList.remove('hidden');
+      $('btn-skip').classList.toggle('hidden', !canSkip);
+      // La Pleyzeta todavía no es tuya: no está en la habitación hasta que termina la intro
+      SN.Desk.hideConsole = true;
+      SN.Desk.dirty();
       SN.Audio.setMood('normal');
       SN.Audio.startMusic();
       try {
@@ -119,6 +124,7 @@
       this.notifs = [];
       SN.FX.clear();
       SN.Desk.phaseOverride = null;
+      SN.Desk.hideConsole = false; // comprada (a plazos): ya está en el mueble
       SN.Desk.dirty();
       SN.Game.camTo({ x: 320, y: 180, zoom: 1 }, 0.01);
       SN.Audio.setMood('normal');

@@ -80,7 +80,6 @@
       slider.addEventListener('pointerdown', (e) => { if (!this.canEditForm('amount')) return; drag = true; slider.setPointerCapture(e.pointerId); fromSlider(e); });
       slider.addEventListener('pointermove', (e) => { if (drag) fromSlider(e); });
       slider.addEventListener('pointerup', () => { drag = false; });
-      $('nav-upgrades').addEventListener('click', () => this.openWindow('upgrades'));
       $('nav-news').addEventListener('click', () => this.openWindow('news'));
       $('nav-shop').addEventListener('click', () => this.openWindow('shop'));
       $('btn-item').addEventListener('click', () => {
@@ -124,8 +123,10 @@
       if (SN.Dialog.active && (e.code === 'Space' || e.code === 'Enter')) { e.preventDefault(); SN.Dialog.advance(); return; }
       if (SN.Cine && SN.Cine.onKey(e)) return;
       if (SN.Game.state !== 'GAMEPLAY' && SN.Game.state !== 'TUTORIAL') return;
-      if (e.code === 'Escape') { if (SN.Windows.current) SN.Windows.close(); else if (this.allowed('settings') && !this.busy) this.openWindow('settings'); return; }
+      // (la oferta de FUTURO.exe no se cierra: es el siguiente paso de la historia)
+      if (e.code === 'Escape') { if (SN.Windows.current === 'offer') return; if (SN.Windows.current) SN.Windows.close(); else if (this.allowed('settings') && !this.busy) this.openWindow('settings'); return; }
       if (SN.Windows.current || SN.Dialog.active) return;
+      if (this.onContinue && (e.code === 'Space' || e.code === 'Enter')) { e.preventDefault(); this.onContinue(); return; }
       // Durante una operación: ESPACIO cobra, F acelera
       if (S.run && S.run.position) {
         if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); this.cashOut(); }
@@ -142,7 +143,7 @@
         Tab: () => this.cycleMarket(e.shiftKey ? -1 : 1), KeyQ: () => this.cycleMarket(-1), KeyE: () => this.cycleMarket(1),
         KeyX: () => this.toggleTab(),
         KeyP: () => this.skip(),
-        KeyM: () => this.openWindow('upgrades'), KeyN: () => this.openWindow('news'), KeyT: () => this.openWindow('shop'),
+        KeyN: () => this.openWindow('news'), KeyT: () => this.openWindow('shop'),
       };
       if (map[e.code]) { e.preventDefault(); map[e.code](); }
     },
@@ -226,14 +227,16 @@
         fill.style.width = (U.clamp(run.capital / goal.amount, 0, 1) * 100).toFixed(1) + '%';
         fill.classList.toggle('debt', goal.type === 'debt');
         fill.classList.toggle('item', goal.type === 'item');
-        $('goal-text').textContent = `${U.short(run.capital)} / ${U.short(goal.amount)}`;
+        // La oferta no pide dinero: se enseña lo que dejará a deber
+        $('goal-text').textContent = goal.type === 'item' ? `Hoy $0 · debes ${U.short(goal.amount)}` : `${U.short(run.capital)} / ${U.short(goal.amount)}`;
+        if (goal.type === 'item') fill.style.width = '100%';
       } else {
         $('goal-title').textContent = 'Sin límites';
         fill.style.width = '100%';
         fill.classList.remove('debt', 'item');
         $('goal-text').textContent = '';
       }
-      $('hud-goal').title = goal && goal.type === 'item' ? `Siguiente paso: la oferta de ${goal.item.name} (FUTURO.exe necesita ver ${U.money(goal.amount)} en tu cuenta)` : goal && goal.type === 'debt' ? `Debes ${U.money(goal.amount)} por ${goal.label}` : '';
+      $('hud-goal').title = goal && goal.type === 'item' ? `Siguiente paso: la oferta de ${goal.item.name} (hoy $0; después debes ${U.money(goal.amount)})` : goal && goal.type === 'debt' ? `Debes ${U.money(goal.amount)} por ${goal.label}` : '';
       // (con una ventana abierta no se enseñan: quedarían por encima de ella)
       const canPay = SN.Debt.canPay() && !this.busy && !SN.Windows.current;
       $('btn-pay').classList.toggle('hidden', !canPay);
@@ -255,7 +258,7 @@
       if (key === this.daysKey) return;
       this.daysKey = key;
       if (!owing) {
-        box.innerHTML = SN.Luck.isLucky(run.day) ? `<span class="free lucky">★ Suerte · día<b>${run.day}</b></span>` : `<span class="free">Libre · día<b>${run.day}</b></span>`;
+        box.innerHTML = SN.Luck.isLucky(run.day) ? `<span class="free lucky" title="Día de la suerte">★ Suerte<b>${run.day}</b></span>` : `<span class="free">Libre · día<b>${run.day}</b></span>`;
         return;
       }
       let html = '';
@@ -271,7 +274,14 @@
       const el = $('capital');
       const txt = U.money(v);
       el.textContent = txt;
-      el.classList.toggle('small', txt.length > 10);
+      el.classList.remove('small');
+      // Si la cifra no cabe en su casilla, se abrevia ($119,902 -> $120K); la exacta, al pasar el ratón
+      const room = el.parentElement.clientWidth - 18;
+      if (room > 0 && el.scrollWidth > room) {
+        el.textContent = U.short(v);
+        if (el.scrollWidth > room) el.classList.add('small');
+      }
+      el.title = txt;
       this.cap.shown = v;
     },
 
@@ -473,16 +483,14 @@
       const badge = $('news-badge');
       badge.textContent = unread > 9 ? '9+' : unread;
       badge.classList.toggle('hidden', unread <= 0);
-      // Lo que ya se puede comprar y todavía no has visto: número rojo en Mejoras y Tienda
-      for (const [id, win] of [['up-badge', 'upgrades'], ['shop-badge', 'shop']]) {
-        const n = SN.ShopWatch.badge(win), b = $(id);
-        b.textContent = n > 9 ? '9+' : n;
-        b.classList.toggle('hidden', n <= 0);
-      }
+      // Lo que ya se puede comprar y todavía no has visto: número rojo en la Tienda (todo está en ella)
+      const n = SN.ShopWatch.badge('shop'), sb = $('shop-badge');
+      sb.textContent = n > 9 ? '9+' : n;
+      sb.classList.toggle('hidden', n <= 0);
       // La tienda se puede mirar siempre (los objetos clave solo se compran cuando toca)
       const shop = $('nav-shop');
       shop.disabled = false;
-      shop.title = 'Tienda: objetos clave y estilo de vida';
+      shop.title = 'Tienda: mejoras, objetos clave, estilo de vida y la Academia';
       $('btn-skip-turn').disabled = this.busy || !!run.position || !this.allowed('skip');
       $('btn-skip-turn').title = 'No apostar: pasa el turno y el mercado sigue';
     },
@@ -496,13 +504,12 @@
     onShopNew({ items }) {
       this.renderNav();
       if (SN.Tutorial.active || SN.Game.state !== 'GAMEPLAY' || SN.Windows.current) return;
-      const up = items.filter((x) => x.win === 'upgrades'), sh = items.filter((x) => x.win === 'shop');
-      const pick = up.length ? up : sh;
-      const win = up.length ? 'upgrades' : 'shop';
-      const first = pick[0];
+      // Todo está en la Tienda: primero se avisa de las mejoras y la Academia, luego del resto
+      const up = items.filter((x) => x.kind === 'upgrade' || x.kind === 'academy');
+      const first = (up.length ? up : items)[0];
       const what = first.kind === 'upgrade' ? 'Mejora disponible' : first.kind === 'academy' ? 'Academia de Bravo Fines' : first.kind === 'gold' ? 'Mercado Dorado' : 'Ya puedes comprar';
       const more = items.length > 1 ? ` (y ${items.length - 1} más)` : '';
-      SN.Desktop.toast('', `<b>${what}:</b> ${esc(first.label)}${more}`, { icon: win === 'upgrades' ? 'wrench' : 'cart', kbd: win === 'upgrades' ? 'M' : 'T', onClick: () => this.openWindow(win) });
+      SN.Desktop.toast('', `<b>${what}:</b> ${esc(first.label)}${more}`, { icon: up.length ? 'wrench' : 'cart', kbd: 'T', onClick: () => this.openWindow(first.kind === 'academy' ? 'upgrades' : 'shop') });
       SN.Audio.sfx('select');
     },
     // La oferta de un objeto clave salta sola (si no hay otra ventana o un diálogo delante)
@@ -604,6 +611,8 @@
     fast() { if (SN.Chart.anim && this.allowed('fast')) SN.Chart.fast(); },
 
     cashOut() {
+      // Velas terminadas: el mismo botón (o ESPACIO) sirve para seguir sin esperar al resultado
+      if (this.onContinue) { this.onContinue(); return; }
       const pos = S.run && S.run.position;
       if (!pos || pos.settled || !SN.Chart.anim || SN.Chart.anim.revealed >= SN.Chart.anim.total || $('btn-close').disabled) return;
       if (!this.allowed('cashout')) { SN.Audio.sfx('error'); return; }
@@ -644,7 +653,6 @@
       // Medio segundo de margen: un doble clic en SUBE/BAJA no cobra sin querer al precio de entrada
       SN.after(0.5, () => { if (S.run && S.run.position === position && !position.settled) { close.disabled = false; close.classList.remove('arming'); } });
       $('close-lbl').textContent = 'Cobrar';
-      $('close-amt').textContent = '+$0';
       this.setLiveNote('');
       $('btn-fast').classList.remove('hidden');
       this.live = { shown: null, lastPnl: 0, warned: false };
@@ -677,7 +685,6 @@
       const close = $('btn-close');
       if (close.classList.contains('done')) return;
       $('close-lbl').textContent = pnl >= 0 ? 'Cobrar' : 'Salir';
-      $('close-amt').textContent = U.money(pnl, { sign: true });
       close.classList.toggle('losing', pnl < 0);
       close.classList.toggle('capped', capped && pnl > 0);
     },
@@ -728,7 +735,6 @@
       close.classList.add('done');
       close.disabled = true;
       $('close-lbl').textContent = r.pnl >= 0 ? '¡Cobrado!' : 'Fuera';
-      $('close-amt').textContent = U.money(r.pnl, { sign: true });
       const pe = $('live-pnl');
       pe.textContent = U.money(r.pnl, { sign: true });
       pe.className = 'pnl ' + (r.pnl >= 0 ? 'up' : 'down');
@@ -765,6 +771,11 @@
     // Al terminar las velas: si cobraste antes, qué te ahorraste o qué te perdiste
     onTradeDone(r) {
       $('chart-wrap').classList.remove('danger');
+      // El botón deja de ser COBRAR y pasa a SEGUIR: clic o ESPACIO y vuelves a operar
+      const close = $('btn-close');
+      close.className = 'btn btn-green next';
+      close.disabled = false;
+      $('close-lbl').textContent = 'Seguir ▶';
       if (!r || !r.cashed) return;
       const diff = r.stayPnl - r.pnl;
       if (diff < -0.5) this.setLiveNote(`¡Te ahorraste ${U.money(-diff)}!`, 'good');
@@ -847,7 +858,7 @@
       });
     },
     // Resultado de la apuesta, sin prisa: se queda sobre la gráfica hasta 2.6 s (clic o tecla para seguir antes)
-    resultCard(r) {
+    resultCard(r, skipP) {
       const win = r.pnl > 0, even = r.pnl === 0;
       const label = r.liquidated ? 'Liquidado' : even ? 'Te quedas igual' : win ? 'Ganaste' : 'Perdiste';
       const extra = (r.capped ? '<span class="rc-cap">Tope del mercado</span>' : '') +
@@ -872,7 +883,8 @@
         };
         const onKey = (e) => { if (!e.repeat) finish(); };
         el.addEventListener('click', finish);
-        SN.after(0.5, () => document.addEventListener('keydown', onKey, true));
+        if (skipP) skipP.then(finish);
+        SN.after(0.5, () => { if (!done) document.addEventListener('keydown', onKey, true); });
         SN.after(2.6, finish);
       });
     },

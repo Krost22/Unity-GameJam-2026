@@ -1,6 +1,6 @@
 // ShopWatchManager: qué se puede comprar AHORA (mejoras, la Academia de Bravo Fines, la tienda y la oferta
-// de FUTURO.exe) y qué es NUEVO desde la última vez que miraste. De aquí salen los números rojos de Mejoras
-// y Tienda, los avisos de "ya puedes comprar..." y cuándo la oferta de un objeto clave salta sola.
+// de FUTURO.exe) y qué es NUEVO desde la última vez que miraste. De aquí salen el número rojo de la Tienda
+// (todo está en ella), los avisos de "ya puedes comprar..." y cuándo la oferta de un objeto clave salta sola.
 // No toca la interfaz: avisa con 'shop:new' (cosas nuevas) y 'offer:prompt' (enseñar la oferta).
 (function (SN) {
   'use strict';
@@ -13,14 +13,15 @@
       const run = S.run, out = [];
       if (!run) return out;
       const keep = D.sim.bankruptcyThreshold;
+      // Todo vive en la TIENDA (las mejoras se compran a crédito: cuentan si todavía se podrían pagar a tiempo)
       for (const d of D.upgrades) {
-        if (!SN.Upgrades.isUnlocked(d.id) || !SN.Upgrades.next(d.id)) continue;
+        if (!SN.Upgrades.isUnlocked(d.id) || !SN.Upgrades.next(d.id) || !SN.Upgrades.canBuy(d.id).ok) continue;
         const lv = SN.Upgrades.level(d.id);
-        if (run.capital - SN.Upgrades.next(d.id).cost >= keep) out.push({ key: `up:${d.id}:${lv}`, win: 'upgrades', kind: 'upgrade', label: `${d.name} NV.${lv + 1}` });
+        out.push({ key: `up:${d.id}:${lv}`, win: 'shop', kind: 'upgrade', label: `${d.name} NV.${lv + 1}` });
       }
-      if (SN.Academy) for (const n of SN.Academy.buyable()) out.push({ key: `ac:${n.id}`, win: 'upgrades', kind: 'academy', label: n.name });
+      if (SN.Academy) for (const n of SN.Academy.buyable()) out.push({ key: `ac:${n.id}`, win: 'shop', kind: 'academy', label: n.name });
       const it = SN.Unlocks.pendingItem();
-      if (it && run.capital >= SN.Unlocks.offer(it).need) out.push({ key: `offer:${it.id}`, win: 'shop', kind: 'offer', label: it.name });
+      if (it) out.push({ key: `offer:${it.id}`, win: 'shop', kind: 'offer', label: it.name });
       const off = SN.Luck.discount();
       for (const s of D.shop) {
         if (!run.owned[s.id] && run.capital - Math.round(s.price * (1 - off)) >= keep) out.push({ key: `shop:${s.id}`, win: 'shop', kind: 'shop', label: s.name });
@@ -59,23 +60,18 @@
       this.offerCheck();
     },
 
-    // La oferta de un objeto clave salta sola: al quedar pendiente (justo después de pagar la deuda anterior),
-    // en cuanto te llega para la entrada si entonces no te llegaba, y cada mañana que siga pendiente.
+    // La oferta de un objeto clave es el siguiente paso de la historia: salta sola al quedar pendiente (justo
+    // después de pagar la deuda anterior) y, mientras siga pendiente, vuelve al terminar cada turno.
     offerCheck() {
       const run = S.run, it = SN.Unlocks.pendingItem();
       if (!it) return null;
       const st = SN.Unlocks.step();
-      if (!run.offer || run.offer.step !== st.id) run.offer = { step: st.id, shown: false, aff: false, day: 0 };
-      const o = run.offer, can = run.capital >= SN.Unlocks.offer(it).need;
-      let why = null;
-      if (!o.shown) why = 'new';
-      else if (!o.aff && can) why = 'afford';
-      else if (run.day > o.day && run.turn === 0) why = 'insist';
-      if (!why) return null;
+      if (!run.offer || run.offer.step !== st.id) run.offer = { step: st.id, shown: false, day: 0 };
+      const o = run.offer;
+      const why = o.shown ? 'insist' : 'new';
       o.shown = true;
       o.day = run.day;
-      if (can) o.aff = true;
-      SN.Events.emit('offer:prompt', { item: it, why, can });
+      SN.Events.emit('offer:prompt', { item: it, why, can: true });
       return why;
     },
   };

@@ -1,5 +1,6 @@
 // UpgradeManager: estadísticas mejorables (Suerte, Límite de inversión, Análisis, Resistencia futura).
-// Precios y efectos vienen de data/simulation.js.
+// Precios y efectos vienen de data/simulation.js. Se compran A CRÉDITO: cada mejora es también una deuda
+// (precio + intereses de D.credit, que se suman a la deuda activa).
 (function (SN) {
   'use strict';
   const S = SN.State, D = SN.Data;
@@ -25,20 +26,25 @@
       return false; // 'future': preparado para próximas versiones
     },
 
+    // A crédito: hoy no pagas nada. Lo que se suma a la deuda (precio + intereses)
+    creditCost(id) { const n = this.next(id); return n ? Math.round(n.cost * (1 + D.credit.interest)) : 0; },
+
+    // Se puede comprar si está desbloqueada, no hay una operación en curso y, con lo que se suma a la deuda,
+    // todavía se podría pagar a tiempo (si no, sería perder seguro)
     canBuy(id) {
       const n = this.next(id);
       if (!n || !this.isUnlocked(id) || S.run.position) return { ok: false };
-      if (S.run.capital < n.cost) return { ok: false, reason: 'NO TE ALCANZA' };
-      if (S.run.capital - n.cost < D.sim.bankruptcyThreshold) return { ok: false, reason: 'TE QUEDARÍAS SIN NADA' };
-      return { ok: true, cost: n.cost };
+      const debt = this.creditCost(id);
+      if (SN.Debt.active() && SN.Debt.hopeless(debt)) return { ok: false, reason: 'YA NO PODRÍAS PAGAR A TIEMPO', debt };
+      return { ok: true, cost: n.cost, debt };
     },
 
     buy(id) {
       const can = this.canBuy(id);
       if (!can.ok) return false;
-      SN.Economy.spend(can.cost, 'upgrade');
+      SN.Debt.charge(can.debt, `la mejora (${this.def(id).name})`);
       S.run.upgrades[id] = this.level(id) + 1;
-      SN.Events.emit('upgrade:bought', { id, level: S.run.upgrades[id] });
+      SN.Events.emit('upgrade:bought', { id, level: S.run.upgrades[id], debt: can.debt });
       return true;
     },
   };

@@ -62,19 +62,20 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
   const fresh = async () => {
     await ev(`localStorage.clear(); localStorage.setItem('saldonegro.profile.v1', '${PROFILE}'); location.reload(); true`);
     await b.sleep(1500);
-    await waitFor('SN.Game && SN.Game.state === "MENU"', 8000);
+    await waitFor('(document.querySelector("#boot .thanks button")?.click(), SN.Game && SN.Game.state === "MENU")', 8000);
     await ev('document.getElementById("btn-new").click()');
+    await waitFor('SN.Game.state === "INTRO"', 8000); await ev('SN.Cine.skip(); true');
     await waitFor('SN.Game.state === "GAMEPLAY" && !SN.UI.busy', 10000);
   };
   const reloadAndContinue = async () => {
     await ev('location.reload(); true');
     await b.sleep(1500);
-    await waitFor('SN.Game && SN.Game.state === "MENU"', 8000);
+    await waitFor('(document.querySelector("#boot .thanks button")?.click(), SN.Game && SN.Game.state === "MENU")', 8000);
     await ev('document.getElementById("btn-continue").click()');
   };
 
   try {
-    await waitFor('SN.Game && SN.Game.state === "MENU"', 8000);
+    await waitFor('(document.querySelector("#boot .thanks button")?.click(), SN.Game && SN.Game.state === "MENU")', 8000);
     await fresh();
     ok(await ev('!SN.Tutorial.active'), 'sin tutorial si ya se hizo el actual');
     ok(await ev('!!document.getElementById("btn-intro").offsetParent') || true, 'menú con VER INTRO');
@@ -190,11 +191,12 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
       if (!(await ev('SN.UI.busy || SN.Dialog.active'))) break;
     }
     ok(sawBravo && await ev('SN.State.run.flags.academy'), 'la mañana siguiente a pagar, Bravo Fines se presenta y abre su Academia');
-    await ev('SN.Economy.add(300, "test"); SN.UI.renderAll(); document.getElementById("nav-upgrades").click(); true');
+    await ev('SN.Economy.add(300, "test"); SN.UI.renderAll(); document.getElementById("nav-shop").click(); true');
     await b.sleep(400);
-    await ev('document.querySelector(".up-tab.ac").click(); true');
-    await b.sleep(300);
-    ok(await ev('document.querySelectorAll(".ac-n").length') === 12 && await ev('SN.Windows.win.classList.contains("big")'), 'la pestaña Academia enseña el árbol (12 nodos) en grande');
+    ok(await ev('!!document.querySelector(".sh-nb[data-cat=academia]")'), 'la Academia sale como categoría de la Tienda');
+    await ev('document.querySelector(".sh-nb[data-cat=academia]").click(); true');
+    await b.sleep(400);
+    ok(await ev('document.querySelectorAll(".ac-n").length') === 12 && await ev('SN.Windows.win.classList.contains("big")'), 'la Academia (desde la Tienda) enseña el árbol (12 nodos) en grande');
     let viewsOk = true;
     for (const [v, n] of [['negocios', 5], ['trading', 4], ['contactos', 3], ['arbol', 12]]) {
       await ev(`document.querySelector(".ac-nb[data-view=${v}]").click(); true`);
@@ -319,8 +321,10 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
     const mode = await s.evaluate('SN.Game.mode');
     ok(mode === 'monitor', `${w}x${h}: modo monitor (${mode})`);
     await s.evaluate(`localStorage.setItem('saldonegro.profile.v1', '${PROFILE}'); location.reload(); true`);
-    for (let i = 0; i < 60 && !(await s.evaluate('!!(window.SN && SN.Game && SN.Game.state === "MENU")')); i++) await s.sleep(150);
+    for (let i = 0; i < 60 && !(await s.evaluate('!!(document.querySelector("#boot .thanks button")?.click(), window.SN && SN.Game && SN.Game.state === "MENU")')); i++) await s.sleep(150);
     await s.evaluate('document.getElementById("btn-new").click(); true');
+    for (let i = 0; i < 60 && !(await s.evaluate('SN.Game.state === "INTRO"')); i++) await s.sleep(150);
+    await s.evaluate('SN.Cine.skip(); true');
     for (let i = 0; i < 60 && !(await s.evaluate('SN.Game.state === "GAMEPLAY" && !SN.UI.busy')); i++) await s.sleep(150);
     await s.sleep(800);
     ok(await s.evaluate('SN.Game.state') === 'GAMEPLAY', `${w}x${h}: se puede jugar`);

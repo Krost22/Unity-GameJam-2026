@@ -22,13 +22,27 @@
 
     // Ya no hay forma de llegar: ni multiplicando el capital al máximo en cada turno que queda se alcanza.
     // Cada mercado tiene un tope por apuesta: un turno no puede dar más que el mejor tope abierto.
-    hopeless() {
+    // extra: lo que se sumaría a la deuda (para no dejar comprar a crédito algo que ya no podrías pagar)
+    hopeless(extra = 0) {
       const run = S.run, d = run.debt;
       if (!this.active() || d.defaulted || run.position) return false;
-      const cap = SN.Trading.bestCap();
+      const cap = SN.Trading.bestCap(), goal = d.amount + extra;
       let c = run.capital;
-      for (let n = this.turnsLeft(); n > 0 && c < d.amount; n--) c += Math.min(c * (D.sim.maxTurnGrowth - 1), cap);
-      return c < d.amount;
+      for (let n = this.turnsLeft(); n > 0 && c < goal; n--) c += Math.min(c * (D.sim.maxTurnGrowth - 1), cap);
+      return c < goal;
+    },
+
+    // Compra a crédito: suma a la deuda activa o, si no debes nada, abre una nueva (mismo plazo para todo)
+    charge(amount, label) {
+      const run = S.run;
+      amount = Math.round(amount);
+      if (this.active()) {
+        run.debt.amount += amount;
+        run.debt.extra = (run.debt.extra || 0) + amount;
+        SN.Events.emit('debt:charged', { amount, debt: run.debt });
+        return run.debt;
+      }
+      return this.open({ id: 'credito-' + run.day + '-' + run.turn, kind: 'credit', label, amount, days: D.credit.days });
     },
 
     // Abre una deuda nueva: { id, kind, label, amount, days }. "N días" cuenta el de hoy, como la Pleyzeta.
@@ -50,7 +64,10 @@
       d.paid = true;
       d.paidDay = S.run.day;
       if (d.id === 'pleyzeta') S.run.flags.debtPaid = true;
-      SN.Events.emit('debt:paid', { auto: !!auto, amount: d.amount, debt: d });
+      // Bono por usar la app: nunca te quedas a cero al saldar una deuda
+      d.bonus = D.payBonusFor(d.amount, SN.Unlocks.nextDebtAmount(), S.run.capital);
+      SN.Economy.add(d.bonus, 'reward');
+      SN.Events.emit('debt:paid', { auto: !!auto, amount: d.amount, debt: d, bonus: d.bonus });
       return true;
     },
   };

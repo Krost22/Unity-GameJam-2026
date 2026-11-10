@@ -12,7 +12,7 @@
   'use strict';
 
   SN.Data.academy = {
-    guru: { id: 'bravo', name: 'Bravo Fines', nick: 'BRAVO FINES ~ Academia de Trading ~ 3 Lambos' },
+    guru: { id: 'bravo', name: 'Bravo Fines', nick: 'BRAVO FINES ~ 3 Lambos ~' },
     branches: [
       {
         id: 'negocios', name: 'Negocios', color: 'orange',
@@ -49,13 +49,13 @@
       'Gurú del trading, coach de vida y dueño de tres Lambos. Alquilados, pero tres.',
       'He visto cómo operas. Fatal. Pero tienes HAMBRE. Me gusta.',
       'Te abro mi ACADEMIA: negocios que dan dinero cada día, trucos de trading y contactos.',
-      'La tienes en MEJORAS (tecla M). Recuerda: el dinero no se gana. Se MANIFIESTA.',
+      'La tienes en la TIENDA (tecla T), categoría Academia. Recuerda: el dinero no se gana. Se MANIFIESTA.',
     ],
 
     // Lo que escribe por Mensajín (no se le puede contestar: no lee los mensajes, solo los manda)
     // when/delay: como js/data/chat.js ('bravo' = el día que se presenta)
     messages: [
-      { id: 'b1', when: 'bravo', delay: 0, lines: ['¿CANSADO DE PERDER?', 'Soy BRAVO FINES. Mentor, emprendedor y padre de tres Lambos.', 'Mi ACADEMIA ya está en tu FUTURO.exe. Pestaña MEJORAS → ACADEMIA.', 'Empieza por la limonada. Todos los imperios empiezan por una limonada.'] },
+      { id: 'b1', when: 'bravo', delay: 0, lines: ['¿CANSADO DE PERDER?', 'Soy BRAVO FINES. Mentor, emprendedor y padre de tres Lambos.', 'Mi ACADEMIA ya está en tu FUTURO.exe. TIENDA → ACADEMIA.', 'Empieza por la limonada. Todos los imperios empiezan por una limonada.'] },
       { id: 'b2', when: 'bravo', delay: 4, lines: ['CONSEJO DEL DÍA: compra barato y vende caro.', 'De nada.'] },
       { id: 'b3', when: 'tele', delay: 3, lines: ['Los pobres ahorran.', 'Los ricos tienen un puesto de limonada.', '¿Ya tienes el tuyo?'] },
       { id: 'b4', when: 'regalo2', delay: 3, lines: ['Hoy me he levantado a las 4:00.', 'He meditado, he corrido 10 km y he perdido $8,000.', 'Pero con MENTALIDAD.'] },
