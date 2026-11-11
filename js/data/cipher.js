@@ -27,7 +27,7 @@
       { id: 'calavera', letter: 'C', where: 'La calavera del mercado negro', hint: 'Tres golpes a la calavera.' },
       { id: 'poster', letter: 'M', where: 'El póster de tu cuarto', hint: 'Cuando la ciudad se apaga, el póster habla.' },
       { id: 'dibujo', letter: 'I', where: 'El dibujo de Timmy', hint: 'Todos los niños lo dibujan. Timmy también.' },
-      { id: 'avatar', letter: 'P', where: 'La foto de LOS PAGADOS', hint: 'Llama tres veces a su puerta.' },
+      { id: 'avatar', letter: 'P', where: 'La foto de LOS DESFASADOS', hint: 'Llama tres veces a su puerta.' },
       { id: 'estrella', letter: 'G', where: 'La Estrella de la Suerte', hint: 'Una estrella que solo sale los días de suerte.' },
       { id: 'acerca', letter: 'F', where: 'Acerca de FUTURO.exe', hint: 'Todo programa tiene su "Acerca de". Mira bien el icono.' },
     ],
@@ -43,7 +43,7 @@
       { id: 's3', when: 'debtPaid', delay: 2, text: 'NO ES UN REGALO' },
       { id: 's4', when: 'tele', delay: 1, text: 'CADA DEUDA TE CUESTA UN RECUERDO' },
       // Al descubrir la primera letra, el encapuchado entra en la conversación
-      { id: 'hood', when: 'cipher', delay: 1, orWhen: 'regalo2', orDelay: 1, hood: ['*El encapuchado se ha unido a la conversación.', 'Silencio.', '*LOS PAGADOS se ha desconectado.'] },
+      { id: 'hood', when: 'cipher', delay: 1, orWhen: 'regalo2', orDelay: 1, hood: ['*El encapuchado se ha unido a la conversación.', 'Silencio.', '*LOS DESFASADOS se ha desconectado.'] },
       { id: 's5', when: 'regalo2', delay: 3, text: 'NO DIGAS NADA. SOLO LEE', back: true },
       // (justo después de que Kevo desaparezca: su conversación `ventana` llega a los 6 turnos del tercer regalo)
       { id: 's6', when: 'regalo3', delay: 7, text: 'TU AMIGO ESTA CON NOSOTROS' },
