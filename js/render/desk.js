@@ -727,7 +727,8 @@
     }
     // LED del monitor
     const on = Desk.led === 'busy' ? Math.floor(t * 8) % 2 === 0 : Desk.led === 'alert' ? Math.floor(t * 4) % 2 === 0 : true;
-    R(g, MON.x + MON.w - 14, MON.y + MON.h - 4, 2, 2, on ? (Desk.led === 'alert' ? P.coral : P.green) : P.greenDD);
+    // (en el marco, a la altura de los dos botones y a su derecha: más abajo quedaba sobre el borde de la mesa)
+    R(g, MON.x + MON.w - 16, MON.y + MON.h - 5, 2, 2, on ? (Desk.led === 'alert' ? P.coral : P.green) : P.greenDD);
   }
 
   function drawHeadphones(g) {
