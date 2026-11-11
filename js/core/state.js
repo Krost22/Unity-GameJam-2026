@@ -32,7 +32,7 @@
         totalTurns: 0,
         stats: { trades: 0, wins: 0, losses: 0, best: 0, worst: 0, earned: 0 },
         markets: {},
-        upgrades: { suerte: 0, limite: 0, analisis: 0, resistencia: 0 },
+        upgrades: { multiplicador: 0, suerte: 0, limite: 0, analisis: 0, resistencia: 0 },
         gifts: {},       // mejoras que ya llegaron como "regalo" (se pueden comprar)
         step: 0,         // paso actual de la escalera de progresión (js/data/progression.js)
         stepOpen: true,  // el paso actual ya abrió su deuda (la Pleyzeta, desde el principio)
@@ -46,7 +46,7 @@
         offer: null,     // cuándo se enseñó la oferta pendiente de FUTURO.exe ({ step, shown, aff, day })
         storySeen: {},
         selected: 'salud',
-        form: { amount: 50, frac: 0.5, leverage: 2 },
+        form: { amount: 50, frac: 0.5, leverage: 1 },
         position: null,
         uid: 1,
       };

@@ -144,7 +144,7 @@
         nick: 'Kevo',
         offline: true,
       },
-      // ---------- $100,000 ----------
+      // ---------- $300,000 (la meta final) ----------
       {
         id: 'mira', when: 'g100000', delay: 1,
         msgs: ['*Kevo se ha conectado.', '!zumbido', 'ya casi estás listo', 'eso me dijeron a mí', 'mira por la ventana', '>encapuchado'],

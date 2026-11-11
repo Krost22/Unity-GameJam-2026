@@ -62,7 +62,7 @@
       { id: 'b5', when: 'movil', delay: 2, lines: ['¿Sabes leer la letra pequeña?', 'Yo tampoco. Por eso la enseño.', 'Nodo LEER LA LETRA PEQUEÑA. Solo en mi Academia.'] },
       { id: 'b6', when: 'regalo3', delay: 3, lines: ['¿El tipo de la capucha?', 'Sí. Le conozco.', 'Todos los gurús le debemos algo. No se lo digas.'] },
       { id: 'b7', when: 'regalo4', delay: 2, lines: ['Te voy a contar un secreto.', 'Mi Lambo es alquilado. Mi casa es alquilada.', 'Mi sonrisa... también.'] },
-      { id: 'b8', when: 'g100000', delay: 1, lines: ['Cien mil. Ya eres casi como yo.', 'Eso no es un cumplido.'] },
+      { id: 'b8', when: 'g100000', delay: 1, lines: ['Trescientos mil. Ya eres casi como yo.', 'Eso no es un cumplido.'] },
     ],
   };
 })(window.SN);

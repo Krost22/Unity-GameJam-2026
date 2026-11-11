@@ -194,6 +194,20 @@
       'kkkkkkkk',
     ],
     // --- Mejoras (12x12) ---
+    multi: [
+      '............',
+      '.kkk....kkk.',
+      '.krrk..krrk.',
+      '.kRrrkkrrRk.',
+      '..kRrrrrRk..',
+      '...kRrrRk...',
+      '...krrrrk...',
+      '..krrRRrrk..',
+      '.krrRkkRrrk.',
+      '.krRk..kRrk.',
+      '.kkk....kkk.',
+      '............',
+    ],
     trebol: [
       '..kk..kk....',
       '.khgkkhgk...',

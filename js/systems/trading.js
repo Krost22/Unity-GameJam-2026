@@ -33,9 +33,12 @@
     },
     maxAmount() { return Math.max(0, Math.floor(Math.min(S.run.capital, this.limit()))); },
 
+    // ×1 siempre; ×2, ×5 y ×10 hay que comprarlos (mejora MULTIPLICADOR). El tutorial presta su ×2.
     leverageAvailable(v) {
       const l = D.sim.leverages.find((x) => x.value === v);
-      return !!l && (!l.unlock || !!S.run.flags[l.unlock]);
+      if (!l) return false;
+      if (!l.level || SN.Upgrades.level('multiplicador') >= l.level) return true;
+      return !!(SN.Tutorial && SN.Tutorial.active && v <= D.sim.tutorial.leverage);
     },
 
     // Ajusta la cantidad del formulario a los límites (capital y límite de inversión)
@@ -53,6 +56,7 @@
       if (f.amount < D.sim.minInvestment) return { ok: false, reason: `MÍNIMO ${SN.Util.money(D.sim.minInvestment)}` };
       if (f.amount > S.run.capital + 1e-9) return { ok: false, reason: 'NO TIENES TANTO DINERO' };
       if (f.amount > this.limit() + 1e-9) return { ok: false, reason: `LÍMITE: ${SN.Util.money(this.limit())}` };
+      if (!this.leverageAvailable(f.leverage)) return { ok: false, reason: `COMPRA EL MULTIPLICADOR ×${f.leverage}` };
       return { ok: true };
     },
 

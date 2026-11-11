@@ -61,7 +61,13 @@
         const b = U.el('button', l.value >= 10 ? 'max' : l.value >= 5 ? 'hot' : '', '×' + l.value);
         b.dataset.l = l.value;
         b.title = `Multiplica el resultado ×${l.value} · tecla ${i + 1}`;
-        b.addEventListener('click', () => this.setLeverage(l.value));
+        // Uno que todavía no tienes te lleva a la Tienda, al MULTIPLICADOR
+        b.addEventListener('click', () => {
+          if (SN.Trading.leverageAvailable(l.value)) { this.setLeverage(l.value); return; }
+          if (!this.canEditForm('leverage') || !this.allowed('window')) { SN.Audio.sfx('error'); return; }
+          SN.Audio.sfx('select');
+          this.openWindow('shop', { cat: 'mejoras', sel: { kind: 'up', id: 'multiplicador' } });
+        });
         lv.appendChild(b);
       });
       $('risk').innerHTML = '<i></i>'.repeat(5);
@@ -461,8 +467,8 @@
       document.querySelectorAll('#leverages button').forEach((b) => {
         const v = +b.dataset.l;
         const ok = SN.Trading.leverageAvailable(v);
-        b.disabled = !ok;
-        if (!ok) b.title = 'Se desbloquea al pagar la deuda';
+        b.classList.toggle('locked', !ok);
+        b.title = ok ? `Multiplica el resultado ×${v} · tecla ${D.sim.leverages.findIndex((l) => l.value === v) + 1}` : `×${v}: cómpralo en la Tienda (Multiplicador)`;
         b.classList.toggle('on', v === f.leverage);
       });
       // Riesgo de un vistazo: cuánto de tu dinero apuestas, multiplicado
@@ -553,7 +559,8 @@
     },
 
     setLeverage(v) {
-      if (!this.canEditForm('leverage') || !SN.Trading.leverageAvailable(v)) { SN.Audio.sfx('error'); return; }
+      if (!this.canEditForm('leverage')) { SN.Audio.sfx('error'); return; }
+      if (!SN.Trading.leverageAvailable(v)) { this.note(`×${v}: CÓMPRALO EN LA TIENDA`); return; }
       S.run.form.leverage = v;
       SN.Audio.sfx('select');
       this.renderForm();

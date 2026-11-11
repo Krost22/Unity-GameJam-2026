@@ -54,14 +54,14 @@
       { id: 'cobrar', target: '#btn-close', wait: 'cashout', lines: ['¡Vas ganando! Pulsa COBRAR antes de que cambie.'] },
       { id: 'esperar', wait: 'trade', lines: [] },
       { id: 'susto', target: '#hud-capital', lines: ['¿Lo ves? Las últimas velas pueden darle la vuelta a todo.', 'Tú ya habías cobrado. Dinero fácil.'] },
-      { id: 'apuesta', target: '#trade-form', lines: ['Más apuesta y más multiplicador: más premio... y más riesgo.'] },
+      { id: 'apuesta', target: '#trade-form', lines: ['Más apuesta y más multiplicador: más premio... y más riesgo.', 'Ese ×2 era prestado. El ×2, el ×5 y el ×10 se compran en la TIENDA.'] },
       // news: abre el periódico con una noticia normal y una "errata" en el idioma secreto. spots: qué se resalta en cada frase
       { id: 'noticias', news: true, spots: ['.win.paper .np-grid', '.np-hero.cipher', '.np-hero.cipher'],
         lines: ['Y esto son las noticias. Mueven el precio: léelas siempre.', '¿Eso? Una errata de la imprenta.', 'No es relevante. Mira la gráfica, no el periódico.'] },
       // buy: enseña Mejoras y Tienda. acts: qué se abre y qué se resalta en cada frase
       { id: 'compras', buy: true,
         acts: [{ spot: '#nav' }, { spot: '#nav-shop' }, { open: 'shop', spot: '.win' }, { open: 'shop', spot: '.win' }],
-        lines: ['Todo se compra en la TIENDA (tecla T): mejoras, objetos y caprichos.', 'Cuando haya algo que puedas comprar, saldrá un número rojo. Como ese.', '¿Las mejoras? Bloqueadas. Ya te iré haciendo... regalos. Y se pagan a crédito: hoy nada, después con intereses.', 'A veces, hasta ofertas que no podrás rechazar.'] },
+        lines: ['Todo se compra en la TIENDA (tecla T): mejoras, objetos y caprichos.', 'Cuando haya algo que puedas comprar, saldrá un número rojo. Como ese.', '¿Las mejoras? El MULTIPLICADOR ya se puede comprar. Las demás te llegarán como... regalos. Todo a crédito: hoy nada, después con intereses.', 'A veces, hasta ofertas que no podrás rechazar.'] },
       { id: 'meta', target: '#hud-goal', lines: ['Junta $250 antes del día 7 y paga la deuda.', 'Si te quedas sin dinero... tendrás que sacarlo de otra parte. Suerte.'] },
     ],
     tutorialPayHint: ['¡Ya tienes para pagar!', 'Pulsa PAGAR DEUDA. O sigue jugando... tú sabrás.'],
@@ -70,7 +70,7 @@
     // Apariciones del encapuchado tras los hitos. {debt} y {days}: la deuda que trae el "regalo".
     hoodedEvents: {
       // Regalos: desbloquean una mejora (que luego se compra)... y traen una deuda
-      gift1: ['¿Ves? Te dije que funcionaría.', 'Ahora que estás dentro, podrías conseguir mucho más. Toma un regalo de bienvenida: ya puedes comprar LÍMITE. Y un multiplicador ×10.', 'Bueno... los regalos también se pagan. {debt} en {days} días. Sin prisa.'],
+      gift1: ['¿Ves? Te dije que funcionaría.', 'Ahora que estás dentro, podrías conseguir mucho más. Toma un regalo de bienvenida: ya puedes comprar LÍMITE.', 'Bueno... los regalos también se pagan. {debt} en {days} días. Sin prisa.'],
       gift2: ['Mil dólares. Hace nada no tenías ni para pagar una consola.', 'Te he abierto otra puerta: TECNOLOGÍA. Más volátil. Más divertido.', 'Y otro regalo: ya puedes comprar ANÁLISIS. Son {debt}. Tienes {days} días.'],
       gift3: ['Pequeños negocios. Grandes sueños.', 'Muy... rentables. Los sueños, digo. Toma: ya puedes comprar SUERTE. Te hará falta.', 'Nada es gratis. {debt} en {days} días.'],
       gift4: ['Minería. Aquí excavamos más hondo que nadie.', 'Un último regalo: RESISTENCIA. Para lo que todavía no ha pasado.', 'No mires abajo. Y no olvides pagar: {debt} en {days} días.'],
@@ -80,7 +80,7 @@
       item3: ['¿Problemas de dinero? Para eso estoy.', 'Te desbloqueo un nuevo mercado: NEGOCIOS NEGROS.', 'Tiendas que solo abren de noche. Como yo.'],
       item4: ['Un reloj precioso. El tiempo es lo único que no se puede comprar.', 'Bueno... casi. Te desbloqueo el último mercado: MINERÍA NEGRA.', 'Ahí abajo siempre hay alguien que paga.'],
       darkNews: ['¿Lees las noticias? No te preocupes por eso.', 'El dinero no sale de la nada. Pero eso no es asunto tuyo.'],
-      goal100000: ['Cien mil. Ya casi estás listo.', 'Pronto tendrás que decidir de qué lado del mercado estás.'],
+      goal100000: ['Trescientos mil. Ya casi estás listo.', 'Pronto tendrás que decidir de qué lado del mercado estás.'],
     },
     // Bono por usar la app: el encapuchado, al saldar cada deuda. {bonus}
     payBonus: [

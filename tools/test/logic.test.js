@@ -18,7 +18,9 @@ const FILES = [
 ];
 const SCRIPTS = FILES.map((f) => new vm.Script(fs.readFileSync(path.join(ROOT, f), 'utf8'), { filename: f }));
 
-function load() {
+// opts.real: la partida empieza como en el juego, solo con ×1. Si no, las pruebas de fórmulas ya tienen
+// el MULTIPLICADOR al máximo (×2, ×5 y ×10).
+function load(opts = {}) {
   const store = {};
   const ctx = {
     console, Math, JSON, Date, Promise, setTimeout,
@@ -29,6 +31,10 @@ function load() {
   vm.createContext(ctx);
   for (const s of SCRIPTS) s.runInContext(ctx);
   ctx.SN.__store = store; // para comprobar lo que se guarda
+  if (!opts.real) {
+    const st = ctx.SN.State, newRun = st.newRun;
+    st.newRun = function (...a) { const r = newRun.apply(this, a); r.upgrades.multiplicador = 3; return r; };
+  }
   return ctx.SN;
 }
 
@@ -38,6 +44,8 @@ function ok(cond, msg) {
   else { failed++; console.log('  FALLO:', msg); }
 }
 const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
+// El mayor multiplicador comprado que no pase de `want` (×1 siempre está)
+const bestLev = (SN, want) => SN.Data.sim.leverages.map((l) => l.value).filter((v) => v <= want && SN.Trading.leverageAvailable(v)).pop() || 1;
 
 // 1) Fórmula de la operación y límites
 {
@@ -203,7 +211,7 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
   let ev = SN3.Unlocks.check();
   ok(ev && ev.type === 'done' && ev.step.id === 'pleyzeta', 'pagar la Pleyzeta completa el primer paso');
   ev = SN3.Unlocks.check();
-  ok(ev && ev.type === 'gift' && SN3.Upgrades.isUnlocked('limite') && SN3.Upgrades.level('limite') === 0 && SN3.Debt.active() && r3.debt.amount === 150,
+  ok(ev && ev.type === 'gift' && SN3.Upgrades.isUnlocked('limite') && SN3.Upgrades.level('limite') === 0 && SN3.Debt.active() && r3.debt.amount === SN3.Data.stepById('regalo1').debt,
     'el regalo desbloquea LÍMITE (sin darte ningún nivel) y trae una deuda');
   ok(SN3.Unlocks.check() === null, 'con una deuda pendiente la escalera no avanza');
 }
@@ -236,6 +244,33 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
   ok(resolved >= 1 && !m.events.includes(shock), 'los shocks se aplican y se publican (con su foto) en las velas siguientes');
 }
 
+// 10b) MULTIPLICADOR: al empezar solo ×1; ×2, ×5 y ×10 se compran a crédito, en orden (el tutorial presta su ×2)
+{
+  const SN = load({ real: true });
+  SN.State.newRun();
+  const run = SN.State.run, T = SN.Trading, Up = SN.Upgrades;
+  ok(T.leverageAvailable(1) && !T.leverageAvailable(2) && !T.leverageAvailable(5) && !T.leverageAvailable(10), 'al empezar solo hay ×1');
+  ok(Up.isUnlocked('multiplicador') && Up.canBuy('multiplicador').ok, 'el MULTIPLICADOR se puede comprar desde el principio (no es un regalo)');
+  run.form = { amount: 50, leverage: 5 };
+  ok(!T.validate().ok && /MULTIPLICADOR/.test(T.validate().reason), 'no se puede operar con un multiplicador que no has comprado');
+  T.clampForm();
+  ok(run.form.leverage === 1, 'el formulario vuelve a ×1 si eliges uno que no tienes');
+  const d0 = run.debt.amount, cr = Up.creditCost('multiplicador');
+  ok(Up.buy('multiplicador') && T.leverageAvailable(2) && !T.leverageAvailable(5) && run.capital === 100 && run.debt.amount === d0 + cr,
+    `el ×2 a crédito: hoy $0 y +$${cr} a la deuda`);
+  ok(Up.buy('multiplicador') && T.leverageAvailable(5) && !T.leverageAvailable(10), 'después el ×5...');
+  run.capital = 5000;
+  ok(Up.buy('multiplicador') && T.leverageAvailable(10) && !Up.next('multiplicador'), '...y por último el ×10');
+  ok(Up.def('multiplicador').levels.every((l, i, a) => !i || l.cost > a[i - 1].cost), 'cada multiplicador cuesta más que el anterior');
+  // El tutorial presta el ×2 (y nada más)
+  const SN2 = load({ real: true });
+  SN2.State.newRun();
+  SN2.Tutorial = { active: true };
+  ok(SN2.Trading.leverageAvailable(2) && !SN2.Trading.leverageAvailable(5), 'durante el tutorial el ×2 va prestado');
+  SN2.Tutorial.active = false;
+  ok(!SN2.Trading.leverageAvailable(2), 'acabado el tutorial, se devuelve');
+}
+
 // 11) Escalera de progresión: una cadena de deudas (al pagar una llega la siguiente), objetos clave con la
 // oferta de FUTURO.exe
 {
@@ -259,8 +294,8 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
   // Comprobar si se puede comprar no cambia nada
   const before = JSON.stringify([run.capital, run.owned, run.debt, run.step]);
   ok(U.canBuyItem('tele').ok && before === JSON.stringify([run.capital, run.owned, run.debt, run.step]), 'mirar la oferta no cambia nada');
-  const o = U.offer('tele');
-  ok(o.now === 0 && o.debt === 900 && o.need === 0, `la oferta: $0 hoy, $900 después y no pide dinero en la cuenta (${o.now} / ${o.debt} / ${o.need})`);
+  const o = U.offer('tele'), teleDebt = Math.round(SN.Data.keyItemById('tele').price * 1.5);
+  ok(o.now === 0 && o.debt === teleDebt && o.need === 0, `la oferta: $0 hoy, el 150% después ($${teleDebt}) y no pide dinero en la cuenta (${o.now} / ${o.debt} / ${o.need})`);
   run.capital = 12;
   ok(U.canBuyItem('tele').ok, 'la oferta se puede aceptar aunque casi no tengas dinero: la deuda se paga después');
   ok(U.acceptOffer('tele') && run.owned.tele && run.capital === 12 && SN.Debt.active() && run.debt.amount === o.debt && U.isUnlocked('salud_negro'),
@@ -285,7 +320,7 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
   ok(run.debts.length === 8 && run.debts.every((d) => d.paid), `9 deudas en total, todas pagadas (${run.debts.length + 1})`);
 }
 
-// 12) Topes por mercado: ninguna operación gana ni pierde más que su tope; el negro es 0.8 × el siguiente normal
+// 12) Topes por mercado: ninguna operación gana ni pierde más que su tope; el negro es el doble que el suyo
 {
   const SN = load();
   SN.State.newRun();
@@ -294,9 +329,9 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
   let ladder = true;
   normal.forEach((d, i) => {
     const b = SN.Data.marketById(d.id + '_negro'), next = normal[i + 1];
-    if (!b || b.cap !== Math.round((next ? next.cap : d.cap * 4) * 0.8) || b.cap <= d.cap || (next && b.cap >= next.cap)) ladder = false;
+    if (!b || b.cap !== d.cap * 2 || (next && b.cap >= next.cap)) ladder = false;
   });
-  ok(ladder, 'cada mercado negro: mejor que el suyo y un 20% peor que el siguiente normal');
+  ok(ladder, 'cada mercado negro: el doble que el suyo y menos que el siguiente normal');
   ok(normal.every((d, i) => !i || d.cap > normal[i - 1].cap), 'cada mercado normal da más que el anterior');
   ok(SN.Data.markets.every((d) => (SN.Data.marketEvents[d.id] || []).length >= 5), 'todos los mercados (también los negros) tienen sus noticias');
   run.flags.debtPaid = true; run.debt.paid = true; // sin deuda: que no se cobre sola a mitad de la prueba
@@ -320,13 +355,14 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
   const SN = load();
   SN.State.newRun();
   const run = SN.State.run;
+  const R1 = SN.Data.stepById('regalo1');
   run.capital = 300; SN.Debt.pay(); SN.Unlocks.check(); SN.Unlocks.check();
-  ok(run.debt.id === 'regalo1' && run.debt.start === 1 && run.debt.deadlineDay === 5, `el regalo vence en 5 días contando hoy (día ${run.debt.deadlineDay})`);
+  ok(run.debt.id === 'regalo1' && run.debt.start === 1 && run.debt.deadlineDay === R1.days, `el regalo vence en ${R1.days} días contando hoy (día ${run.debt.deadlineDay})`);
   let defaulted = null;
   SN.Events.on('debt:defaulted', (d) => { defaulted = d; });
   run.capital = 40;
-  for (let i = 0; i < 15 && !defaulted; i++) SN.Trading.skipTurn();
-  ok(defaulted && run.debt.defaulted && run.day === 6, 'si no pagas el regalo a tiempo: embargo');
+  for (let i = 0; i < 40 && !defaulted; i++) SN.Trading.skipTurn();
+  ok(defaulted && run.debt.defaulted && run.day === R1.days + 1, 'si no pagas el regalo a tiempo: embargo');
 
   const SN2 = load();
   SN2.State.newRun();
@@ -341,11 +377,13 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
   SN3.State.newRun();
   const r3 = SN3.State.run;
   r3.capital = 300; SN3.Debt.pay(); SN3.Unlocks.check(); SN3.Unlocks.check();
-  r3.capital = 500;
+  r3.capital = 900;
   let paid = null;
   SN3.Events.on('debt:paid', (d) => { paid = d; });
-  for (let i = 0; i < 15 && !paid; i++) SN3.Trading.skipTurn();
-  ok(paid && paid.auto && paid.debt.id === 'regalo1' && r3.capital === 350 + 60, 'si al vencer te alcanza, el regalo se cobra solo (bono mínimo: $60)');
+  for (let i = 0; i < 40 && !paid; i++) SN3.Trading.skipTurn();
+  const owed = R1.debt, bonus = Math.max(60, Math.round(owed * SN3.Data.payBonus.frac));
+  ok(paid && paid.auto && paid.debt.id === 'regalo1' && paid.bonus === bonus && r3.capital === 900 - owed + bonus,
+    `si al vencer te alcanza, el regalo se cobra solo (y llega el bono de la app: $${bonus})`);
 }
 
 // 14) RESISTENCIA: menos giros en las últimas velas
@@ -386,15 +424,18 @@ const near = (a, b, eps = 0.011) => Math.abs(a - b) <= eps;
 function strategy(name, pick, N = 500) {
   let paidCount = 0, ruined = 0;
   for (let i = 0; i < N; i++) {
-    const SN = load();
+    const SN = load({ real: true });
     SN.State.newRun();
     const run = SN.State.run;
     while (run.day <= 7 && !run.debt.paid) {
-      if (run.capital >= 250) { SN.Debt.pay(); break; }
+      if (SN.Debt.canPay()) { SN.Debt.pay(); break; }
       if (run.capital < SN.Data.sim.bankruptcyThreshold || SN.Debt.hopeless()) { ruined++; break; }
       const choice = pick(SN, run);
       if (!choice) { SN.Trading.skipTurn(); continue; }
-      run.form = { amount: SN.Trading.maxAmount() * choice.frac, leverage: choice.lev };
+      // ¿Quiere un multiplicador que no tiene? Lo compra a crédito si lo que tiene ya cubre lo que suma a la deuda
+      const mc = SN.Upgrades.canBuy('multiplicador');
+      if (!SN.Trading.leverageAvailable(choice.lev) && mc.ok && run.capital >= mc.debt) SN.Upgrades.buy('multiplicador');
+      run.form = { amount: SN.Trading.maxAmount() * choice.frac, leverage: bestLev(SN, choice.lev) };
       SN.Trading.clampForm();
       SN.Trading.open(choice.dir);
       SN.Trading.close();
@@ -415,15 +456,17 @@ const sized = strategy('apuesta según la fuerza de la pista', (SN) => {
   return h.power ? { dir: h.dir, frac: [0, 0.3, 0.6, 1][h.power], lev: [1, 2, 2, 5][h.power] } : null;
 });
 ok(coin < 0.2, 'jugar al azar casi nunca basta');
-ok(follow > 0.55 && follow < 0.75, `seguir la pista con la apuesta por defecto suele bastar, pero el inicio es difícil (${(follow * 100).toFixed(0)}%, entre 55 y 75)`);
-ok(sized > follow, 'leer la fuerza de la pista y ajustar la apuesta da aún más ventaja');
+// (1.8: los multiplicadores se compran. Con el ×2 y la apuesta por defecto la Pleyzeta es difícil; quien compra
+// el ×5 y ajusta la apuesta a la fuerza de la pista casi siempre llega)
+ok(follow > 0.35 && follow < 0.65, `seguir la pista con ×2 y la apuesta por defecto a veces basta: el inicio es difícil (${(follow * 100).toFixed(0)}%, entre 35 y 65)`);
+ok(sized > follow + 0.15, 'comprar el ×5 y ajustar la apuesta a la fuerza de la pista da mucha más ventaja');
 
 // 15) La partida entera: un bot sensato (sigue la pista, opera en el mercado abierto de mayor tope, paga en
 // cuanto puede, acepta las ofertas en cuanto FUTURO.exe le deja, compra alguna mejora y nodos de la Academia).
 // Al perder hace lo mismo que el juego: rompe los ahorros de Timmy (una vez por paso) o vuelve al punto de
 // control. Sirve para ajustar la cadena de deudas.
 function fullRun(maxDays) {
-  const SN = load();
+  const SN = load({ real: true });
   SN.State.newRun();
   const S = SN.State, U = SN.Unlocks, T = SN.Trading;
   let run = S.run, last = -1, rewinds = 0, piggies = 0;
@@ -442,10 +485,19 @@ function fullRun(maxDays) {
       const keep = SN.Debt.active() ? run.debt.amount : 0;
       if (run.capital - n.cost >= Math.max(keep, run.capital * 0.6)) SN.Academy.buy(n.id);
     }
-    // Mejoras a crédito: cuando lo que tiene ya cubre lo que la mejora suma a la deuda (y se puede pagar a tiempo)
-    for (const id of ['limite', 'analisis', 'suerte', 'resistencia']) {
+    // Mejoras a crédito: cuando lo que tiene ya cubre lo que la mejora suma a la deuda y, echando cuentas hasta
+    // el plazo (cada turno gana una parte de lo apostado, como mucho medio tope), todavía paga con margen... o, si es
+    // Límite o Multiplicador (hasta ×5, el que usa), le deja más dinero al final que no comprarla
+    for (const id of ['multiplicador', 'limite', 'analisis', 'suerte', 'resistencia']) {
       const c = SN.Upgrades.canBuy(id);
-      if (c.ok && run.capital >= c.debt) SN.Upgrades.buy(id);
+      if (!c.ok || run.capital < c.debt || (id === 'multiplicador' && SN.Upgrades.level(id) >= 2)) continue;
+      const nx = SN.Upgrades.next(id), L0 = bestLev(SN, 10), cap = T.bestCap();
+      const L1 = id === 'multiplicador' ? nx.value : L0, lim0 = T.limit(), lim1 = id === 'limite' ? nx.value : lim0;
+      const turns = SN.Debt.active() ? SN.Debt.turnsLeft() : SN.Data.credit.days * 3;
+      const owed0 = SN.Debt.active() ? run.debt.amount : 0, owed1 = owed0 + c.debt;
+      const proj = (L, lim) => { let x = run.capital; for (let t = 0; t < turns; t++) x += Math.min(cap * 0.47, Math.min(x, lim) * L * 0.045) * 0.5; return x; };
+      const p0 = proj(L0, lim0), p1 = proj(L1, lim1);
+      if (p1 >= 1.3 * owed1 || ((id === 'multiplicador' || id === 'limite') && p1 - owed1 > p0 - owed0)) SN.Upgrades.buy(id);
     }
     // ¿Se ha perdido? Cerdito (con 2 días más si era por el plazo) o vuelta al punto de control
     const late = (run.debt && run.debt.defaulted) || SN.Debt.hopeless();
@@ -471,8 +523,10 @@ function fullRun(maxDays) {
     if (!best) { T.skipTurn(); continue; }
     run.selected = best.d.id;
     const p = best.h.power;
-    const want = Math.min(T.maxAmount() * [0, 0.3, 0.6, 1][p], best.d.cap / ([1, 2, 2, 5][p] * 0.06));
-    run.form = { amount: Math.max(SN.Data.sim.minInvestment, Math.floor(want)), leverage: [1, 2, 2, 5][p] };
+    // El multiplicador que quiere según la pista o, si todavía no lo ha comprado, el mayor que tenga por debajo
+    const lev = bestLev(SN, [1, 2, 2, 5][p]);
+    const want = Math.min(T.maxAmount() * [0, 0.3, 0.6, 1][p], best.d.cap / (lev * 0.06));
+    run.form = { amount: Math.max(SN.Data.sim.minInvestment, Math.floor(want)), leverage: lev };
     T.clampForm();
     if (!T.open(best.h.dir)) { T.skipTurn(); continue; }
     T.close();
@@ -489,7 +543,8 @@ function fullRun(maxDays) {
   const by = SN0().Data.chain.map((st, i) => `${st.id}:${avg(runs.filter((r) => r.stepDay[i] != null), (r) => r.stepDay[i]).toFixed(0)}`);
   console.log('  día medio en que empieza cada paso: ' + by.join(' '));
   ok(done.length / N >= 0.5, 'un jugador sensato puede terminar la escalera');
-  ok(avg(runs, (r) => r.rewinds + r.piggies) >= 0.5, 'pero no es un paseo: alguna vez se pierde');
+  // (1.8: un jugador sensato pierde una vez cada una o dos partidas; 30 bots dan una media de ~0.6, con margen)
+  ok(avg(runs, (r) => r.rewinds + r.piggies) >= 0.25, 'pero no es un paseo: alguna vez se pierde');
   ok(runs.every((r) => r.rewinds < 25), `nunca se queda atascado volviendo al mismo punto de control (máx. ${Math.max(...runs.map((r) => r.rewinds))})`);
 }
 

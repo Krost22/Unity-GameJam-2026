@@ -18,7 +18,8 @@
       this.current = kind;
       this.opts = opts;
       if (kind === 'news') this.newsFocus = opts.focus || null; // abrir una noticia directamente en primera plana
-      if (kind === 'shop') this.shopSel = null; // al entrar, Destacados enseña el objeto clave de la historia
+      // Al entrar, Destacados enseña el objeto clave de la historia (o lo que se pida: { cat, sel })
+      if (kind === 'shop') { this.shopSel = opts.sel || null; if (opts.cat) this.shopCat = opts.cat; }
       const layer = document.getElementById('layer-windows');
       this.back = U.el('div', 'win-back');
       // La oferta de FUTURO.exe es el siguiente paso de la historia: no se cierra pulsando fuera

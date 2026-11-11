@@ -325,6 +325,11 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 .seg button.hot.on { background: var(--orange); --ol: var(--orangeL); }
 .seg button.max.on { background: var(--coral); --ol: var(--coralL); color: var(--creamL); }
 .seg button:disabled { color: var(--ink3); background: var(--navyD); cursor: not-allowed; }
+/* Multiplicador que todavía no has comprado: apagado, con un candadito; al pulsarlo se abre la Tienda */
+.seg button.locked { color: var(--ink3); background: var(--navyD); }
+.seg button.locked::before { content: ''; position: absolute; right: 2px; top: 1px; width: 1px; height: 1px; border: 1px solid var(--ink3); border-bottom: 0; }
+.seg button.locked::after { content: ''; position: absolute; right: 1px; top: 3px; width: 5px; height: 3px; background: var(--ink3); }
+.seg button.locked:hover { color: var(--ink2); background: var(--panel2); }
 #risk { display: flex; gap: 1px; margin: 3px 1px 0; height: 3px; }
 #risk i { flex: 1; background: var(--navyDD); }
 #risk i.on { background: var(--green); }

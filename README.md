@@ -22,7 +22,7 @@ El teclado es un atajo y cada botón muestra su tecla:
 | `Espacio` | COBRAR (durante una operación) · avanzar diálogos |
 | `F` | acelerar las velas |
 | `← →` | apuesta (en pasos de 5%) |
-| `1-4` | multiplicador ×1 ×2 ×5 ×10 |
+| `1-4` | multiplicador ×1 ×2 ×5 ×10 (los que todavía no has comprado salen con candado) |
 | `P` | ESPERAR (pasar el turno sin apostar) |
 | `Tab` | cambiar de mercado (de la pestaña que se ve) |
 | `X` | pestañas Legal / Negro (cuando tienes un mercado negro) |
@@ -38,6 +38,9 @@ El teclado es un atajo y cada botón muestra su tecla:
   mejora ANÁLISIS reduce. Más flechas, más fiable: ▲ acierta ~70%, ▲▲ ~80%, ▲▲▲ ~93%. Con `?` es una moneda al aire.
 - **SUBIRÁ / BAJARÁ:** ganas si el precio va hacia donde apostaste. APUESTA (25% / 50% / TODO o la barra) y MULTIPLICADOR
   deciden cuánto. La barrita de colores bajo el multiplicador es el riesgo de la apuesta de un vistazo.
+- **Multiplicadores:** al empezar solo tienes el ×1. El ×2 ($20), el ×5 ($50) y el ×10 ($2,000) son los tres niveles
+  de la mejora MULTIPLICADOR de la Tienda y se compran a crédito, como las demás mejoras (+40% a tu deuda). Pulsar un
+  multiplicador con candado abre la Tienda justo ahí. El primer SUBIRÁ del tutorial usa un ×2 prestado.
 - **COBRAR:** una operación dura unas 12 velas, pero puedes cobrar cuando quieras al precio que ves. Las velas que
   faltan se siguen mostrando en gris: lo que te ahorraste... o lo que te perdiste.
 - **Zona de peligro:** las últimas velas (rayadas en naranja) pueden traer un **giro inesperado**. Cuando llega, el
@@ -51,11 +54,9 @@ El teclado es un atajo y cada botón muestra su tecla:
   2. **Los "regalos" del encapuchado:** te "regala" una mejora (que solo queda desbloqueada para comprarla) y, desde
      el segundo, un mercado nuevo: Tecnología, Negocios y Minería. Cada regalo trae una deuda con su plazo.
   3. **Los objetos clave** (Tele SAMSONG 98", Móvil iFON 17 Pro Max Plus, Moto YAMAJA, Reloj RÓLEZ): al pagar la
-     deuda anterior, FUTURO.exe salta solo con una oferta "mucho más barata" (un 10% hoy; la letra pequeña dice el
-     resto). Para aceptarla hay que tener en la cuenta un 25% de lo que vas a deber. "No, gracias" la deja esperando
-     en la tienda y en el HUD (y vuelve a insistir cada mañana); aceptarla te endeuda... y el encapuchado te abre un
-     **mercado negro**.
-  4. **La meta final:** $100,000.
+     deuda anterior, FUTURO.exe salta sola con una oferta que no se puede rechazar: hoy $0 y, en unos días, el 150%
+     del precio (la letra pequeña). Aceptarla te endeuda... y el encapuchado te abre un **mercado negro**.
+  4. **La meta final:** $300,000.
 - **Números rojos:** Mejoras y Tienda enseñan un número rojo, como las noticias, cuando hay algo nuevo que ya puedes
   comprar, y sale un aviso. Abrir la ventana lo da por visto.
 - **Bravo Fines y su Academia:** la mañana siguiente a pagar la Pleyzeta aparece un gurú del trading (gafas de sol,
@@ -65,7 +66,8 @@ El teclado es un atajo y cada botón muestra su tecla:
   pequeña (las ofertas traen un 10% menos de deuda). El resto de nodos sale como "Próximamente".
 - **Palabras clave:** en los textos, el dinero sale en dorado, el 7 en arcoíris y la suerte en verde, y se mueven.
 - **Mercado negro:** cada mercado tiene su versión negra (pestaña Negro, logo con calavera, FUTURO.exe se oscurece).
-  Paga más que su versión normal y un 20% menos que el siguiente mercado normal (Salud negro, $1,200 = 0.8 × Tecnología).
+  Paga el doble que su versión normal (Salud negro: ±$600 por apuesta, frente a ±$300), pero menos que el siguiente
+  mercado normal (Tecnología: ±$1,500).
   Ganar ahí casi siempre trae una noticia extraña.
 - **Días de la suerte:** los días cuyo número lleva un 7 (7, 17, 27... del 70 al 79; el 77 vale doble). Los mercados
   crecen, cada ganancia trae un 7% extra por siete y sale algo especial: Lluvia de Oro, Mercado Dorado de Don Siete,
@@ -87,6 +89,23 @@ la habitación, en las ventanas de la app...) se traduce para siempre, en todos 
 La app **Símbolos** aparece al encontrar el primero, con una pista vaga más cada día de la suerte.
 Hasta el nombre del programa, **FUTURO**, está escrito así (la F tiene su propia pista).
 El encapuchado sabe leerlo. No le gusta que lo leas.
+
+## Qué hay en la versión 1.8: multiplicadores a la venta y deudas a la altura
+
+Las deudas se quedaban pequeñas al lado de lo que se ganaba y la partida se pasaba volando. Se ha rehecho el
+equilibrio con un simulador (jugadores de tres niveles sobre los sistemas reales del juego, 40 partidas de cada uno).
+
+| Cambio | Detalle |
+|---|---|
+| Multiplicadores | Ya no vienen de regalo: al empezar solo hay ×1. ×2 $20, ×5 $50 y ×10 $2,000, a crédito, en la Tienda (mejora MULTIPLICADOR). Pagar la Pleyzeta ya no regala el ×10 |
+| Mercado negro | Paga el doble que su versión normal (antes, 4 veces): $600, $3,000, $15,000 y $60,000 por apuesta |
+| Deudas y plazos | Regalos: $300 (7 días), $1,200 (8), $10,000 (8) y $70,000 (9). Objetos: tele $450 (7 días), móvil $3,000 (8), moto $24,000 (9) y reloj $230,000 (9), y se debe el 150%. Meta final: $300,000 |
+
+| Jugador simulado | Antes (1.7) | Ahora |
+|---|---|---|
+| Experto | 22 días (~14 min) | 40 días (~20 min) |
+| Normal | 38 días, se atascaba en la tele | 55 días (~27 min), cada paso se paga a la primera al menos 7 de cada 10 veces |
+| Prudente | 31 días | 48 días (~27 min) |
 
 ## Qué hay en la versión 1.6.1: Tienda y Academia nuevas
 

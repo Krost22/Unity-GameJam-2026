@@ -92,11 +92,11 @@
 
   // ---------- Mercados negros ----------
   // La versión "sin preguntas" de cada mercado: mismo carácter que el original (volatilidad, velas, giros),
-  // logo y colores propios y un tope mejor que el suyo, pero un 20% peor que el del siguiente mercado normal
-  // (Salud negro = 0.8 × Tecnología). Tras Minería no hay otro mercado: se imagina uno 4 veces mayor.
+  // logo y colores propios y el DOBLE de tope que el suyo (Salud negro: ±$600 frente a ±$300). Compensa, pero
+  // no tanto como el siguiente mercado normal (Tecnología: ±$1,500).
   // Se abren con los objetos clave de la tienda (js/data/progression.js). Ganar aquí sale caro: casi siempre
   // hay una noticia extraña después.
-  const BLACK_RATIO = 0.8, LAST_STEP = 4;
+  const BLACK_RATIO = 2;
   const normal = SN.Data.markets.slice();
   const BLACK = {
     salud: {
@@ -125,13 +125,12 @@
     },
   };
   normal.forEach((base, i) => {
-    const next = normal[i + 1];
     const extra = BLACK[base.id];
     SN.Data.markets.push(Object.assign({}, base, extra, {
       id: base.id + '_negro',
       parent: base.id,
       black: true,
-      cap: Math.round((next ? next.cap : base.cap * LAST_STEP) * BLACK_RATIO),
+      cap: Math.round(base.cap * BLACK_RATIO),
       eventRate: base.eventRate + 0.1,
       twist: Object.assign({}, base.twist), // copia: cambiar el original no cambia el negro
       unlock: { type: 'item', label: extra.lock },

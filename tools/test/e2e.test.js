@@ -174,16 +174,26 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
     ok(await ev('SN.Game.timeScale === 1 && SN.Game.focus.k === 0 && !SN.Drama.active'), 'todo vuelve a la normalidad tras el golpe');
     await ev('SN.Data.markets[0].twist.chance = 0.26; true');
 
-    // --- Mejoras (en la Tienda): al empezar no hay ninguna (llegan como "regalo" del encapuchado) ---
-    await mouse('#nav-shop');
-    await b.sleep(400);
-    await mouse('.sh-nb[data-cat="mejoras"]');
+    // --- Mejoras (en la Tienda): al empezar solo el MULTIPLICADOR (las demás llegan como "regalo" del encapuchado) ---
+    ok(await ev('SN.State.run.form.leverage === 1 && !SN.Trading.leverageAvailable(2) && document.querySelectorAll("#leverages button.locked").length === 3'),
+      'acabado el tutorial solo queda el ×1: ×2, ×5 y ×10 salen con candado');
+    await mouse('#leverages button[data-l="5"]');
     await b.sleep(500);
+    ok(await ev('SN.Windows.current === "shop" && document.querySelector(".sh-nb.on").dataset.cat === "mejoras" && document.querySelector(".sh-row.sel").dataset.id === "multiplicador"'),
+      'pulsar un multiplicador con candado abre la Tienda en el MULTIPLICADOR');
     await shot('13-mejoras');
-    ok(await ev('document.querySelectorAll(".sh-row").length === 4 && document.querySelectorAll(".sh-row.locked").length === 4'),
-      'al empezar las 4 mejoras están bloqueadas (categoría Mejoras de la Tienda)');
+    ok(await ev('document.querySelectorAll(".sh-row").length === 5 && document.querySelectorAll(".sh-row.locked").length === 4 && !document.querySelector(".sh-row[data-id=multiplicador]").classList.contains("locked")'),
+      'al empezar las 4 mejoras de los regalos están bloqueadas; el MULTIPLICADOR se puede comprar');
+    {
+      const d0 = await ev('SN.State.run.debt.amount'), cr = await ev('SN.Upgrades.creditCost("multiplicador")');
+      await mouse('.sh-buy');
+      await b.sleep(400);
+      ok(await ev(`SN.Upgrades.level("multiplicador") === 1 && SN.Trading.leverageAvailable(2) && !SN.Trading.leverageAvailable(5) && SN.State.run.debt.amount === ${d0 + cr}`),
+        `el ×2 se compra a crédito en la Tienda: hoy $0 y +$${cr} a la deuda`);
+    }
     await mouse('.win-x');
     await b.sleep(300);
+    ok(await ev('!document.querySelector("#leverages button[data-l=\'2\']").classList.contains("locked")'), 'el botón ×2 pierde el candado');
 
     // --- Periódico ---
     await ev('SN.Market.addEvent(SN.State.run.markets.salud, SN.Data.marketEvents.salud[0]); SN.UI.renderAll(); true');
@@ -212,7 +222,7 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
       await b.sleep(300);
     }
     ok(await ev('SN.State.run.flags.debtPaid'), 'deuda de la Pleyzeta pagada');
-    ok(await ev('SN.Trading.leverageAvailable(10)'), 'tras pagar se desbloquea x10');
+    ok(await ev('!SN.Trading.leverageAvailable(10)'), 'pagar la deuda ya no regala el ×10: se compra');
     ok(sawHood && await ev('SN.Debt.active() && SN.State.run.debt.id === "regalo1" && SN.Upgrades.isUnlocked("limite") && SN.Upgrades.level("limite") === 0'),
       'el "regalo" del encapuchado: LÍMITE para comprar... y una deuda nueva');
     await b.sleep(500);

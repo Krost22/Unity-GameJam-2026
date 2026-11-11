@@ -21,11 +21,12 @@
     twistRescue: 0.62,       // si vas perdiendo, probabilidad de que el giro te salve (si vas ganando es 50%)
     climaxSigma: 2.6,        // tamaño (en desviaciones típicas) a partir del cual una vela final merece cámara lenta
     // Multiplicador de la operación (apalancamiento). La pérdida nunca supera lo invertido.
+    // ×1 de serie; los demás se compran en la Tienda (mejora MULTIPLICADOR, nivel `level`).
     leverages: [
       { value: 1 },
-      { value: 2 },
-      { value: 5 },
-      { value: 10, unlock: 'debtPaid' },
+      { value: 2, level: 1 },
+      { value: 5, level: 2 },
+      { value: 10, level: 3 },
     ],
     luckBiasPerLevel: 0.03,  // sesgo por vela (en desviaciones típicas) a favor de tu operación
     luckRumorPerLevel: 0.03, // +3% por nivel a que un rumor salga a tu favor
@@ -38,11 +39,18 @@
     tutorial: { frac: 0.5, leverage: 2, candles: 12, regime: 1, volMul: 0.45, holdAt: 7, twistAt: 10, twistJump: -0.11 },
   };
 
-  // Mejoras. Ninguna está disponible al empezar: cada una llega como "regalo" del encapuchado (que trae una
-  // deuda, ver js/data/progression.js) y después sus niveles se compran con tu capital.
-  // Van en el orden en que llegan los regalos.
+  // Mejoras. Todas se compran A CRÉDITO en la Tienda. El MULTIPLICADOR está desde el principio; las demás
+  // llegan como "regalo" del encapuchado (que trae una deuda, ver js/data/progression.js), en ese orden.
   const GIFT = { type: 'gift', label: 'Un "regalo" del encapuchado' };
   D.upgrades = [
+    {
+      // Cada nivel desbloquea un botón de multiplicador: ×2, ×5 y ×10 (D.sim.leverages)
+      id: 'multiplicador', name: 'Multiplicador', icon: 'multi', color: 'coral',
+      desc: 'Más premio... y más riesgo.',
+      unlock: { type: 'start' },
+      levels: [{ cost: 20, value: 2 }, { cost: 50, value: 5 }, { cost: 2000, value: 10 }],
+      effect: (v) => (v ? `Hasta ×${v}` : 'Solo ×1'),
+    },
     {
       id: 'limite', name: 'Límite', icon: 'caja', color: 'yellow',
       desc: 'Apuestas más grandes.',
