@@ -78,7 +78,9 @@
       item1: ['¿Problemas de dinero?', 'Tranquilo. Te desbloqueo un nuevo mercado: SALUD... pero negro.', 'Aquí nadie hace preguntas. Y paga mejor.'],
       item2: ['¿Otra vez justo de dinero? Qué casualidad.', 'Tranquilo. Te desbloqueo un nuevo mercado: TECNOLOGÍA NEGRA.', 'Datos, chips... cosas que se caen de los camiones.'],
       item3: ['¿Problemas de dinero? Para eso estoy.', 'Te desbloqueo un nuevo mercado: NEGOCIOS NEGROS.', 'Tiendas que solo abren de noche. Como yo.'],
-      item4: ['Un reloj precioso. El tiempo es lo único que no se puede comprar.', 'Bueno... casi. Te desbloqueo el último mercado: MINERÍA NEGRA.', 'Ahí abajo siempre hay alguien que paga.'],
+      item4: ['Un reloj precioso. El tiempo es lo único que no se puede comprar. Bueno... casi.', 'Te desbloqueo el último mercado: MINERÍA NEGRA. Ocho mercados.', 'Cuando los tengas todos, cobro lo otro.', '¿Tu alma? Qué palabra tan antigua. Yo lo llamo... tu cuenta.'],
+      // La revelación: después de que "Kevo [PAGADO]" te escriba (js/systems/narrative.js)
+      kevoPaid: ['¿Buscas a tu amigo? Pagó. Todo, con intereses.', 'No te preocupes por él: ya no recuerda que te debía nada. Ni que te conocía.', 'Su perro se llamaba Toby. Ahora el nombre es mío.'],
       darkNews: ['¿Lees las noticias? No te preocupes por eso.', 'El dinero no sale de la nada. Pero eso no es asunto tuyo.'],
       goal100000: ['Trescientos mil. Ya casi estás listo.', 'Pronto tendrás que decidir de qué lado del mercado estás.'],
     },
@@ -97,6 +99,8 @@
       later: 'Hoy no pagas nada. Todo, después.',
       small: 'Letra pequeña',
       smallText: 'Todo, con intereses: {debt} en {days} días. FUTURO.exe no se hace responsable de lo que pase después.',
+      // (en la última oferta, la del reloj, aparece una cláusula que antes no estaba)
+      clause: 'Al completar los ocho mercados, el cliente cede LO OTRO.',
       yes: '¡Lo quiero!',
       insist: 'FUTURO.exe insiste',
     },
@@ -188,11 +192,12 @@
       timmy: ['Lo siento, Timmy. Te lo devolveré. Te lo juro.', 'Timmy no puede enterarse.'],
       night: ['Debería dormir. Una más y lo dejo.', 'Otra noche sin dormir...', 'Las velas no duermen. Yo tampoco.'],
       lastDay: ['Último día. No llego. No llego...', 'Hoy o nunca.'],
+      // Kevo ha desaparecido: el protagonista empieza a entender que la app no es buena
+      kevoGone: ['¿Kevo? Contesta...', '¿Y si no es un juego?', 'Kevo no se olvidaría de Toby.', 'Esto no es normal. Nada de esto es normal.'],
     },
     embargo: ['PLAZO VENCIDO', 'El cobrador se lo lleva todo', 'Capital embargado'],
     embargoEarly: ['YA NO LLEGAS', 'Ni con suerte juntas {amount} a tiempo', 'El cobrador se adelanta'],
     broke: ['SIN FONDOS', 'No te alcanza ni para la apuesta mínima'],
     teaser: 'ACTIVOS HUMANOS: LIQUIDACIÓN EN CURSO',
-    endDemo: ['FIN DE LA VERSIÓN 1.6', 'La historia continuará.', 'Puedes seguir operando... si te atreves.'],
   };
 })(window.SN);

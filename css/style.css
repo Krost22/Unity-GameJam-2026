@@ -630,7 +630,7 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 #btn-min { position: relative; }
 #btn-min .ico-min { width: 7px; height: 7px; background-size: 7px 7px; image-rendering: pixelated; }
 #btn-min .badge { right: auto; left: -11px; top: 0; }
-#app.minimizing { animation: appmin .22s steps(5) forwards; transform-origin: 8% 100%; }
+#app.minimizing { animation: appmin .22s steps(5) forwards; transform-origin: 8% 100%; pointer-events: none; }
 #app.restoring { animation: appmin .22s steps(5) reverse; transform-origin: 8% 100%; }
 @keyframes appmin { to { transform: scale(.08, .05); opacity: 0; } }
 #desktop { background: var(--navyDD); overflow: hidden; }
@@ -1109,3 +1109,104 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 .rl-go { align-self: flex-start; padding: 3px 10px 2px; }
 .rl-res { min-height: 20px; color: var(--ink); line-height: 10px; }
 .rl-res b { color: var(--yellow); font-weight: normal; }
+
+/* ---------- 2.0: los finales (js/systems/finale.js) ---------- */
+/* El mercado TÚ: tapa la barra lateral y la gráfica; en el panel de operar solo quedan la oferta, el escritorio y ESPERAR */
+#finale { position: absolute; left: 3px; top: 3px; width: 305px; bottom: 3px; z-index: 3; display: flex; gap: 3px; background: var(--bg); }
+#finale.hidden, #finale-trade.hidden { display: none; }
+.fz-side { width: 80px; display: flex; flex-direction: column; gap: 2px; }
+.fz-card { position: relative; height: 14px; display: flex; align-items: center; gap: 3px; padding: 0 3px; background: var(--panel); color: var(--ink2); line-height: 9px; }
+.fz-card i { display: flex; }
+.fz-card span { flex: 1; white-space: nowrap; overflow: hidden; }
+.fz-card b { font-weight: normal; color: var(--coralL); }
+.fz-card.off { opacity: .5; filter: grayscale(1); }
+.fz-card.you { height: 24px; margin-top: 2px; background: var(--coralD); color: var(--creamL); box-shadow: 0 0 0 1px var(--coralL); animation: fzPulse 1.2s steps(2) infinite; }
+.fz-card.you b { color: var(--yellow); }
+.fz-main { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.fz-head { height: 14px; display: flex; align-items: center; gap: 3px; padding: 0 3px; background: var(--coralDD); color: var(--creamL); line-height: 9px; }
+.fz-head i { display: flex; }
+.fz-price { margin-left: auto; color: var(--yellow); font-family: "SaldoNum", "SaldoPixel", monospace; }
+#fz-chart { width: 222px; height: 140px; image-rendering: pixelated; }
+.fz-warn { height: 13px; line-height: 13px; text-align: center; background: var(--coral); color: var(--creamL); animation: fzBlink 1s steps(2) infinite; }
+#finale.falling .fz-warn { background: var(--panel2); color: var(--ink3); animation: none; }
+@keyframes fzBlink { 50% { background: var(--coralD); } }
+@keyframes fzPulse { 50% { box-shadow: 0 0 0 1px var(--yellow); } }
+#app.finale #bet-box, #app.finale #lev-box, #app.finale #trade-buttons { display: none; }
+#finale-trade { display: flex; flex-direction: column; align-items: stretch; gap: 5px; padding: 8px 2px 6px; text-align: center; }
+#finale-trade .ft-t { color: var(--coralL); line-height: 10px; }
+#finale-trade .ft-or { color: var(--ink3); line-height: 8px; }
+#finale-trade .btn { padding: 3px 4px 2px; }
+/* La X de FUTURO.EXE: solo al final de NULL.EXE */
+#btn-x { background: var(--coralD); color: var(--creamL); }
+#btn-x.call { animation: xCall .5s steps(2) infinite; }
+@keyframes xCall { 50% { background: var(--coral); box-shadow: 0 0 0 2px var(--yellow); } }
+/* Final A: FUTURO.EXE absorbe la interfaz */
+#app.absorb #hud, #app.absorb #body { animation: absorb 2.2s cubic-bezier(.6, 0, .9, .4) forwards; transform-origin: 50% 40%; }
+@keyframes absorb { to { transform: scale(.04) rotate(28deg); opacity: 0; } }
+/* Final A: la habitación pierde sus colores */
+#desk.gray { filter: grayscale(1) contrast(1.15) brightness(.85); transition: filter 1.6s; }
+/* La última oferta del encapuchado */
+.offer.pact { width: 238px; box-shadow: 0 0 0 1px var(--coral), 0 0 0 2px var(--navyDD), 0 0 0 3px var(--magentaD), 4px 5px 0 3px rgba(7, 5, 18, .6); }
+.offer.pact .of-head span { color: var(--coralL); }
+.pa-face { display: flex; justify-content: center; margin-top: 4px; }
+.pa-face canvas { width: 60px; height: 69px; image-rendering: pixelated; }
+.pa-lines { margin: 2px 8px 0; }
+.pa-lines p { line-height: 11px; color: var(--creamL); }
+.offer .of-clause { color: var(--coralL); font-weight: normal; }
+/* NULL.EXE en el escritorio: el LÉEME y la terminal */
+.dt-icon.ready canvas { animation: fzPulse 1s steps(2) infinite; }
+.dt-null { left: 66px; top: 6px; width: 262px; height: 206px; }
+.dt-term { left: 40px; top: 14px; width: 320px; height: 176px; }
+.nu { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 6px; background: var(--navyDD); color: var(--ink); display: flex; flex-direction: column; gap: 3px; }
+.nu-err { color: var(--coral); }
+.nu-junk { color: var(--ink3); word-break: break-all; line-height: 9px; }
+/* El LÉEME se desplaza solo; el botón de ejecutar queda siempre a la vista */
+.nu-txt { flex: 1; min-height: 0; overflow-y: auto; line-height: 9px; color: var(--creamL); display: flex; flex-direction: column; gap: 5px; }
+.nu-txt .nu-h { color: var(--yellow); }
+.nu-run { flex: none; align-self: center; margin-top: 3px; padding: 3px 10px 2px; }
+.tm { flex: 1; overflow-y: auto; padding: 4px 5px; background: #07061A; color: var(--green); line-height: 9px; }
+.tm p { white-space: pre-wrap; }
+.tm-cmd { color: var(--creamL); }
+.tm-hint { color: var(--ink3); animation: caret 1s steps(2) infinite; }
+.tm .caret { display: inline-block; width: 4px; height: 7px; margin-left: 1px; background: var(--green); animation: caret 1s steps(2) infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+/* Encima de todo el escenario: periódico, créditos, onomatopeyas */
+#stage-top { position: absolute; inset: 0; z-index: 30; pointer-events: none; }
+#stage-top > * { pointer-events: auto; }
+.fin-panel { animation: offerin .2s steps(3); }
+.fin-panel.out { animation: none; opacity: 0; transition: opacity .25s; }
+.fin-next { display: block; margin: 6px auto 0; padding: 3px 10px 2px; }
+/* La carta del servicio de compensación (en la pantalla del monitor) */
+.fin-letter { position: absolute; left: 50%; top: 50%; z-index: 6; width: 250px; transform: translate(-50%, -50%); padding: 0 8px 7px;
+  background: var(--navyD); color: var(--ink); box-shadow: 0 0 0 1px var(--yellow), 0 0 0 2px var(--navyDD), 4px 5px 0 3px rgba(7, 5, 18, .6); }
+.fin-letter .lt-head { margin: 0 -8px 5px; padding: 2px 4px 1px; background: var(--navyDD); color: var(--yellow); letter-spacing: 1px; }
+.fin-letter p { line-height: 10px; margin-top: 2px; }
+.lt-gift { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 6px 0 2px; }
+.lt-gift canvas { width: 24px; height: 32px; image-rendering: pixelated; }
+.lt-gift b { font-size: 16px; line-height: 16px; color: var(--green); font-weight: normal; }
+.lt-foot { text-align: center; color: var(--ink2); }
+/* El periódico (fuera del monitor: se han llevado el ordenador) */
+.fin-paper { position: absolute; left: 50%; top: 50%; width: 440px; transform: translate(-50%, -50%) rotate(-1deg); padding: 6px 10px 8px;
+  background: var(--creamL); color: var(--coal); box-shadow: 4px 5px 0 2px rgba(7, 5, 18, .55); }
+.fin-paper .np-front { grid-template-columns: 172px 1fr; }
+.fin-paper .np-ph canvas { width: 172px; height: 108px; image-rendering: pixelated; }
+.fin-paper .t { margin-top: 2px; }
+.fin-paper .cap { margin-top: 4px; color: var(--coalL); font-style: italic; line-height: 9px; }
+/* FIN y créditos */
+.fin-credits { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  background: #07061A; color: var(--ink2); text-align: center; }
+.fin-credits .cr-fin { font-size: 32px; line-height: 32px; color: var(--creamL); letter-spacing: 6px; margin-bottom: 10px; }
+.fin-credits .cr-title { font-size: 16px; line-height: 16px; color: var(--yellow); margin-bottom: 6px; letter-spacing: 2px; }
+.fin-credits .cr-final { margin-top: 8px; color: var(--coralL); }
+.fin-credits .cr-pala { display: flex; align-items: center; gap: 5px; color: var(--green); }
+.fin-credits .cr-pala canvas { width: 18px; height: 24px; image-rendering: pixelated; }
+/* Onomatopeyas de los golpes (fuera de plano) y la nube de polvo */
+.fin-comic { position: absolute; transform: translate(-50%, -50%) rotate(var(--r)); font-size: 16px; line-height: 16px; color: var(--yellow);
+  text-shadow: 1px 0 0 var(--coal), -1px 0 0 var(--coal), 0 1px 0 var(--coal), 0 -1px 0 var(--coal), 2px 2px 0 var(--coralD); animation: comic 1.1s steps(4) forwards; pointer-events: none; }
+@keyframes comic { 0% { transform: translate(-50%, -50%) rotate(var(--r)) scale(.3); } 20% { transform: translate(-50%, -50%) rotate(var(--r)) scale(1.3); } 70% { opacity: 1; } 100% { transform: translate(-50%, -50%) rotate(var(--r)) scale(1); opacity: 0; } }
+.fin-dust { position: absolute; left: 30px; top: 270px; width: 12px; height: 12px; pointer-events: none; background: var(--creamD);
+  box-shadow: 12px -6px 0 2px var(--creamD), 24px 0 0 4px var(--cream), 36px -8px 0 1px var(--creamD), 6px 10px 0 3px var(--cream), 30px 10px 0 2px var(--creamD);
+  animation: dust 3.4s steps(8) forwards; }
+@keyframes dust { 0% { transform: scale(.2); opacity: 0; } 15% { opacity: 1; } 60% { transform: scale(1.6) translateX(20px); opacity: .9; } 100% { transform: scale(2.4) translateX(60px); opacity: 0; } }
+.fin-panel.fin-credits { animation: fadein .6s steps(6); }
+@keyframes fadein { from { opacity: 0; } }

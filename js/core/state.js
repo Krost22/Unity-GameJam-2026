@@ -13,6 +13,8 @@
       runs: 0,
       bestCapital: 0,
       settings: { music: true, sfx: true },
+      endings: {},   // finales vistos (A: el avatar perfecto, B: NULL.EXE)
+      pala: false,   // LA PALA: se gana con el final B y se queda en el cuarto para siempre
     },
 
     newRun() {

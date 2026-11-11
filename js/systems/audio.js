@@ -264,6 +264,24 @@
       [0, 2, 4].forEach((g, i) => pluck(deg(K, g, 2), { vol: 0.07, dur: 0.22, at: 0.35 + i * 0.08 }));
     },
     whoosh: () => noise({ dur: 0.3, vol: 0.1, filter: 'bandpass', f0: 400, f1: 2400, q: 2, attack: 0.08 }),
+    // El final B: llaman a la puerta (un golpe seco; se repite tres veces)
+    knock: () => { tone({ type: 'sine', f0: 120, f1: 70, dur: 0.12, vol: 0.4 }); noise({ dur: 0.06, vol: 0.18, filter: 'lowpass', f0: 900 }); },
+    // Golpe de dibujos animados, fuera de plano
+    punch: () => {
+      const K = keyNow();
+      noise({ dur: 0.09, vol: 0.28, filter: 'bandpass', f0: 1200, q: 1.5 });
+      tone({ type: 'square', f0: deg(K, 0, 0), f1: deg(K, 0, -1), dur: 0.12, vol: 0.05 });
+      tone({ type: 'sine', f0: 180, f1: 60, dur: 0.15, vol: 0.32 });
+    },
+    // NULL.EXE: todo cae a cero (dos notas de la escala que se hunden y ruido que se apaga)
+    collapse: () => {
+      const K = keyNow();
+      tone({ type: 'sawtooth', f0: deg(K, 0, 1), f1: deg(K, 0, -3), dur: 2.4, vol: 0.05, attack: 0.05 });
+      tone({ type: 'triangle', f0: deg(K, 2, 1), f1: deg(K, 2, -3), dur: 2.6, vol: 0.05, attack: 0.05 });
+      noise({ dur: 2.2, vol: 0.12, filter: 'lowpass', f0: 3000, f1: 120, attack: 0.1 });
+    },
+    // La pantalla se apaga
+    powerOff: () => { tone({ type: 'sine', f0: 900, f1: 40, dur: 0.5, vol: 0.12 }); noise({ dur: 0.25, vol: 0.08, filter: 'highpass', f0: 3000, f1: 300 }); },
     thud: () => { tone({ type: 'sine', f0: 140, f1: 50, dur: 0.25, vol: 0.35 }); noise({ dur: 0.1, vol: 0.1, filter: 'lowpass', f0: 600 }); },
     cheer: () => {
       const K = keyNow();

@@ -1,6 +1,7 @@
 // Escritorio del PC: FUTURO.exe se minimiza (botón _ o tecla D) y debajo está el ordenador del
-// protagonista, con sus programas: Mensajín (chat con Kevo, con LOS PAGADOS y con Bravo Fines), Notas, Papelera y,
-// cuando descifras el primer símbolo, Símbolos (la tabla del idioma secreto, js/systems/cipher.js).
+// protagonista, con sus programas: Mensajín (chat con Kevo, con LOS DESFASADOS y con Bravo Fines), Notas, Papelera,
+// Símbolos (la tabla del idioma secreto, al descifrar el primero) y NULL.EXE (lo entregan LOS DESFASADOS por partes;
+// completo, es el final B: js/systems/finale.js, que también usa aquí su terminal).
 // En Mensajín no se escribe de verdad: cualquier tecla pone las letras de la
 // respuesta que el protagonista tiene que dar; el jugador siente que escribe y la historia sigue su guion.
 // El clic no escribe (a propósito): la gracia es teclear.
@@ -17,9 +18,10 @@
     { id: 'notes', name: 'Notas', sprite: 'icoNotes' },
     { id: 'trash', name: 'Papelera', sprite: 'icoTrash' },
     { id: 'symbols', name: 'Símbolos', sprite: 'icoSymbols' },
+    { id: 'null', name: 'NULL.EXE', sprite: 'icoNull' },
   ];
-  const TITLES = { notes: 'Notas.txt', trash: 'Papelera', symbols: 'Símbolos.txt' };
-  const TASKS = { notes: 'Notas', trash: 'Papelera', symbols: 'Símbolos' };
+  const TITLES = { notes: 'Notas.txt', trash: 'Papelera', symbols: 'Símbolos.txt', null: 'NULL.EXE · LÉEME.txt', term: 'C:\\> NULL.EXE' };
+  const TASKS = { notes: 'Notas', trash: 'Papelera', symbols: 'Símbolos', null: 'NULL.EXE', term: 'Terminal' };
   const X = () => SN.Data.cipher;
   const B = () => SN.Data.academy;
   const cx = (t) => SN.Cipher.html(t, SN.UI.freshLetter);
@@ -109,7 +111,7 @@
       if (then) this.launch(then);
     },
     restore() {
-      if (!this.open) return;
+      if (!this.open || this.noApp) return;
       this.open = false;
       SN.Audio.sfx('open');
       clearTimeout(this.animT);
@@ -138,6 +140,8 @@
         if (badge) badge.classList.add('hidden');
         this.renderSymbols();
       }
+      if (id === 'null') this.buildNull(w);
+      if (id === 'term') this.renderTerm();
       this.focus(id);
       this.refresh();
     },
@@ -166,8 +170,10 @@
         b.addEventListener('click', () => this.launch(id));
         tasks.appendChild(b);
       };
-      add('futuro', 'FUTURO.exe');
+      if (!this.noApp) add('futuro', 'FUTURO.exe');
       for (const id of Object.keys(this.wins)) add(id, id === 'chat' ? C().app : TASKS[id]);
+      const fi = root.querySelector('.dt-icon[data-app="futuro"]');
+      if (fi) fi.classList.toggle('hidden', !!this.noApp);
       const names = SN.Data.sim.turnNames || ['Mañana', 'Tarde', 'Noche'];
       root.querySelector('.dt-clock').textContent = `Día ${S.run.day} · ${names[S.run.turn] || ''}`;
       const unread = (this.chat().unread || 0) + (this.ser().unread || 0) + (this.bravo().unread || 0);
@@ -182,13 +188,16 @@
     onKey(e) {
       if (!this.open) {
         if (e.code === 'KeyD' && !e.repeat && SN.Game.state === 'GAMEPLAY' && !SN.Windows.current && !SN.Dialog.active) {
-          if (this.canMinimize()) { e.preventDefault(); this.minimize(); return true; }
+          // En la elección del final, D hace lo mismo que «Ir al escritorio»: abre NULL.EXE
+          if (this.canMinimize()) { e.preventDefault(); this.minimize(SN.Finale && SN.Finale.choosing() ? 'null' : undefined); return true; }
         }
         return false;
       }
       e.preventDefault();
       const top = this.topWin();
       if (e.code === 'Escape') { if (top) this.closeWin(top); else this.restore(); return true; }
+      // La terminal de NULL.EXE: cualquier tecla escribe el comando (js/systems/finale.js)
+      if (top === 'term' && SN.Finale && SN.Finale.termKey(e)) return true;
       if (top === 'chat' && this.contact !== 'ser' && this.chat().phase === 'reply') {
         if (e.code === 'Enter' && this.replyDone()) this.send();
         else if (!e.repeat || Math.random() < 0.35) {
@@ -268,6 +277,9 @@
           ch.phase = 'wait'; ch.k = 0; ch.typed = 0;
           if (ch.side != null) { ch.sideDone[ch.side] = true; ch.side = null; } else ch.i++;
           if (c.offline) ch.offline = true;
+          // Kevo desaparece aquí: desde este día está "desconectado"
+          if (c.gone) ch.goneDay = S.run.day;
+          SN.Events.emit('kevo:done', { id: c.id });
         }
         SN.Save.saveRun();
         this.renderChat();
@@ -323,6 +335,35 @@
 
     // Aviso dentro de FUTURO.exe: clic para ir al chat. opts (otros avisos, como "ya puedes comprar..."):
     // { icon, kbd, onClick }
+    // El final: la última conversación de Kevo, entera y sin esperar turnos (con avisos en FUTURO.exe).
+    // La respuesta del protagonista se escribe sola.
+    async playConvo(id) {
+      const ch = this.chat(), at = C().convos.findIndex((c) => c.id === id);
+      if (at < 0 || ch.i > at) return;
+      clearTimeout(this.timer); this.timer = null;
+      const c = C().convos[at];
+      ch.i = at; ch.side = null; ch.phase = 'in'; ch.k = 0;
+      if (c.nick) ch.nick = c.nick;
+      ch.offline = false;
+      const line = async (l) => {
+        if (l.startsWith('>')) { SN.Desk.windowEvent(l.slice(1)); await SN.wait(1.2); return; }
+        this.deliver(l);
+        await SN.wait(l.startsWith('*') || l === '!zumbido' ? 0.7 : 1.1 + Math.min(1.6, l.length * 0.04));
+      };
+      for (const l of c.msgs) await line(l);
+      ch.log.push({ who: 'm', t: c.reply });
+      if (!this.open) this.toast('', `<b>Tú</b> ${esc(c.reply)}`);
+      SN.Audio.sfx('select');
+      await SN.wait(1.4);
+      ch.phase = 'out';
+      for (const l of c.after) await line(l);
+      ch.phase = 'wait'; ch.k = 0; ch.typed = 0; ch.i = at + 1;
+      if (c.offline) ch.offline = true;
+      SN.Save.saveRun();
+      this.renderChat();
+      this.refresh();
+    },
+
     toast(line, html, opts = {}) {
       const layer = $('layer-top');
       let t = layer.querySelector('.msg-toast');
@@ -358,7 +399,7 @@
         this.renderChat();
         this.refresh();
       }));
-      // La foto de LOS PAGADOS: tres llamadas a su puerta
+      // La foto de LOS DESFASADOS: tres llamadas a su puerta
       w.querySelector('.ch-ava').addEventListener('click', () => {
         if (this.contact !== 'ser') return;
         this.avaHits = (this.avaHits || 0) + 1;
@@ -403,7 +444,7 @@
         btn.disabled = !this.replyDone();
         btn.classList.toggle('ready', this.replyDone());
       } else {
-        box.innerHTML = '<span class="ph">…</span>';
+        box.innerHTML = this.kevoGone() && ch.offline ? '<span class="ph">Kevo no está. Tus mensajes no se entregan.</span>' : '<span class="ph">…</span>';
         box.classList.remove('live');
         btn.disabled = true;
         btn.classList.remove('ready');
@@ -414,11 +455,13 @@
       const w = this.wins.chat;
       if (!w) return;
       const ch = this.chat(), f = C().friend, cs = this.ser(), cb = this.bravo();
-      // Pestañas: Kevo y, cuando escriben, LOS PAGADOS y Bravo Fines
+      // Pestañas: Kevo y, cuando escriben, LOS DESFASADOS (hasta que se despiden, en el final B) y Bravo Fines
       const tabs = w.querySelector('.ch-tabs');
-      tabs.classList.toggle('hidden', !cs.log.length && !cb.log.length);
+      const serOn = cs.log.length && !cs.gone;
+      tabs.classList.toggle('hidden', !serOn && !cb.log.length);
+      if (cs.gone && this.contact === 'ser') this.contact = 'kevo';
       const stab = tabs.querySelector('.ser');
-      stab.classList.toggle('hidden', !cs.log.length);
+      stab.classList.toggle('hidden', !serOn);
       stab.innerHTML = `${cx(X().contact.name)}<b class="badge${cs.unread ? '' : ' hidden'}">${cs.unread || ''}</b>`;
       const bt = tabs.querySelector('.bravo');
       bt.classList.toggle('hidden', !cb.log.length);
@@ -433,7 +476,9 @@
       if (this.topWin() === 'chat') ch.unread = 0;
       w.querySelector('.ch-nick').textContent = ch.nick || f.nick;
       const st = w.querySelector('.ch-status');
-      st.textContent = ch.offline ? 'Desconectado' : 'Conectado';
+      // Desde que desapareció: "desconectado desde hace N días"
+      const gone = ch.goneDay != null && ch.offline && ch.phase === 'wait' ? S.run.day - ch.goneDay : null;
+      st.textContent = ch.offline ? (gone ? `Desconectado desde hace ${gone} día${gone === 1 ? '' : 's'}` : 'Desconectado') : 'Conectado';
       st.className = 'ch-status' + (ch.offline ? ' off' : '');
       const log = w.querySelector('.ch-log');
       log.innerHTML = ch.log.length ? '' : `<p class="ch-sys">${esc(f.name)} todavía no ha escrito.</p>`;
@@ -451,7 +496,7 @@
       this.renderInput();
     },
 
-    // ---------- LOS PAGADOS: escriben en el idioma secreto; no se les puede contestar ----------
+    // ---------- LOS DESFASADOS: escriben en el idioma secreto; no se les puede contestar ----------
     ser() {
       if (!S.run) return {};
       if (!S.run.chatSer) S.run.chatSer = { i: 0, log: [], unread: 0, offline: false };
@@ -481,6 +526,12 @@
         cs.log.push({ who: 'x', t: m.text });
         SN.Audio.sfx('notify');
         SN.FX.glitch(0.2, 0.6);
+        // Con algunos mensajes llega una parte de NULL.EXE
+        if (m.null) {
+          S.run.nullParts = Math.max(S.run.nullParts || 0, m.null);
+          cs.log.push({ who: 's', t: `Archivo recibido: NULL.EXE (parte ${m.null} de 3)` });
+          this.renderIcons();
+        }
       }
       cs.i++;
       const reading = this.open && this.topWin() === 'chat' && this.contact === 'ser';
@@ -490,6 +541,27 @@
       this.renderChat();
       this.refresh();
       this.serCheck();
+    },
+    // El final: lo que les quede por decir, ya (sin esperar turnos)
+    async serFlush() {
+      clearTimeout(this.serT); this.serT = null;
+      const cs = this.ser();
+      while (X().messages[cs.i]) { this.serDeliver(X().messages[cs.i]); clearTimeout(this.serT); this.serT = null; await SN.wait(1.6); }
+    },
+    // Final B: LOS DESFASADOS se despiden (por primera vez en letras normales) y su contacto desaparece
+    async serFarewell(text) {
+      const cs = this.ser();
+      cs.log.push({ who: 'v', t: text });
+      cs.unread = (cs.unread || 0) + 1;
+      SN.Audio.sfx('notify');
+      this.toast('', `<b>${cx(X().contact.name)}</b> ${esc(text)}`);
+      this.renderChat();
+      await SN.wait(5);
+      cs.log.push({ who: 's', t: `${X().contact.name} ya no existe.` });
+      cs.gone = true;
+      SN.Save.saveRun();
+      this.renderChat();
+      this.refresh();
     },
     renderSer(w) {
       const cs = this.ser(), name = X().contact.name;
@@ -506,7 +578,8 @@
       for (const m of cs.log) {
         if (m.who === 's') { log.insertAdjacentHTML('beforeend', `<p class="ch-sys">${esc(m.t).replace(name, cx(name))}</p>`); prev = null; continue; }
         const head = m.who !== prev ? `<b>${m.who === 'h' ? '???' : cx(name)}</b>` : '';
-        log.insertAdjacentHTML('beforeend', `<p class="ch-msg ${m.who === 'h' ? 'hood' : 'ser'}${head ? ' first' : ''}">${head}${m.who === 'h' ? esc(m.t) : cx(m.t)}</p>`);
+        // 'v': su despedida, en letras normales (ya no hace falta el idioma secreto)
+        log.insertAdjacentHTML('beforeend', `<p class="ch-msg ${m.who === 'h' ? 'hood' : 'ser'}${head ? ' first' : ''}">${head}${m.who === 'h' || m.who === 'v' ? esc(m.t) : cx(m.t)}</p>`);
         prev = m.who;
       }
       log.scrollTop = log.scrollHeight;
@@ -578,7 +651,18 @@
       const root = $('desktop');
       const b = root && root.querySelector('.dt-icon[data-app="symbols"]');
       if (b) b.classList.toggle('hidden', !SN.Cipher || SN.Cipher.count() === 0);
+      // NULL.EXE: aparece con la primera parte; la insignia dice cuántas tienes
+      const n = root && root.querySelector('.dt-icon[data-app="null"]');
+      if (n) {
+        const parts = this.nullParts();
+        n.classList.toggle('hidden', !parts || !!(S.run && S.run.finale && S.run.finale.phase === 'done'));
+        const badge = n.querySelector('.badge');
+        badge.textContent = parts >= 3 ? '!' : `${parts}/3`;
+        badge.classList.toggle('hidden', !parts);
+        n.classList.toggle('ready', parts >= 3);
+      }
     },
+    nullParts() { return (S.run && S.run.nullParts) || 0; },
     renderSymbols() {
       const w = this.wins.symbols;
       if (!w) return;
@@ -606,6 +690,35 @@
       this.refreshTrash();
     },
 
+    // ---------- NULL.EXE: el LÉEME (roto hasta tener las tres partes) y la terminal del final B ----------
+    buildNull(w) {
+      const parts = this.nullParts(), F = SN.Data.finale, body = w.querySelector('.dt-body');
+      const choosing = SN.Finale && SN.Finale.choosing();
+      if (parts < 3) {
+        // Incompleto: lo poco que se lee está en el idioma secreto
+        const junk = X().messages.filter((m) => m.null && m.null <= parts).map((m) => `<p>${cx(m.text)}</p>`).join('');
+        body.innerHTML = `<div class="nu"><div class="nu-err">ARCHIVO INCOMPLETO · parte ${parts} de 3</div>${junk}<p class="nu-junk">${'▓▒░ '.repeat(18)}</p></div>`;
+        return;
+      }
+      body.innerHTML = `<div class="nu"><div class="nu-txt">${F.readme.map((p, i) => `<p${i ? '' : ' class="nu-h"'}>${esc(p)}</p>`).join('')}</div></div>`;
+      const run = U.el('button', 'btn btn-coral nu-run', choosing ? 'Ejecutar NULL.EXE' : 'Todavía no');
+      run.disabled = !choosing;
+      run.addEventListener('click', (e) => { e.stopPropagation(); if (SN.Finale.choosing()) SN.Finale.choose('B'); });
+      body.querySelector('.nu').appendChild(run);
+    },
+    // La terminal: lo que pinta js/systems/finale.js (líneas, el comando que se escribe y su cursor)
+    renderTerm() {
+      const w = this.wins.term, T = SN.Finale && SN.Finale.term;
+      if (!w || !T) return;
+      const body = w.querySelector('.dt-body');
+      const lines = T.lines.map((l) => `<p class="tm-${l.k || 'out'}">${esc(l.t)}</p>`).join('');
+      const cur = T.typing ? `<p class="tm-cmd">${esc(T.prompt + T.typing.text.slice(0, T.typing.shown))}<i class="caret"></i></p>` : '';
+      const hint = T.typing && !T.typing.shown ? '<p class="tm-hint">Pulsa cualquier tecla para escribir</p>' : '';
+      body.innerHTML = `<div class="tm">${lines}${cur}${hint}</div>`;
+      const box = body.querySelector('.tm');
+      box.scrollTop = box.scrollHeight;
+    },
+
     // ---------- Notas y Papelera ----------
     refreshNotes() {
       const w = this.wins.notes;
@@ -620,7 +733,7 @@ ${box(paid)} Pagar la Pleyzeta: ${U.money(SN.Data.sim.startDebt)} · día 7${lat
 ${box(false)} Comprar ramen (otra vez)
 ${box(this.chat().i > 0)} Contestar a Kevo
 ${box(false)} NO apostarlo todo
-${box(false)} Dormir${this.ghostLine()}</pre>`;
+${box(false)} Dormir${this.kevoGone() ? `\n${box(false)} Encontrar a Kevo` : ''}${this.ghostLine()}</pre>`;
       SN.KW.apply(w.querySelector('.nt'));
       const gh = w.querySelector('.nt-ghost');
       if (gh) gh.addEventListener('click', () => { SN.Audio.sfx('select'); SN.Cipher.discover('notas'); });
@@ -640,6 +753,8 @@ ${box(false)} Dormir${this.ghostLine()}</pre>`;
       ];
       // Desde el día 3 aparece un archivo que tú no tiraste
       if (S.run && (S.run.day >= 3 || SN.Cipher.found('papelera'))) files.push(['no_abrir.txt', '1 KB', null]);
+      // Desde que Kevo desapareció: intentaste borrar FUTURO.exe... y volvió solo
+      if (this.kevoGone()) files.push(['FUTURO.exe', '6,66 MB', 'Lo tiraste anoche. Ha vuelto solo al escritorio.']);
       const body = w.querySelector('.dt-body');
       body.innerHTML = '<div class="tr-list"></div><div class="tr-note">Haz clic en un archivo</div>';
       for (const [n, size, joke] of files) {

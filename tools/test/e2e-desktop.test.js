@@ -74,9 +74,9 @@ const ok = (c, msg) => { if (c) pass++; else fail++; console.log(`  ${c ? 'ok   
     ok(await wait('SN.Desktop.open', 2000), 'la tecla D minimiza FUTURO.exe');
     await clickSel('.dt-icon[data-app="futuro"]');
     ok(await wait('!SN.Desktop.open', 2000), 'el icono de FUTURO.exe la restaura');
-    // --- El idioma secreto: LOS PAGADOS escriben y una pista traduce lo que dicen ---
+    // --- El idioma secreto: LOS DESFASADOS escriben y una pista traduce lo que dicen ---
     await ev('SN.Desktop.ser().i = 0; SN.State.run.day = 2; SN.State.run.turn = 1; SN.Desktop.serCheck(); true');
-    ok(await wait('SN.Desktop.ser().log.length > 0', 4000), 'LOS PAGADOS escriben en el idioma secreto');
+    ok(await wait('SN.Desktop.ser().log.length > 0', 4000), 'LOS DESFASADOS escriben en el idioma secreto');
     await b.key('KeyD', 'd');
     await wait('SN.Desktop.open', 2000);
     await clickSel('.dt-icon[data-app="chat"]');
@@ -85,7 +85,7 @@ const ok = (c, msg) => { if (c) pass++; else fail++; console.log(`  ${c ? 'ok   
     await b.sleep(200);
     const ser0 = await ev('document.querySelector(".ch-log").textContent');
     ok(/[ЖДФЯИЛШБЭЦГЮЩПЧ]/.test(ser0) && !/E/.test(ser0), `sus mensajes salen en cirílico (${ser0.trim()})`);
-    ok(await ev('document.querySelector(".ch-box").textContent.includes("No puedes responder")'), 'a LOS PAGADOS no se les puede contestar');
+    ok(await ev('document.querySelector(".ch-box").textContent.includes("No puedes responder")'), 'a LOS DESFASADOS no se les puede contestar');
     await b.screenshot(path.join(OUT, '6-los-pagados.png'));
     // La Papelera esconde una pista desde el día 3: la E
     await ev('SN.State.run.day = 3; true');

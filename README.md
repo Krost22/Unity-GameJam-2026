@@ -83,12 +83,34 @@ El teclado es un atajo y cada botón muestra su tecla:
 ## El idioma secreto (no lo leas si quieres descubrirlo tú)
 
 Algunas cosas están escritas con letras que parecen rusas: "erratas" del periódico (la primera la ves en el tutorial,
-y el encapuchado dice que no es relevante) y los mensajes de **LOS PAGADOS**, alguien que te escribe por Mensajín y a
+y el encapuchado dice que no es relevante) y los mensajes de **LOS DESFASADOS**, alguien que te escribe por Mensajín y a
 quien no se puede contestar. Es una sustitución de letras: cada símbolo escondido que encuentras (en el escritorio, en
 la habitación, en las ventanas de la app...) se traduce para siempre, en todos los textos y en todas las partidas.
 La app **Símbolos** aparece al encontrar el primero, con una pista vaga más cada día de la suerte.
 Hasta el nombre del programa, **FUTURO**, está escrito así (la F tiene su propia pista).
 El encapuchado sabe leerlo. No le gusta que lo leas.
+
+## Qué hay en la versión 2.0: la historia y sus dos finales
+
+La historia ya tiene final. Antes, la meta mostraba un cartel provisional; ahora todo lleva a una elección.
+
+- **LOS PAGADOS pasan a ser LOS DESFASADOS:** los que ya pagaron «lo otro». Te entregan **NULL.EXE** en tres partes:
+  al desaparecer Kevo, tras la revelación del encapuchado y al llegar a la meta.
+- **Kevo desaparece** (dos días después del tercer regalo). El protagonista empieza a entender:
+  - en Notas aparece «Encontrar a Kevo»;
+  - FUTURO.exe vuelve de la Papelera;
+  - los mensajes a Kevo no se entregan.
+  Después, el encapuchado confiesa que cobró a Kevo, y en la oferta del reloj aparece una cláusula: «el cliente cede LO OTRO».
+- **La meta ($300,000):** Kevo escribe una última vez, se abre el **mercado TÚ** (los demás se bloquean) y hay que elegir.
+  Si no eliges, la oferta vuelve cada turno y a la tercera la entidad elige por ti.
+
+| Final | Qué pasa |
+|---|---|
+| A — El avatar perfecto | Aceptas la última oferta: FUTURO.EXE absorbe la pantalla, el encapuchado se funde contigo, la habitación pierde el color y la app arranca con un nuevo administrador. Termina con el gato. Sin pala |
+| B — NULL.EXE | En la terminal escribes los comandos (cualquier tecla), todo cae a $0, FUTURO.EXE tiene por fin una X y las farolas se encienden. Después llegan la carta con **+1 PALA**, la Policía Fiscal (golpes fuera de plano y embargo de todo, menos la pala) y el periódico con Bravo Fines detenido |
+
+Al terminar: créditos y vuelta al menú. **La Pala**, solo con el final B, queda en la esquina del cuarto para siempre.
+Con `index.html?debug`, **F11** salta a la meta final.
 
 ## Qué hay en la versión 1.9: música de verdad
 
@@ -252,11 +274,12 @@ js/data/              los "ScriptableObjects": mercados (también los negros), e
                       progression.js (la cadena de deudas y los objetos clave), luck.js (días de la suerte),
                       cipher.js (el idioma secreto), academy.js (el árbol de Bravo Fines), historia (también lo
                       que dice el protagonista en sus globos), chat.js (las conversaciones con Kevo),
-                      music.js (las pistas de Musics/, su tonalidad y cuándo suena cada una)
+                      music.js (las pistas de Musics/, su tonalidad y cuándo suena cada una),
+                      finale.js (los textos de los dos finales)
 js/systems/           economy, debt, time, market-sim (+ PISTA), trading (+ COBRAR, giros y topes), drama (cámara lenta),
                       unlocks (la cadena), upgrades, academy, shopwatch (números rojos y ofertas que saltan solas),
                       save, cipher, luck, music (el director de la música), audio (efectos afinados con la música),
-                      tutorial, narrative, bankruptcy
+                      tutorial, narrative, bankruptcy, finale (la meta final y los dos finales)
 js/render/            pixel.js, pixkit.js (kit de pixel art procedural), sprites.js, desk.js (habitación y ventana), hero.js (manos,
                       gato y primeros planos), hands.js, chart.js, fx.js, news-art.js, characters.js, cinematic.js,
                       sneak.js (el cuarto de Timmy)
@@ -285,7 +308,7 @@ tope) y su lista de eventos en `js/data/events.js` (cada evento con su foto `art
 **Cambiar la escalera:** pasos, importes de las deudas, plazos y objetos clave en `js/data/progression.js`; la prueba
 de lógica juega partidas enteras con un bot y dice cuánto se tarda en cada paso.
 
-**El idioma secreto:** alfabeto, pistas, mensajes de LOS PAGADOS y erratas en `js/data/cipher.js`. Los textos cifrados
+**El idioma secreto:** alfabeto, pistas, mensajes de LOS DESFASADOS y erratas en `js/data/cipher.js`. Los textos cifrados
 solo pueden usar las 15 letras del alfabeto (la prueba de lógica lo comprueba).
 Apuesta mínima, velas de la zona de peligro, error de la pista y la operación del tutorial están en `js/data/simulation.js`.
 
@@ -311,9 +334,10 @@ Kevo, la respuesta del protagonista y lo que Kevo contesta.
 node tools/test/logic.test.js       # fórmulas, COBRAR, giros, pista, topes, cadena de deudas, Academia, números rojos, palabras clave, noticias, idioma secreto, suerte y equilibrio (con un bot que juega la partida entera)
 node tools/test/e2e.test.js         # partida completa en Chrome/Edge sin ventana: tutorial (errata, mejoras y tienda), regalo, oferta que salta sola, mercado negro, ahorros de Timmy
 node tools/test/e2e-paths.test.js   # continuar (también tras cobrar), repetir tutorial, tienda, Bravo Fines y su Academia, primera plana, día de la suerte y ruleta, los 3 finales y pantallas pequeñas
-node tools/test/e2e-desktop.test.js # minimizar, Mensajín, la historia de Kevo, LOS PAGADOS, una pista que traduce sus mensajes, Símbolos
+node tools/test/e2e-desktop.test.js # minimizar, Mensajín, la historia de Kevo, LOS DESFASADOS, una pista que traduce sus mensajes, Símbolos
 node tools/test/e2e-music.test.js   # la pista de cada momento, cambios a compás, bucle sin cortes, la cinta (perdiendo, sin dinero, el final) y todos los efectos
+node tools/test/e2e-finales.test.js # la elección, 3 turnos sin elegir, retomar la partida, el final A y el final B enteros, y la pala
 ```
 
 Abre `index.html?debug` para atajos de prueba: `F6` descubre un símbolo, `F7` salta al siguiente día de la suerte,
-`F8` bancarrota, `F9` +$1,000, `F10` pasar un día.
+`F8` bancarrota, `F9` +$1,000, `F10` pasar un día, `F11` saltar a la meta final.

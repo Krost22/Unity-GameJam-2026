@@ -509,7 +509,7 @@
     // Algo nuevo que ya se puede comprar: aviso dentro de FUTURO.exe (clic: abre la ventana)
     onShopNew({ items }) {
       this.renderNav();
-      if (SN.Tutorial.active || SN.Game.state !== 'GAMEPLAY' || SN.Windows.current) return;
+      if (SN.Tutorial.active || SN.Game.state !== 'GAMEPLAY' || SN.Windows.current || (SN.Finale && SN.Finale.active())) return;
       // Todo está en la Tienda: primero se avisa de las mejoras y la Academia, luego del resto
       const up = items.filter((x) => x.kind === 'upgrade' || x.kind === 'academy');
       const first = (up.length ? up : items)[0];
@@ -590,6 +590,7 @@
 
     openWindow(kind, opts) {
       if (this.busy || !this.allowed('window')) return;
+      if (SN.Finale && SN.Finale.active() && kind !== 'settings') { SN.Audio.sfx('error'); return; }
       SN.Windows.open(kind, opts);
     },
 

@@ -790,6 +790,18 @@
       Px.line(g, 19, 22, 12, 12, P.coal, 2);
       Px.line(g, 22, 8, 40, 8, P.coralD, 2); Px.line(g, 22, 8, 26, 5, P.coralD, 2); Px.line(g, 22, 8, 26, 11, P.coralD, 2);
     },
+    // Bravo Fines detenido (el final B): en el asiento de atrás del coche patrulla, gafas de sol y el pulgar arriba
+    bravoDetenido(g) {
+      sky(g, P.creamL, '#9FB6FF'); ground(g, 32, P.coalL, P.coal);
+      R(g, 6, 18, 52, 14, P.creamL); R(g, 6, 26, 52, 2, '#3A5BD0'); R(g, 6, 31, 52, 1, P.coalD);
+      R(g, 14, 10, 30, 9, P.creamL); R(g, 16, 12, 12, 7, '#9FB6FF'); R(g, 30, 12, 12, 7, '#9FB6FF');
+      R(g, 24, 7, 5, 3, P.coral); R(g, 29, 7, 5, 3, '#3A5BD0');
+      R(g, 9, 20, 16, 4, '#3A5BD0'); R(g, 10, 21, 14, 2, P.creamL);
+      Px.ellipse(g, 16, 33, 4, 4, P.coal); Px.ellipse(g, 48, 33, 4, 4, P.coal);
+      Px.ellipse(g, 16, 33, 1, 1, P.coalL); Px.ellipse(g, 48, 33, 1, 1, P.coalL);
+      R(g, 32, 13, 8, 6, P.skin); R(g, 31, 11, 10, 3, P.orangeDD); R(g, 32, 14, 8, 2, P.coal); R(g, 33, 14, 1, 1, P.creamL); R(g, 34, 17, 4, 1, P.creamL);
+      R(g, 43, 9, 2, 4, P.skin); R(g, 42, 12, 4, 3, P.skin);
+    },
     // Bravo Fines, el gurú: gafas de sol, gráfica que sube y un deportivo amarillo
     bravo(g) {
       R(g, 0, 0, W, H, P.violetD);

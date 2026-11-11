@@ -7,7 +7,7 @@
   const S = SN.State, D = SN.Data;
   const GAP = 5;          // segundos mínimos entre globos
   const REPEAT = 35;      // segundos antes de repetir el mismo suceso (salvo los importantes)
-  const IMPORTANT = ['debtPaid', 'gift', 'offer', 'black', 'timmy', 'bravo', 'newMarket'];
+  const IMPORTANT = ['debtPaid', 'gift', 'offer', 'black', 'timmy', 'bravo', 'newMarket', 'kevoGone'];
 
   const H = SN.HeroSay = {
     el: null, queue: [], cur: null, wait: 0, last: {}, used: {},
@@ -98,6 +98,7 @@
   E.on('luck:day', () => H.say('lucky'));
   E.on('cipher:found', ({ isNew }) => { if (isNew) H.say('cipher'); });
   E.on('kevo:writes', () => H.say('kevo', { chance: 0.5 }));
+  E.on('kevo:done', ({ id }) => { if (id === 'ventana') SN.after(2, () => H.say('kevoGone')); });
   E.on('bravo:message', () => H.say('bravo', { chance: 0.35 }));
   E.on('academy:open', () => H.say('bravo'));
   E.on('academy:bought', () => H.say('academy'));
@@ -107,7 +108,8 @@
   E.on('turn:ready', () => {
     const run = S.run;
     if (!run) return;
-    if (run.turn === 2 && Math.random() < 0.15) H.say('night');
+    if (SN.Desktop && SN.Desktop.kevoGone() && !run.finale && Math.random() < 0.06) H.say('kevoGone');
+    else if (run.turn === 2 && Math.random() < 0.15) H.say('night');
     else if (SN.Debt.active() && SN.Debt.daysLeft() <= 1 && !SN.Debt.canPay() && Math.random() < 0.4) H.say('lastDay');
   });
 })(window.SN);

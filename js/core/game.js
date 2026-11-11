@@ -167,6 +167,7 @@
       SN.Dialog.update(dt);
       SN.UI.update(dt);
       SN.Cine.update(dt);
+      SN.Finale.update(dt);
       SN.FX.update(w, dt);
       SN.Desk.render(this.deskCtx, w);
       if (S.run && !$('app').classList.contains('hidden')) SN.Chart.render();
@@ -355,6 +356,7 @@
       // Partida sin punto de control (por si acaso): se guarda uno ahora
       if (!run.checkpoint) S.checkpoint(SN.Narrative.stepLabel(SN.Unlocks.step()));
       if (run.piggy == null) run.piggy = 'ready';
+      SN.Finale.reset();
       SN.Desktop.reset();
       SN.HeroSay.clear();
       SN.Sneak.abort();
@@ -392,6 +394,8 @@
         this.closeTrade();
         return;
       }
+      // Partida guardada en el final: de vuelta a la elección (el mercado TÚ y la última oferta)
+      if (loaded && run.finale && run.finale.phase) { SN.Finale.resume(); return; }
       // Partida guardada justo al perder (se cerró el juego en medio): se retoma la derrota
       if (loaded && !tutorial && this.lost()) {
         SN.UI.setBusy(true);
@@ -552,11 +556,32 @@
     },
 
     // ?debug: atajos para probar (F6 descubre un símbolo, F7 salta al siguiente día de la suerte,
-    // F8 bancarrota, F9 +$1,000, F10 día siguiente)
+    // F8 bancarrota, F9 +$1,000, F10 día siguiente, F11 salta al final)
+    debugFinale() {
+      const run = S.run, goal = D.chain.findIndex((st) => st.kind === 'goal');
+      if (goal < 0 || run.finale || run.step >= goal) return;
+      if (run.debt && !run.debt.paid) { run.debt.paid = true; run.debts.push(run.debt); run.debt = null; }
+      run.step = goal; run.stepOpen = false;
+      run.flags.debtPaid = true;
+      run.flags.academy = true; run.flags.bravoQueued = true; // Bravo Fines ya se presentó hace mucho
+      for (const it of D.keyItems) run.owned[it.id] = true;
+      for (const st of D.chain) if (st.kind === 'gift') run.gifts[st.upgrade] = true;
+      for (const d of D.markets) run.markets[d.id].unlocked = true;
+      // Kevo, a punto de su último mensaje; LOS DESFASADOS, con dos partes de NULL.EXE entregadas
+      const ch = SN.Desktop.chat(), at = D.chat.convos.findIndex((c) => c.id === 'mira');
+      if (ch.i < at) { ch.i = at; ch.goneDay = run.day; ch.offline = true; ch.nick = 'Kevo'; }
+      const cs = SN.Desktop.ser(), s8 = D.cipher.messages.findIndex((m) => m.id === 's8');
+      if (cs.i < s8) cs.i = s8;
+      run.nullParts = 2;
+      run.capital = D.chain[goal].amount;
+      SN.UI.setBusy(true);
+      this.afterTurn(null);
+    },
     debugKeys() {
       document.addEventListener('keydown', (e) => {
         if (!S.run || this.state !== 'GAMEPLAY' || SN.UI.busy) return;
         if (e.code === 'F6') { e.preventDefault(); SN.Cipher.wildcard(); }
+        if (e.code === 'F11') { e.preventDefault(); this.debugFinale(); }
         if (e.code === 'F7') {
           e.preventDefault();
           for (let i = 0; i < 300 && !SN.Luck.isLucky(S.run.day + 1); i++) S.run.day++;

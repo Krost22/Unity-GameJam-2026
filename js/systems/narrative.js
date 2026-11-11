@@ -165,9 +165,10 @@
       }
       const lines = story().hoodedEvents[g.story];
       if (lines) await this.hoodedScene(lines, { smile: true });
-      if (!next) await this.endDemo();
       this.addNews({ title: `Objetivo ${U.short(g.amount)} cumplido`, tone: 'pos', art: 'dinero' });
       SN.Events.emit('chat:flag', { flag: g.id });
+      // La meta final: el mercado TÚ y la elección (js/systems/finale.js)
+      if (!next) { await SN.Finale.start(); return; }
       if (next && next.kind !== 'gift') S.checkpoint(this.stepLabel(next));
     },
 
@@ -209,16 +210,6 @@
       document.getElementById('screen').classList.add('glitch');
       await SN.UI.stamp(story().teaser, 'coral', '', 1.2);
       document.getElementById('screen').classList.remove('glitch');
-    },
-
-    async endDemo() {
-      const run = S.run;
-      if (run.flags.endDemo) return;
-      run.flags.endDemo = true;
-      await this.teaser();
-      const [a, b, c] = story().endDemo;
-      if (SN.Music) SN.Music.ending(); // el tema principal, lento: has ganado... ¿y ahora qué?
-      await SN.UI.card(`<div class="overlay-panel"><div class="t1">${a}</div><div class="t2">${b}</div><div class="t3">${c}</div></div>`, 'daycard', 4);
     },
 
     // Tras cada turno: escenas pendientes y pequeñas inquietudes
@@ -308,6 +299,13 @@
     N.pending.unshift(() => N.onDebtPaid(auto, debt));
   });
   SN.Events.on('debt:defaulted', () => N.addNews({ title: 'Plazo vencido. Embargo.', tone: 'neg', art: 'documento' }));
+  // La revelación: después de que "Kevo [PAGADO]" te escriba, el encapuchado te cuenta qué cobró
+  SN.Events.on('kevo:done', ({ id }) => {
+    if (id === 'pagado' && S.run && !S.run.storySeen.kevoPaid) {
+      S.run.storySeen.kevoPaid = true;
+      N.pending.push(() => N.hoodedScene(story().hoodedEvents.kevoPaid, { smile: true }));
+    }
+  });
   SN.Events.on('day:changed', () => {
     N.cityNews();
     // Bravo Fines se presenta la mañana siguiente a pagar la Pleyzeta

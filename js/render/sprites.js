@@ -22,7 +22,17 @@
     icoSymbols: ['................', '..kkkkkkkkkkk...', '..kwwwwwwwwwkk..', '..kwwwwwwwwwkwk.', '..kwrwrwrwwwkkkk', '..kwrwrwrwwwwwk.', '..kwwrrrwwwwwwk.',
       '..kwwwrwwwwwwwk.', '..kwwrrrwwwwwwk.', '..kwrwrwrwwwwwk.', '..kwrwrwrwwwwwk.', '..kwwwwwwwwDDwk.', '..kwwwwwwwwwwwk.',
       '..kkkkkkkkkkkkk.', '................', '................'],
-    // LOS PAGADOS: una capucha vacía (no se le ve la cara)
+    // NULL.EXE (lo dan LOS DESFASADOS por partes): una consola negra con un cero tachado
+    icoNull: ['................', '.kkkkkkkkkkkkkk.', '.kKKKKKKKKKKKKk.', '.kkkkkkkkkkkkkk.', '.kKKKKKKKKKKKKk.', '.kKKKKggggKKKKk.',
+      '.kKKKgKKKggKKKk.', '.kKKKgKKgKgKKKk.', '.kKKKgKgKKgKKKk.', '.kKKKggKKKgKKKk.', '.kKKKKggggKKKKk.', '.kKKKKKKKKKKKKk.',
+      '.kKgKKKKKKKKKKk.', '.kKKKKKKKKKKKKk.', '.kkkkkkkkkkkkkk.', '................'],
+    // TÚ: el mercado del final, con la cara del protagonista (pelo oscuro y sudadera)
+    avaTu: ['...KKKKKK...', '..KKKKKKKK..', '..KKKKKKKKK.', '..Kssssssk..', '..sskssksS..', '..sssssssS..', '..sssrrssS..',
+      '...ssssSS...', '....SSSS....', '..cccccccc..', '.cccccccccc.', '.cccccccccc.'],
+    // La pala (el regalo de compensación... y lo único que no se embarga)
+    pala: ['...kkkkkk...', '...kOooOk...', '...kkookk...', '.....kok....', '.....kok....', '.....kok....', '.....kok....',
+      '.....kok....', '.....kok....', '...kkkkkkk..', '..klllllllk.', '..klwlllllk.', '..kllllllk..', '...klllllk..', '....klllk...', '.....kkk....'],
+    // LOS DESFASADOS: una capucha vacía (no se le ve la cara)
     avaSer: ['....kkkk....', '...kllllk...', '..kllllllk..', '..klKKKKlk..', '..lKKKKKKl..', '..lKKyyKKl..', '..lKKKKKKl..',
       '..llKKKKll..', '.kllllllllk.', '.kllllllllk.', 'kllllllllllk', 'kllllllllllk'],
     // --- Academia de Bravo Fines (12x12) ---

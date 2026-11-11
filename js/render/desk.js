@@ -70,7 +70,7 @@
   // Cosas que pasan al otro lado de la ventana (ver Desk.windowEvent)
   const winEvents = [];
   let blindLift = 0;
-  const WIN_DUR = { ambulancia: 6, apagon: 7, fuegos: 4.5, encapuchado: 7, dron: 6, camion: 7, lluvia: 22, cuervo: 8, temblor: 2.5, oro: 14 };
+  const WIN_DUR = { ambulancia: 6, apagon: 7, fuegos: 4.5, encapuchado: 7, dron: 6, camion: 7, lluvia: 22, cuervo: 8, temblor: 2.5, oro: 14, farolas: 8 };
   let room = null, rg = null;
   const motes = Array.from({ length: 12 }, (_, i) => ({ x: 4 + (i * 37) % 44, y: 30 + (i * 53) % 110, s: 0.3 + (i % 5) * 0.12, ph: i }));
 
@@ -80,6 +80,12 @@
     camShift: 0,
     phaseOverride: null,
     glow: { color: P.cyan, k: 0.5, flash: 0, flashColor: P.white },
+    // El final (js/systems/finale.js): lo que se lleva el embargo (Set de ids; 'pleyzeta' es la consola), el
+    // ordenador que se llevan, las gráficas que se salen del monitor (final A) y la pala (final B)
+    stripped: null,
+    noPC: false,
+    crawl: 0,
+    palaHere: false,
     dirty() { bgKey = ''; },
     keyFor(code) { return KEYS.find((k) => k.code === code); },
 
@@ -97,6 +103,7 @@
       else if (kind === 'apagon') A.sfx('static', { dur: 0.4 });
       else if (kind === 'temblor') { SN.FX.shake(3, 1.6); A.sfx('thud'); }
       else if (kind === 'cuervo') A.sfx('tick');
+      else if (kind === 'farolas') for (let i = 1; i <= 5; i++) SN.after(1.1 * i, () => A.sfx('tick'));
       SN.Events.emit('window:event', { kind });
     },
     get windowEvents() { return winEvents.map((e) => e.kind); },
@@ -125,20 +132,23 @@
     },
 
     state() {
-      const run = SN.State.run;
+      const run = SN.State.run, strip = this.stripped;
+      const owned = run ? run.owned : {};
       return {
         phase: this.phaseOverride || (run ? SN.Time.phase() : 'evening'),
         day: run ? run.day : 1,
         // Sin deuda activa = "libre" (el calendario se tacha con un check)
         paid: run ? !SN.Debt.active() : false,
-        owned: run ? run.owned : {},
+        owned: strip ? Object.fromEntries(Object.entries(owned).filter(([k]) => !strip.has(k))) : owned,
         dark: run ? run.darkness : 0,
         start: run && run.debt ? run.debt.start || 1 : 1,
         deadline: run && run.debt ? run.debt.deadlineDay : 7,
         defaulted: run && run.debt ? run.debt.defaulted : false,
         owe: run && SN.Debt.active() ? run.debt.amount : 0,
         // La consola: en la intro no aparece hasta que se compra (js/render/cinematic.js)
-        console: !this.hideConsole,
+        console: !this.hideConsole && !(strip && strip.has('pleyzeta')),
+        noPC: this.noPC,
+        pala: this.palaHere || !!(SN.State.profile && SN.State.profile.pala),
       };
     },
 
@@ -159,7 +169,8 @@
       SN.Hero.update(dt);
       SN.Hero.drawCat(rg, 2, 142, st.phase);
       drawAnimated(rg, st, dt);
-      SN.Hero.drawHands(rg, st.phase, HANDS.kx, HANDS.ky, HANDS.mx, HANDS.my);
+      if (this.crawl > 0) { this.crawl += dt; drawCrawl(rg, this.crawl); }
+      if (!st.noPC) SN.Hero.drawHands(rg, st.phase, HANDS.kx, HANDS.ky, HANDS.mx, HANDS.my);
       drawLighting(rg, st, dt);
       g.drawImage(room, 0, 0);
     },
@@ -171,17 +182,43 @@
     drawWall(g, st);
     drawWindowFrame(g);
     drawRightWall(g, st);
-    drawMonitor(g);
+    if (st.pala) drawPala(g);
+    if (!st.noPC) drawMonitor(g);
     drawDesk(g);
     drawConsoleBox(g, st);
-    drawPad(g, st);
-    drawKeyboard(g, st);
+    if (!st.noPC) drawPad(g, st);
+    if (!st.noPC) drawKeyboard(g, st);
     drawMug(g, st);
     drawRamen(g);
     if (!st.paid) drawBills(g, st);
     if (st.owned.cascos) drawHeadphones(g);
     drawKeyItems(g, st);
     return c;
+  }
+
+  // LA PALA (final B): de pie en la esquina de la derecha, entre la consola y la pared (sin tapar el mando)
+  function drawPala(g) {
+    const x = 313;
+    R(g, x - 2, 93, 6, 2, P.coalD); R(g, x - 1, 93, 4, 1, P.orange);
+    R(g, x, 95, 2, 24, P.orangeD); R(g, x, 95, 1, 24, P.orange);
+    R(g, x - 1, 118, 4, 2, P.coalD);
+    R(g, x - 4, 120, 10, 11, P.coalL); R(g, x - 4, 120, 10, 1, P.creamD); R(g, x - 4, 121, 1, 10, P.creamDD); R(g, x + 5, 121, 1, 10, P.coal);
+    R(g, x - 3, 131, 8, 1, P.coalL); R(g, x - 2, 132, 6, 1, P.coal);
+  }
+
+  // Final A: las gráficas se salen del monitor y trepan por las paredes y la mesa
+  function drawCrawl(g, k) {
+    const rays = [[48, 30, -1], [48, 70, -1], [48, 108, -1], [270, 40, 1], [270, 78, 1], [270, 116, 1], [96, 131, 0], [176, 131, 0], [232, 131, 0]];
+    for (const [x0, y0, dir] of rays) {
+      const len = Math.min(dir ? 46 : 38, k * 13);
+      for (let d = 4; d < len; d += 5) {
+        const x = Math.round(dir ? x0 + dir * d : x0 + Math.sin(d * 0.4 + x0) * 3);
+        const y = Math.round(dir ? y0 + Math.sin(d * 0.35 + x0) * 4 - d * 0.15 : y0 + d);
+        const up = ((d / 5) | 0) % 2 === 0;
+        R(g, x, y - 3, 1, 7, up ? P.greenD : P.coralD);
+        R(g, x - 1, y - 2, 3, 4, up ? P.green : P.coral);
+      }
+    }
   }
 
   // Objetos clave de la tienda (los de la "oferta" de FUTURO.exe)
@@ -625,6 +662,15 @@
         // Las luces de la ciudad se apagan de golpe; al final parpadean y vuelven
         const flicker = k > 0.8 && Math.sin(a * 40) > 0;
         if (!flicker) { g.globalAlpha = 0.85 * fade; R(g, x, y + 20, w, h - 20, '#07061A'); g.globalAlpha = 1; }
+      } else if (e.kind === 'farolas') {
+        // Final B: las farolas de la calle se encienden una a una (al revés que el apagón)
+        const lamps = 5, lit = Math.min(lamps, Math.floor(a / 1.1));
+        g.globalAlpha = 0.85 * (1 - lit / lamps) * fade; R(g, x, y + 20, w, h - 20, '#07061A'); g.globalAlpha = 1;
+        for (let i = 0; i < lamps; i++) {
+          const lx = x + 4 + Math.round(i * (w - 8) / (lamps - 1)), ly = base - 12;
+          R(g, lx, ly, 1, 12, P.coalD); R(g, lx - 1, ly - 1, 3, 1, P.coalD);
+          if (i < lit) { R(g, lx - 1, ly, 3, 1, P.yellowL); g.globalAlpha = 0.28 * fade; Px.ellipse(g, lx, ly + 7, 5, 7, P.yellow); g.globalAlpha = 1; }
+        }
       } else if (e.kind === 'fuegos') {
         for (let n = 0; n < 4; n++) {
           const ta = a - n * 0.65 - 0.2;

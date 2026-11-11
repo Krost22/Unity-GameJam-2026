@@ -32,9 +32,11 @@
       { id: 'acerca', letter: 'F', where: 'Acerca de FUTURO.exe', hint: 'Todo programa tiene su "Acerca de". Mira bien el icono.' },
     ],
 
-    // Quien escribe en este idioma por Mensajín (no se le puede contestar)
-    contact: { id: 'ser', name: 'LOS PAGADOS' },
-    // Cuándo llega cada mensaje (como js/data/chat.js: day/turn, o when/delay en turnos)
+    // Quien escribe en este idioma por Mensajín (no se le puede contestar): LOS DESFASADOS, los que ya pagaron
+    // "lo otro" (y con ello, su idioma). Son la gente de las noticias raras.
+    contact: { id: 'ser', name: 'LOS DESFASADOS' },
+    // Cuándo llega cada mensaje (como js/data/chat.js: day/turn, o when/delay en turnos).
+    // null: n -> con ese mensaje entregan la parte n de NULL.EXE (con las 3 se puede elegir el final B)
     messages: [
       { id: 's1', day: 2, turn: 1, text: 'NO ESTAS SOLO' },
       { id: 's2', day: 4, turn: 0, text: 'EL DE LA CAPA MIENTE' },
@@ -43,9 +45,13 @@
       // Al descubrir la primera letra, el encapuchado entra en la conversación
       { id: 'hood', when: 'cipher', delay: 1, orWhen: 'regalo2', orDelay: 1, hood: ['*El encapuchado se ha unido a la conversación.', 'Silencio.', '*LOS PAGADOS se ha desconectado.'] },
       { id: 's5', when: 'regalo2', delay: 3, text: 'NO DIGAS NADA. SOLO LEE', back: true },
-      { id: 's6', when: 'regalo3', delay: 2, text: 'TU AMIGO ESTA CON NOSOTROS' },
-      { id: 's7', when: 'regalo4', delay: 2, text: 'NOSOTROS TAMPOCO PUDIMOS PARAR' },
+      // (justo después de que Kevo desaparezca: su conversación `ventana` llega a los 6 turnos del tercer regalo)
+      { id: 's6', when: 'regalo3', delay: 7, text: 'TU AMIGO ESTA CON NOSOTROS' },
+      { id: 'n1', when: 'regalo3', delay: 8, text: 'PARA SOLTAR, PIERDE TODO', null: 1 },
+      { id: 's7', when: 'regalo4', delay: 2, text: 'NOSOTROS TAMPOCO PUDIMOS PARAR', null: 2 },
+      // Los dos últimos los entrega el final en cuanto llegas a la meta (js/systems/finale.js)
       { id: 's8', when: 'g100000', delay: 1, text: 'NO SE PUEDE CERRAR. PERO SE PUEDE SOLTAR' },
+      { id: 's9', when: 'g100000', delay: 1, text: 'EL ES TU', null: 3 },
     ],
 
     // "Erratas" del periódico (la primera sale en el tutorial)

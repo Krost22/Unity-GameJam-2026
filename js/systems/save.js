@@ -16,6 +16,8 @@
   SN.Save = {
     saveRun() {
       if (!S.run || S.run.over || (SN.Tutorial && SN.Tutorial.replaying)) return;
+      // Mientras dura un final no se guarda: si se recarga, se vuelve a la elección
+      if (S.run.finale && S.run.finale.lock) { this.saveProfile(); return; }
       S.sync();
       write(KEY_RUN, S.run);
       this.saveProfile();

@@ -7,7 +7,7 @@
   const R = (g, x, y, w, h, c) => Px.rect(g, x, y, w, h, c);
   const SKIP = { skip: true };
   // Expresiones de las cinemáticas -> expresiones del protagonista
-  const HERO_EXPR = { star: 'star', happy: 'happy', confused: 'worried', worried: 'nervous', relieved: 'relieved', shocked: 'shock', neutral: 'calm' };
+  const HERO_EXPR = { star: 'star', happy: 'happy', confused: 'worried', worried: 'nervous', relieved: 'relieved', shocked: 'shock', neutral: 'calm', sad: 'sad', cry: 'sad' };
   const $ = (id) => document.getElementById(id);
 
   const C = SN.Cine = {
@@ -366,7 +366,9 @@
       R(b, 118, 30, 42, 3, P.woodM); R(b, 122, 18, 5, 12, P.coral); R(b, 128, 20, 5, 10, P.orange); R(b, 134, 16, 5, 14, P.green);
       // De noche la habitación se oscurece, pero la cara queda iluminada por la pantalla
       if (sh.night) { b.globalAlpha = 0.55; R(b, 0, 0, 160, 90, P.coalDD); b.globalAlpha = 1; }
-      SN.Hero.closeUp(b, HERO_EXPR[sh.expr] || 'worried', sh.t, sh.opts || {});
+      // hoodIn: segundos que tarda la capucha en cubrir la cara (el final A)
+      const o = sh.opts || {};
+      SN.Hero.closeUp(b, HERO_EXPR[sh.expr] || 'worried', sh.t, o.hoodIn ? Object.assign({}, o, { hood: Math.min(1, sh.t / o.hoodIn) }) : o);
       if (sh.night) { b.globalAlpha = 0.14; R(b, 0, 0, 160, 90, P.coalDD); b.globalAlpha = 1; }
       if (sh.confetti) {
         for (let i = 0; i < 40; i++) {

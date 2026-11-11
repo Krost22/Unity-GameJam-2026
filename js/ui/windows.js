@@ -5,7 +5,7 @@
   const U = SN.Util, S = SN.State, D = SN.Data;
 
   // 'upgrades' es ahora la Academia de Bravo Fines (se entra desde la Tienda: todo se compra allí)
-  const TITLES = { upgrades: 'Tienda · Academia de Bravo Fines', news: 'Noticias', shop: 'Tienda · MEGATIENDA.COM', settings: 'Ajustes', ruleta: 'Ruleta de la Fortuna', offer: '', about: 'Acerca de FUTURO.exe' };
+  const TITLES = { upgrades: 'Tienda · Academia de Bravo Fines', news: 'Noticias', shop: 'Tienda · MEGATIENDA.COM', settings: 'Ajustes', ruleta: 'Ruleta de la Fortuna', offer: '', pact: '', about: 'Acerca de FUTURO.exe' };
 
   const W = SN.Windows = {
     current: null, back: null, win: null,
@@ -24,8 +24,8 @@
       this.back = U.el('div', 'win-back');
       // La oferta de FUTURO.exe es el siguiente paso de la historia: no se cierra pulsando fuera
       if (kind !== 'offer') this.back.addEventListener('click', () => this.close());
-      this.win = U.el('div', 'win' + (kind === 'news' ? ' wide paper' : kind === 'offer' ? ' offer-win' : kind === 'shop' ? ' big sh-win' : ''));
-      if (kind === 'offer') this.win.innerHTML = '<div class="win-body"></div>';
+      this.win = U.el('div', 'win' + (kind === 'news' ? ' wide paper' : kind === 'offer' ? ' offer-win' : kind === 'pact' ? ' offer-win pact-win' : kind === 'shop' ? ' big sh-win' : ''));
+      if (kind === 'offer' || kind === 'pact') this.win.innerHTML = '<div class="win-body"></div>';
       else {
         this.win.innerHTML = `<div class="win-head"><span>${TITLES[kind]}</span><button class="win-x">X<kbd>ESC</kbd></button></div><div class="win-body"></div>`;
         SN.KW.apply(this.win.querySelector('.win-head span'), { terms: false });
@@ -60,7 +60,7 @@
       if (!this.win) return;
       const body = this.win.querySelector('.win-body');
       body.innerHTML = '';
-      ({ upgrades: buildUpgrades, news: buildNews, shop: buildShop, settings: buildSettings, ruleta: buildWheel, offer: buildOffer, about: buildAbout })[this.current](body);
+      ({ upgrades: buildUpgrades, news: buildNews, shop: buildShop, settings: buildSettings, ruleta: buildWheel, offer: buildOffer, pact: buildPact, about: buildAbout })[this.current](body);
       // Palabras clave con color y FUTURO.exe en el idioma secreto. En la tienda y las mejoras, solo dinero, 7 y
       // suerte: ahí cada nombre es una mejora o un regalo y, si todo se mueve, nada destaca
       SN.KW.apply(body, { terms: this.current !== 'shop' && this.current !== 'upgrades' });
@@ -677,7 +677,7 @@
       <div class="of-price"><s>${U.money(it.price)}</s><b>${st.free}</b><em>${st.save}</em></div>
       <div class="of-later">${fill(st.later)}</div>
       <button class="of-small">${st.small} ▼</button>
-      <div class="of-fine hidden">${fill(st.smallText)} <b class="cx of-clue" title="">${D.cipher.alphabet.D}</b></div>
+      <div class="of-fine hidden">${fill(st.smallText)}${it.id === 'reloj' ? ` <b class="of-clause">${st.clause}</b>` : ''} <b class="cx of-clue" title="">${D.cipher.alphabet.D}</b></div>
       <div class="of-row"><button class="btn btn-yellow of-yes">${st.yes}</button></div>`;
     pop.querySelector('.of-ico').style.backgroundImage = `url(${SN.Sprites.url('app', 1)})`;
     const yes = pop.querySelector('.of-yes');
@@ -694,6 +694,27 @@
     pop.querySelector('.of-clue').addEventListener('click', () => SN.Cipher.discover('letra'));
     yes.addEventListener('click', () => { if (SN.Unlocks.canBuyItem(it.id).ok) SN.Game.buyKeyItem(it.id); else SN.Audio.sfx('error'); });
   }
+  // ---------- La última oferta (el final A, js/systems/finale.js) ----------
+  // El encapuchado ofrece tenerlo todo. «¡Lo quiero!» es el final A; «Ahora no» deja ir al escritorio (NULL.EXE).
+  // Si no eliges, vuelve cada turno: a la tercera, la entidad elige por ti.
+  function buildPact(body) {
+    const st = D.finale.pact, f = S.run && S.run.finale, n = (f && f.insist) || 0;
+    const pop = U.el('div', 'offer pact');
+    pop.innerHTML = `<div class="of-head"><i class="of-ico"></i>${SN.Cipher.brand(true)}<span>${n ? st.insist[Math.min(n, st.insist.length) - 1] : st.title}</span></div>
+      <div class="pa-face"></div>
+      <div class="pa-lines">${st.lines.map((l) => `<p>«${l}»</p>`).join('')}</div>
+      <div class="of-row"><button class="btn btn-cream pa-no">${st.no}</button><button class="btn btn-yellow of-yes">${st.yes}</button></div>`;
+    pop.querySelector('.of-ico').style.backgroundImage = `url(${SN.Sprites.url('app', 1)})`;
+    const face = SN.Px.canvas(40, 46);
+    SN.Px.ctx(face).drawImage(SN.Chars.hoodedCanvas(0, { smile: true }), 0, 0);
+    pop.querySelector('.pa-face').appendChild(face);
+    body.appendChild(pop);
+    SN.FX.glitch(0.3, 0.8);
+    pop.addEventListener('click', (e) => e.stopPropagation());
+    pop.querySelector('.of-yes').addEventListener('click', () => { if (SN.Finale.choosing()) SN.Finale.choose('A'); else SN.Audio.sfx('error'); });
+    pop.querySelector('.pa-no').addEventListener('click', () => W.close());
+  }
+
   // Compatibilidad: abrir la oferta de un objeto
   W.showOffer = (it) => W.offer(it.id || it, 'shop');
 

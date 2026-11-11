@@ -290,7 +290,7 @@
   function buildCat(state, breath, tail, phase, look = 0) {
     const sp = new PK.Sprite(CW, CH);
     const rim = RIM[phase] || RIM.evening;
-    if (state === 'sit' || state === 'arch' || state === 'alert') return buildCatUp(sp, state, breath, tail, rim, look);
+    if (state === 'sit' || state === 'arch' || state === 'alert' || state === 'stare') return buildCatUp(sp, state, breath, tail, rim, look);
     const lying = state === 'sleep' || state === 'ear' || state === 'purr' || state === 'peek';
     const up = lying ? 0 : -2;
     const st = state === 'stretch';
@@ -368,7 +368,9 @@
     sp.rim(head, rim, [-1, -1]);
     if (!earsBack) sp.px(hx - 5, hy - 8, P.catPink).px(hx + 4, hy - 8, P.catPink);
     const lx = alert ? -1 : U.clamp(Math.round(look), -1, 1);
-    sp.rect(hx - 5, hy - 1, 3, 2, P.catEye).rect(hx + 2, hy - 1, 3, 2, P.catEye).px(hx - 4 + lx, hy - 1, P.catD).px(hx + 3 + lx, hy - 1, P.catD);
+    // Mirando a cámara (el final): ojos muy abiertos con las pupilas en rendija
+    if (state === 'stare') sp.rect(hx - 5, hy - 2, 3, 3, P.catEye).rect(hx + 2, hy - 2, 3, 3, P.catEye).rect(hx - 4, hy - 2, 1, 3, P.catD).rect(hx + 3, hy - 2, 1, 3, P.catD);
+    else sp.rect(hx - 5, hy - 1, 3, 2, P.catEye).rect(hx + 2, hy - 1, 3, 2, P.catEye).px(hx - 4 + lx, hy - 1, P.catD).px(hx + 3 + lx, hy - 1, P.catD);
     sp.px(hx - 1, hy + 2, P.catPink).px(hx, hy + 2, P.catPink);
     return sp.c;
   }
@@ -409,7 +411,7 @@
       const c = this.cat;
       c.act = state; c.actT = sec; c.state = state;
       if (fx) { c.fx = fx; c.fxT = Math.min(sec, 2.4); }
-      if (state === 'awake' || state === 'sit' || state === 'groom' || state === 'arch' || state === 'alert') c.wakeT = sec;
+      if (state === 'awake' || state === 'sit' || state === 'groom' || state === 'arch' || state === 'alert' || state === 'stare') c.wakeT = sec;
     },
     // Clic en el gato: dormido, mueve la oreja y ronronea (no se despierta); despierto, ronronea
     petCat() {
@@ -465,6 +467,7 @@
       const c = this.cat;
       c.t += dt;
       c.fxT = Math.max(0, c.fxT - dt);
+      if (c.hoodT > 0) c.hoodT = Math.max(0, c.hoodT - dt);
       if (c.act && (c.actT -= dt) <= 0) { c.act = null; c.state = 'sleep'; c.wakeT = 0; }
       if (c.wakeT > 0 && (c.wakeT -= dt) <= 0 && !c.act) c.state = 'sleep';
       const drama = SN.Drama && SN.Drama.active;
@@ -547,6 +550,8 @@
       }
       // Alerta: un "!" sobre la cabeza
       if (c.state === 'alert') Px.text(g, '!', x + 30, y + 2 + (Math.sin(c.t * 8) > 0 ? 0 : 1), P.yellow);
+      // El final: durante un instante, el gato tiene la cara del encapuchado
+      if (c.hoodT > 0 && SN.Chars) g.drawImage(SN.Chars.hoodedCanvas(c.t, { smile: true }), 0, 0, 40, 46, x + 28, y - 2, 20, 23);
     },
 
     // Primer plano para las cinemáticas (búfer de 160x90): cabeza y hombros centrados, a escala 1:1
@@ -568,6 +573,22 @@
         g.drawImage(near, ox, oy - k);
       }
       g.drawImage(bangs, ox, oy);
+      // Final A: la capucha del encapuchado va cubriendo la cara (hood: 0..1)
+      if (opts.hood > 0 && SN.Chars) {
+        g.globalAlpha = opts.hood * 0.55;
+        g.fillStyle = '#05040A'; g.fillRect(0, 0, 160, 90);
+        g.globalAlpha = Math.min(1, opts.hood);
+        g.drawImage(SN.Chars.hoodedCanvas(t, { smile: opts.hood > 0.7 }), 0, 0, 40, 46, 39, -4, 80, 92);
+        g.globalAlpha = 1;
+      }
+      // Final B: llora en la habitación vacía
+      if (opts.tears) {
+        for (const ex of [74, 87]) {
+          const k = (t * 1.4 + ex * 0.13) % 1;
+          g.fillStyle = P.cyanL; g.fillRect(ex, 49, 1, 3 + Math.round(k * 9));
+          g.fillStyle = P.cyan; g.fillRect(ex, 52 + Math.round(k * 9), 2, 2);
+        }
+      }
       if (opts.question) {
         const qx = 112, qy = 10 + Math.round(Math.sin(t * 4));
         SN.Px.box(g, qx, qy, 11, 13, P.creamL, P.coal);

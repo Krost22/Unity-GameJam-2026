@@ -33,6 +33,8 @@
     winUntil: 0,     // GANANDO se queda un rato tras una operación ganada
     ending: false,   // el final suena hasta la siguiente operación
     stopped: false,  // cinta parada (sin dinero) hasta que vuelva el ambiente normal
+    force: null,     // una pista fija durante una escena (los finales): manda sobre todo lo demás
+    pulseKind: null, // pulso a tempo pedido a mano ('danger' | 'clock'), p. ej. en la terminal de NULL.EXE
     tape: null,      // la cinta frenándose: { t, dur }
     mix: 0,          // volumen general de la música ahora mismo
     pulseIdx: -1,    // último golpe del pulso programado
@@ -90,7 +92,9 @@
     return t < st.winUntil;
   }
   function resolve(t) {
-    if (!st.enabled || st.stopped || st.tape) return st.tape ? st.main : null;
+    if (st.tape) return st.main;
+    if (st.enabled && st.force) return st.force;
+    if (!st.enabled || st.stopped) return null;
     const G = SN.Game, state = G && G.state;
     if (state === 'MENU' || state === 'BOOT' || state === 'INTRO') return st.menu;
     if (state !== 'GAMEPLAY' && state !== 'BANKRUPTCY') return st.main;
@@ -215,7 +219,7 @@
   }
   function pulse() {
     const tr = st.trade;
-    const kind = tr && !tr.settled && tr.danger ? 'danger' : lastDay() ? 'clock' : null;
+    const kind = st.pulseKind || (tr && !tr.settled && tr.danger ? 'danger' : lastDay() ? 'clock' : null);
     const v = voices[st.main], a = el(v);
     if (!kind || !v || !v.playing || !v.t.sync || !a || a.paused || st.mix < 0.2 || !isFinite(a.currentTime)) { st.pulseIdx = -1; return; }
     const beat = 60 / C().bpm, step = kind === 'danger' ? beat / 2 : beat;
@@ -313,6 +317,10 @@
     tapeStop(dur = 0.9) { if (st.enabled && st.main && !st.tape) st.tape = { t: 0, dur }; },
     // El final: el tema principal, lento, hasta la siguiente operación
     ending() { st.ending = true; },
+    // Una pista fija durante una escena (null: vuelve a decidir el director). Quita la cinta parada.
+    force(id) { st.force = id || null; if (id) st.stopped = false; },
+    // Pulso a tempo a mano ('danger' | 'clock' | null)
+    pulse(kind) { st.pulseKind = kind || null; },
     // Tonalidad de lo que suena (para afinar los efectos) o null si no suena nada
     tonality() {
       const h = voices.hood;

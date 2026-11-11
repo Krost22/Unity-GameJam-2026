@@ -30,7 +30,7 @@
                 <button id="btn-intro" class="btn btn-violet hidden">Ver intro</button>
                 <button id="btn-menu-settings" class="btn btn-cream">Ajustes</button>
               </div>
-              <p class="menu-foot">v1.9 · KrostGames · Adrede</p>
+              <p class="menu-foot">v2.0 · KrostGames · Adrede</p>
             </div>
           </section>
 
@@ -48,6 +48,8 @@
               <button id="btn-min" class="tb-btn" aria-label="Minimizar" title="Minimizar: ver el escritorio"><i class="ico-min"></i><b id="min-badge" class="badge hidden"></b><kbd>D</kbd></button>
               <button id="btn-sound" class="tb-btn" aria-label="Sonido">♪</button>
               <button id="btn-settings" class="tb-btn" aria-label="Ajustes">Menú<kbd>ESC</kbd></button>
+              <!-- La X: FUTURO.EXE no tiene botón de cerrar... salvo al final de NULL.EXE -->
+              <button id="btn-x" class="tb-btn hidden" aria-label="Cerrar">X</button>
             </header>
             <div id="hud">
               <div id="hud-capital" class="hud-box" title="Tu dinero">
@@ -62,6 +64,8 @@
               <div id="hud-days" class="hud-box" title="Días para pagar la deuda"></div>
             </div>
             <div id="body">
+              <!-- El final: el mercado TÚ (js/systems/finale.js) -->
+              <div id="finale" class="hidden"></div>
               <aside id="sidebar">
                 <div id="markets"></div>
                 <div id="nav">
@@ -96,6 +100,7 @@
                     <button id="btn-buy" class="btn btn-green big-btn"><span>Subirá</span><small>▲ ganas si sube</small><kbd>↑</kbd></button>
                     <button id="btn-sell" class="btn btn-coral big-btn"><span>Bajará</span><small>▼ ganas si baja</small><kbd>↓</kbd></button>
                   </div>
+                  <div id="finale-trade" class="hidden"></div>
                   <button id="btn-skip-turn" class="nav-btn ghost">Esperar ▶<kbd>P</kbd></button>
                 </div>
                 <div id="trade-live" class="hidden">
@@ -123,6 +128,8 @@
       <!-- Planos de cinemática a pantalla completa (caras, negro) -->
       <canvas id="cine" width="640" height="360" class="hidden"></canvas>
       <div id="fade"></div>
+      <!-- Encima de todo el escenario (fuera del monitor): el periódico del final, los créditos, onomatopeyas -->
+      <div id="stage-top"></div>
     </div>
     <!-- Subtítulos y SALTAR: fuera de la cámara para que el zoom de las cinemáticas no los recorte -->
     <div id="subs" class="px-font hidden"></div>
@@ -145,6 +152,7 @@
   <script src="js/data/story.js"></script>
   <script src="js/data/chat.js"></script>
   <script src="js/data/music.js"></script>
+  <script src="js/data/finale.js"></script>
   <script src="js/core/state.js"></script>
   <!-- Sistemas -->
   <script src="js/systems/economy.js"></script>
@@ -185,6 +193,7 @@
   <script src="js/systems/tutorial.js"></script>
   <script src="js/systems/narrative.js"></script>
   <script src="js/systems/bankruptcy.js"></script>
+  <script src="js/systems/finale.js"></script>
   <script src="js/render/cinematic.js"></script>
   <!-- Arranque -->
   <script src="js/core/game.js"></script>

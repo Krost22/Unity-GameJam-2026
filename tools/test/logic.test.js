@@ -10,7 +10,7 @@ const ROOT = path.join(__dirname, '..', '..');
 const FILES = [
   'js/core/sn.js', 'js/core/events.js',
   'js/data/markets.js', 'js/data/events.js', 'js/data/simulation.js', 'js/data/progression.js', 'js/data/luck.js',
-  'js/data/cipher.js', 'js/data/academy.js', 'js/data/story.js',
+  'js/data/cipher.js', 'js/data/academy.js', 'js/data/story.js', 'js/data/chat.js', 'js/data/finale.js',
   'js/core/state.js',
   'js/systems/economy.js', 'js/systems/academy.js', 'js/systems/time.js', 'js/systems/debt.js', 'js/systems/market-sim.js',
   'js/systems/trading.js', 'js/systems/unlocks.js', 'js/systems/upgrades.js', 'js/systems/save.js',
@@ -741,6 +741,23 @@ function SN0() { return load(); }
   run.luck.events = ['ruleta']; run.luck.spun = false;
   const spin = L.spin();
   ok(spin && spin.text && L.spin() === null, 'la ruleta da un premio y solo gira una vez por día');
+}
+
+// 2.0) La historia del final: LOS DESFASADOS, NULL.EXE por partes, la despedida y la última oferta
+{
+  const SN = load();
+  const X = SN.Data.cipher, chat = SN.Data.chat, F = SN.Data.finale;
+  ok(X.contact.name === 'LOS DESFASADOS', 'quienes escriben en el idioma secreto se llaman LOS DESFASADOS');
+  const gone = chat.convos.find((c) => c.gone), s6 = X.messages.find((m) => m.id === 's6');
+  ok(gone && gone.when === s6.when && s6.delay > gone.delay, '"TU AMIGO ESTÁ CON NOSOTROS" llega justo después de que Kevo desaparezca');
+  ok(X.messages.filter((m) => m.null).map((m) => m.null).join() === '1,2,3', 'NULL.EXE llega en tres partes, en orden');
+  ok(!X.messages.some((m) => m.text === F.farewell) && /[HB]/.test(F.farewell), 'la despedida va en letras normales: lleva H o B, que no existen en el idioma secreto');
+  ok(F.pact.lines.length === 4 && F.pact.turns === 3, 'la última oferta: cuatro frases y, a la tercera, la entidad elige por ti');
+  ok(F.term.steps.length === 5 && /EXECUTE NULL\.EXE/.test(F.term.steps[4].cmd), 'NULL.EXE: cinco comandos, el último lo ejecuta');
+  ok(SN.Data.story.hoodedEvents.kevoPaid.length === 3 && !SN.Data.story.endDemo, 'la revelación de Kevo existe y el cartel provisional del final ya no');
+  // Todos los objetos que se puede llevar el embargo tienen su nombre para la lista del agente
+  const ids = ['pleyzeta', ...SN.Data.keyItems.map((k) => k.id), ...SN.Data.shop.map((s) => s.id), ...SN.Data.luck.golden.map((g) => g.id)];
+  ok(ids.every((id) => F.police.goods[id]), 'la Policía Fiscal sabe nombrar todo lo que se puede tener');
 }
 
 console.log(`\n${passed} correctas, ${failed} fallos`);
