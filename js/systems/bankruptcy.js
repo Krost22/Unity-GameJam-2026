@@ -29,6 +29,7 @@
       SN.Game.setState('BANKRUPTCY');
       SN.Game.resetTime();
       const [a, b] = D.story.broke;
+      if (SN.Music) SN.Music.tapeStop(); // sin dinero: la cinta se para
       SN.Audio.sfx('notifyBad');
       SN.FX.shake(3, 0.4);
       await SN.UI.stamp(a, 'coral', b, 1.8);
@@ -39,6 +40,7 @@
     async embargo({ early = false } = {}) {
       SN.Game.setState('BANKRUPTCY');
       SN.Game.resetTime();
+      if (SN.Music) SN.Music.tapeStop();
       SN.Audio.setMood('tense');
       SN.Desk.led = 'alert';
       const [a, b0, c] = early ? D.story.embargoEarly : D.story.embargo;
@@ -76,6 +78,7 @@
       const run = S.run, cp = run.checkpoint, st = D.story.finalLoss;
       SN.Audio.setMood('silent');
       SN.Audio.sfx('liquidation');
+      SN.Audio.sfx('broke', { at: 0.7 }); // y una caja de música rota
       SN.Desk.led = 'alert';
       S.profile.runs++;
       S.restoreCheckpoint();

@@ -31,6 +31,7 @@
       screen.classList.remove('glitch');
       this.hood = { t: 0, a: 0, out: false };
       SN.ScreenCanvas.take('hood');
+      if (SN.Music) SN.Music.sting('hood'); // su música (antes que el susurro: así va en su tonalidad)
       SN.Audio.sfx('whisper');
       await SN.wait(0.6);
       await SN.Dialog.show(lines, { pos: { v: 'bottom', h: 'center' }, glitchy: true, smile: opts.smile });
@@ -70,7 +71,7 @@
     // Deuda pagada. La primera (la Pleyzeta) es una fiesta; las siguientes, un alivio corto.
     async onDebtPaid(auto, debt) {
       const run = S.run;
-      SN.Audio.sfx('pay');
+      SN.Audio.sfx('debtPaid');
       SN.Audio.sfx('cheer');
       SN.FX.flash(P.yellowL, 0.3, 0.4);
       const cap = SN.UI.posIn(document.getElementById('hud-goal'));
@@ -216,6 +217,7 @@
       run.flags.endDemo = true;
       await this.teaser();
       const [a, b, c] = story().endDemo;
+      if (SN.Music) SN.Music.ending(); // el tema principal, lento: has ganado... ¿y ahora qué?
       await SN.UI.card(`<div class="overlay-panel"><div class="t1">${a}</div><div class="t2">${b}</div><div class="t3">${c}</div></div>`, 'daycard', 4);
     },
 

@@ -708,6 +708,8 @@
       SN.Market.flush(candle);
       const settled = !!pos.settled;
       const pnl = settled ? pos.result.pnl : SN.Trading.pnlAt(i === pos.candles && pos.liquidated ? pos.exit : candle.c);
+      // La música sigue la operación: ganando, perdiendo y las últimas velas (js/systems/music.js)
+      if (SN.Music) SN.Music.trade({ pnl, amount: pos.amount, settled, danger: i >= pos.total - D.sim.dangerCandles && i < pos.candles });
       // Cada vela suena más aguda cuanto mejor te va
       SN.Audio.sfx('candle', { up: candle.c >= candle.o, step: settled ? null : Math.round(pnl / Math.max(1, pos.amount) * 25), quiet: settled });
       const step = $('live-steps').children[i - 1];
@@ -747,6 +749,7 @@
       pe.className = 'pnl ' + (r.pnl >= 0 ? 'up' : 'down');
       $('chart-wrap').classList.remove('danger');
       this.setLiveNote('...y el mercado sigue sin ti');
+      if (SN.Music) SN.Music.trade({ pnl: r.pnl, amount: r.amount, settled: true });
       SN.Audio.sfx('cash');
       SN.Hands.drumming = false;
     },
@@ -755,6 +758,7 @@
       const cap = this.posIn($('hud-capital'));
       const cx = cap.x + 60, cy = cap.y + 14;
       const big = r.ret >= 0.5 || r.pnl >= Math.max(100, S.run.capital * 0.4);
+      if (SN.Music) SN.Music.tradeEnd(r.pnl);
       SN.Desk.flashGlow(r.pnl >= 0 ? P.green : P.coral, big ? 1.4 : 0.9);
       if (r.pnl >= 0) {
         SN.FX.win(r.pnl, cx, cy, big);
@@ -797,6 +801,7 @@
       $('btn-fast').classList.add('hidden');
       $('chart-wrap').classList.remove('danger');
       this.live = null;
+      if (SN.Music) SN.Music.trade(null);
       this.renderAll();
     },
 

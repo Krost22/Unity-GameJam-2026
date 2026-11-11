@@ -36,10 +36,13 @@
       this.layout();
       this.bindMenu();
       SN.Events.on('day:changed', () => { this.dayChanged = true; });
-      document.addEventListener('pointerdown', () => {
+      // Primer gesto (clic o tecla): el navegador ya deja sonar el audio
+      const gesture = () => {
         SN.Audio.unlock();
         if (this.state === 'MENU' || this.state === 'BOOT') SN.Audio.startMusic();
-      });
+      };
+      document.addEventListener('pointerdown', gesture);
+      document.addEventListener('keydown', gesture);
       if (SN.DEBUG) this.debugKeys();
       $('stage').classList.add('ready');
       $('loading').remove();

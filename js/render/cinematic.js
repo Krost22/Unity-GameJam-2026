@@ -236,6 +236,7 @@
       SN.Desk.led = 'alert';
       await this.wait(1.2);
       this.screenMode = 'hood';
+      if (SN.Music) SN.Music.sting('hood');
       SN.Audio.sfx('whisper');
       await this.wait(1.4);
       for (const line of story.hoodedIntro) await this.say(story.hoodedName, line);

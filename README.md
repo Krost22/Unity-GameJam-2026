@@ -90,6 +90,37 @@ La app **Símbolos** aparece al encontrar el primero, con una pista vaga más ca
 Hasta el nombre del programa, **FUTURO**, está escrito así (la F tiene su propia pista).
 El encapuchado sabe leerlo. No le gusta que lo leas.
 
+## Qué hay en la versión 1.9: música de verdad
+
+Las pistas de `Musics/` sustituyen a la música chiptune que se generaba en código. Un director (`js/systems/music.js`)
+mira lo que pasa en el juego y decide qué suena. Todas las pistas van a 90 BPM y duran compases enteros, así que los
+cambios esperan al siguiente compás y la pista nueva entra por el mismo punto del compás (no se pierde el ritmo).
+
+| Momento | Qué suena |
+|---|---|
+| Menú e intro | `cancionIntroParte1` y `CancionIntroParte2`, una detrás de otra |
+| Partida | `Background` |
+| Vas ganando (desde un +8% de lo apostado, y 6 s después de ganar) | `Ganancia` |
+| Vas perdiendo | `Background` con la cinta frenada: hasta un 6% más lenta y un semitono más grave, con vaivén |
+| Últimas velas | encima, un tic a corcheas y un latido cada dos tiempos, a tempo con la música |
+| Último día de una deuda | encima, un tic-tac de reloj a tempo y una campana desafinada cada cuatro compases |
+| Pestaña Negro | `MercadoNegro` |
+| Día de la suerte | `LuckyDay` |
+| Habla Bravo Fines o estás en su Academia | `BravosFines` |
+| Aparece el encapuchado | `AparicionEncapuchado`, con el resto en silencio |
+| Sin dinero o embargo | la cinta se frena hasta pararse; si no queda el cerdito, una caja de música rota |
+| El final | `CancionIntroParte2`, lenta y dos semitonos más grave |
+
+**Efectos de sonido a juego:** cada nota de los efectos sale de la escala de la pista que suena (y va a su misma
+velocidad de cinta), con timbres suaves de lo-fi. Las tonalidades se midieron analizando las pistas: Background y
+LuckyDay en Re menor, Ganancia en Do menor, MercadoNegro en Fa, BravosFines y la intro 2 en La menor, la intro 1 en
+Mi mayor y el encapuchado en Fa# menor; todas afinadas en La 440. Efectos nuevos: deuda pagada (un alivio que se
+tuerce al final), sin dinero, y el pulso de las últimas velas y del último día.
+
+Funciona también abriendo `index.html` con doble clic: la música usa `<audio>` (Chrome no deja cargar archivos con
+Web Audio desde `file://`). En iPhone y iPad, donde el volumen de un `<audio>` no se puede cambiar, las pistas cambian
+sin fundido. Con la pestaña oculta, la música se para.
+
 ## Qué hay en la versión 1.8: multiplicadores a la venta y deudas a la altura
 
 Las deudas se quedaban pequeñas al lado de lo que se ganaba y la partida se pasaba volando. Se ha rehecho el
@@ -220,10 +251,12 @@ js/core/              sn.js (utilidades, RNG con semilla), events.js, state.js, 
 js/data/              los "ScriptableObjects": mercados (también los negros), eventos, simulación/mejoras/tienda,
                       progression.js (la cadena de deudas y los objetos clave), luck.js (días de la suerte),
                       cipher.js (el idioma secreto), academy.js (el árbol de Bravo Fines), historia (también lo
-                      que dice el protagonista en sus globos), chat.js (las conversaciones con Kevo)
+                      que dice el protagonista en sus globos), chat.js (las conversaciones con Kevo),
+                      music.js (las pistas de Musics/, su tonalidad y cuándo suena cada una)
 js/systems/           economy, debt, time, market-sim (+ PISTA), trading (+ COBRAR, giros y topes), drama (cámara lenta),
                       unlocks (la cadena), upgrades, academy, shopwatch (números rojos y ofertas que saltan solas),
-                      save, cipher, luck, audio, tutorial, narrative, bankruptcy
+                      save, cipher, luck, music (el director de la música), audio (efectos afinados con la música),
+                      tutorial, narrative, bankruptcy
 js/render/            pixel.js, pixkit.js (kit de pixel art procedural), sprites.js, desk.js (habitación y ventana), hero.js (manos,
                       gato y primeros planos), hands.js, chart.js, fx.js, news-art.js, characters.js, cinematic.js,
                       sneak.js (el cuarto de Timmy)
@@ -266,6 +299,9 @@ Los iconos son dibujos en texto en `js/render/sprites.js`; el encapuchado, el ce
 **Fuente:** `node tools/build-font.js` regenera `css/font.css` a partir de los glifos dibujados en ese archivo: SaldoPixel
 (texto) y SaldoNum (cifras en negrita de ancho fijo para el dinero; lo que no tiene lo pone SaldoPixel).
 
+**Cambiar la música:** las pistas (archivo, volumen, tonalidad) y cuánto pesa cada situación en
+`js/data/music.js`. Si cambias una pista por otra, pon su tonalidad: los efectos se afinan con ella.
+
 **Añadir una conversación de Mensajín:** una entrada en `js/data/chat.js` con el día y turno en que llega, lo que escribe
 Kevo, la respuesta del protagonista y lo que Kevo contesta.
 
@@ -276,6 +312,7 @@ node tools/test/logic.test.js       # fórmulas, COBRAR, giros, pista, topes, ca
 node tools/test/e2e.test.js         # partida completa en Chrome/Edge sin ventana: tutorial (errata, mejoras y tienda), regalo, oferta que salta sola, mercado negro, ahorros de Timmy
 node tools/test/e2e-paths.test.js   # continuar (también tras cobrar), repetir tutorial, tienda, Bravo Fines y su Academia, primera plana, día de la suerte y ruleta, los 3 finales y pantallas pequeñas
 node tools/test/e2e-desktop.test.js # minimizar, Mensajín, la historia de Kevo, LOS PAGADOS, una pista que traduce sus mensajes, Símbolos
+node tools/test/e2e-music.test.js   # la pista de cada momento, cambios a compás, bucle sin cortes, la cinta (perdiendo, sin dinero, el final) y todos los efectos
 ```
 
 Abre `index.html?debug` para atajos de prueba: `F6` descubre un símbolo, `F7` salta al siguiente día de la suerte,
