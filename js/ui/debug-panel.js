@@ -46,6 +46,28 @@
     await SN.Finale.choose(which);
   }
 
+  // El embargo del final B, suelto: el agente entra, se lo lleva todo en la caja y arrastra el PC. Con todo
+  // comprado, para verlo entero; al acabar, la habitación y la partida vuelven a como estaban
+  async function raid() {
+    const run = S.run, D = SN.Data, Dk = SN.Desk, had = Object.assign({}, run.owned);
+    for (const id of [...D.keyItems.map((k) => k.id), ...D.shop.map((s) => s.id), ...D.luck.golden.map((g) => g.id)]) run.owned[id] = true;
+    SN.UI.setBusy(true);
+    Dk.phaseOverride = 'night';
+    Dk.dirty();
+    try {
+      await SN.Finale.raid();
+      await SN.wait(1.5);
+    } finally {
+      run.owned = had;
+      Object.assign(Dk, { stripped: null, noPC: false, palaHere: false, palaPos: null, handsOff: false, phaseOverride: null });
+      Dk.dirty();
+      SN.Officer.reset();
+      document.getElementById('monitor').classList.remove('hidden');
+      SN.Game.camTo({ x: 320, y: 180, zoom: 1 }, 0.3);
+      SN.UI.setBusy(false);
+    }
+  }
+
   const ACTIONS = [
     { label: 'Rescate: llamada', run: () => rescue('phone') },
     { label: 'Rescate: videollamada', run: () => rescue('call') },
@@ -60,6 +82,8 @@
     { label: 'Final: llegar a la meta', run: () => finale() },
     { label: 'Final A (el avatar)', run: () => finale('A') },
     { label: 'Final B (NULL.EXE)', run: () => finale('B') },
+    // Solo la escena de la Policía Fiscal (no acaba la partida)
+    { label: 'Final B: el embargo', run: raid },
   ];
 
   // ¿Se puede lanzar algo ahora? (con la partida en marcha y sin nada más pasando)

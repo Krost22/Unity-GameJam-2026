@@ -133,6 +133,9 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
     ok(await ev('SN.Desktop.topWin() === "term"'), 'el icono de NULL.EXE te lleva a la terminal');
     ok(await playOut(200000), 'final B entero hasta los créditos: terminal, colapso, la X, farolas, despedida, carta, Hacienda y periódico');
     await shot('B-creditos');
+    ok(await ev('["pleyzeta", "tele", "movil", "moto", "reloj", "pc"].every((id) => SN.Officer.taken.includes(id)) && SN.Desk.noPC && !SN.Officer.on'),
+      'el agente de la Policía Fiscal ha entrado en la habitación y se lo ha llevado todo, objeto por objeto (y el PC)');
+    ok(await ev('SN.Desk.palaPos === "desk" && SN.Desk.state().pala === true'), '...y la pala te la ha dejado él mismo en el escritorio');
     ok(await ev('/NULL\\.EXE/.test(document.querySelector(".fin-credits").textContent) && /PALA/.test(document.querySelector(".fin-credits").textContent)'), 'créditos del final B, con la pala');
     await click('.fin-credits .fin-next');
     ok(await wait('SN.Game.state === "MENU"', 6000), 'vuelta al menú');

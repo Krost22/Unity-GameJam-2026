@@ -15,6 +15,10 @@
   const F = () => D.finale;
   const wait = (s) => SN.wait(s);
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  // El embargo del final B: el orden en que el agente se lleva las cosas, según están en la habitación (de la
+  // ventana a la consola), para que la cruce de un lado al otro en vez de ir dando saltos
+  const RAID_ORDER = ['lampara', 'planta', 'tele', 'moto', 'taza', 'maneki', 'trebol4', 'herradura', 'reloj', 'teclado', 'billete7',
+    'movil', 'alfombrilla', 'cascos', 'poster', 'trofeo', 'pleyzeta'];
 
   // Parte un texto en líneas cortas (para los planos en negro)
   function wrap(text, max = 40) {
@@ -433,61 +437,16 @@
 
     // ---------- Epílogo B: la pala... y Hacienda ----------
     async epilogueB() {
-      const L = F().letter, Pz = F().police, run = S.run;
+      const L = F().letter, run = S.run;
       // La carta del servicio de compensación, en la pantalla, y la pala
       SN.Desktop.closeWin('chat');
       SN.Audio.sfx('notify');
       await this.panel(`<div class="lt-head">${esc(L.head)}</div>${L.body.map((l) => `<p>${esc(l)}</p>`).join('')}
         <div class="lt-gift"><i data-ico="pala"></i><b>${esc(L.gift)}</b></div><p class="lt-foot">«${esc(L.foot)}»</p>`, 'fin-letter', 'layer-top', 'Seguir');
-      // Llaman a la puerta
-      SN.Desk.palaHere = true;
-      SN.Desk.dirty();
-      for (let i = 0; i < 3; i++) { SN.Audio.sfx('knock'); SN.FX.shake(2, 0.15); await wait(0.32); }
-      await this.say(Pz.name, Pz.knock, 2);
-      // La lista: lo que el jugador tiene de verdad (la consola primero)
-      const ids = ['pleyzeta', ...D.keyItems.map((k) => k.id), ...D.shop.map((s) => s.id), ...(D.luck && D.luck.golden ? D.luck.golden.map((g) => g.id) : [])]
-        .filter((id) => id === 'pleyzeta' || run.owned[id]);
-      const names = ids.map((id) => Pz.goods[id]).filter(Boolean);
-      const list = names.length > 1 ? `${names.slice(0, -1).join(', ')} y ${names[names.length - 1]}` : names[0];
-      await this.say(Pz.name, Pz.read.replace('{list}', list));
-      const last = ids[ids.length - 1];
-      if (Pz.objection[last]) { await this.say(Pz.me, Pz.objection[last], 1.8); await this.say(Pz.name, Pz.taken, 1.8); }
-      await this.say(Pz.me, Pz.defense[0], 2.2);
-      await this.say(Pz.name, Pz.defense[1], 2.2);
-      // Los golpes, fuera de plano: la cámara se va a la ventana
-      SN.Game.camTo({ x: 96, y: 112, zoom: 2.4 }, 0.6);
-      await wait(0.7);
-      const hits = [[30, 60], [92, 92], [40, 130], [110, 52], [70, 150]];
-      for (let i = 0; i < 5; i++) {
-        this.comic(Pz.hits[i % Pz.hits.length], hits[i][0], hits[i][1]);
-        SN.Audio.sfx('punch');
-        SN.FX.shake(4, 0.25);
-        if (i === 1) this.say(Pz.me, Pz.cries[0], 1.6);
-        if (i === 3) this.say(Pz.me, Pz.cries[1], 1.6);
-        await wait(0.55);
-      }
-      const dust = U.el('div', 'fin-dust');
-      $('stage-top').appendChild(dust);
-      SN.after(3.5, () => dust.remove());
-      await wait(1.6);
-      SN.Game.camTo({ x: 320, y: 180, zoom: 1 }, 1);
-      await wait(0.8);
-      // El embargo: el camión por la ventana y la habitación vaciándose
-      SN.Desk.windowEvent('camion');
-      SN.Desk.stripped = new Set();
-      for (const id of ids) { SN.Desk.stripped.add(id); SN.Desk.dirty(); SN.Audio.sfx('whoosh'); await wait(0.4); }
-      await this.say(Pz.me, Pz.pc[0], 2);
-      await this.say(Pz.name, Pz.pc[1], 1.8);
-      SN.Desk.noPC = true;
-      SN.Desk.dirty();
-      $('monitor').classList.add('hidden');
-      SN.Audio.sfx('thud');
-      await wait(1);
-      // Lo único que no se embarga
-      await this.say(Pz.name, Pz.shovel, 2.6);
-      await wait(0.6);
+      await this.raid();
       // El protagonista llora en la habitación vacía
       SN.Cine.setShot({ type: 'face', expr: 'cry', night: true, opts: { tears: true } });
+      SN.Game.camTo({ x: 320, y: 180, zoom: 1 }, 0.01);
       await wait(4.2);
       SN.Cine.setShot(null);
       // A la mañana siguiente, el periódico
@@ -505,6 +464,93 @@
       await this.catSting();
       await this.powerOff();
       await this.theEnd('B');
+    },
+
+    // El embargo: el agente de la Policía Fiscal entra en la habitación por el lado de la ventana (de cuerpo entero,
+    // por detrás de la mesa y del monitor: lo dibuja js/render/officer.js), lee la lista, rodea el monitor para
+    // repartir y luego recorre el cuarto metiendo en su caja, uno a uno, todo lo que tienes. Al final empuja el PC
+    // hasta la puerta... y te deja la pala.
+    async raid() {
+      const Pz = F().police, run = S.run, O = SN.Officer, Dk = SN.Desk;
+      const cop = async (text, auto) => { O.talk = true; try { await this.say(Pz.name, text, auto); } finally { O.talk = false; } };
+      // Llaman a la puerta
+      Dk.palaHere = true;
+      Dk.dirty();
+      for (let i = 0; i < 3; i++) { SN.Audio.sfx('knock'); SN.FX.shake(2, 0.15); await wait(0.32); }
+      await this.say(Pz.name, Pz.knock, 2);
+      // No espera a que abras: entra (y al gato no le hace ninguna gracia)
+      SN.Audio.sfx('thud');
+      SN.FX.shake(3, 0.3);
+      SN.Hero.catDo('arch', 2.4, 'hiss');
+      O.occlude(['cascos', 'trofeo', 'pleyzeta']); // lo que está en la mesa por delante de él, cuando pase por la derecha
+      await O.enter(25);
+      await wait(0.3);
+      // La lista: lo que el jugador tiene de verdad (la consola primero)
+      const ids = ['pleyzeta', ...D.keyItems.map((k) => k.id), ...D.shop.map((s) => s.id), ...(D.luck && D.luck.golden ? D.luck.golden.map((g) => g.id) : [])]
+        .filter((id) => id === 'pleyzeta' || run.owned[id]);
+      const names = ids.map((id) => Pz.goods[id]).filter(Boolean);
+      const list = names.length > 1 ? `${names.slice(0, -1).join(', ')} y ${names[names.length - 1]}` : names[0];
+      O.prop = 'list';
+      await cop(Pz.read.replace('{list}', list));
+      const last = ids[ids.length - 1];
+      if (Pz.objection[last]) { await this.say(Pz.me, Pz.objection[last], 1.8); await cop(Pz.taken, 1.8); }
+      await this.say(Pz.me, Pz.defense[0], 2.2);
+      await cop(Pz.defense[1], 2.2);
+      O.prop = null;
+      // Los golpes, fuera de plano: rodea el monitor hacia ti (se pierde detrás de la pantalla) y la cámara se va
+      // a la ventana
+      await O.walkTo(96, 110);
+      SN.Game.camTo({ x: 96, y: 112, zoom: 2.4 }, 0.6);
+      await wait(0.7);
+      Dk.handsOff = true; // te aparta de la mesa: ya no vuelves a tocar el teclado
+      const hits = [[30, 60], [92, 92], [40, 130], [110, 52], [70, 150]];
+      for (let i = 0; i < 5; i++) {
+        this.comic(Pz.hits[i % Pz.hits.length], hits[i][0], hits[i][1]);
+        SN.Audio.sfx('punch');
+        SN.FX.shake(4, 0.25);
+        if (i === 1) this.say(Pz.me, Pz.cries[0], 1.6);
+        if (i === 3) this.say(Pz.me, Pz.cries[1], 1.6);
+        await wait(0.55);
+      }
+      const dust = U.el('div', 'fin-dust');
+      $('stage-top').appendChild(dust);
+      SN.after(3.5, () => dust.remove());
+      await wait(1.6);
+      SN.Game.camTo({ x: 320, y: 180, zoom: 1 }, 1);
+      await wait(0.8);
+      // El embargo: el camión espera en la calle y el agente vuelve a salir de detrás del monitor, ya con la caja.
+      // Recorre la habitación de la ventana a la consola, cada vez con más prisa: lo de los lados lo coge a la
+      // vista; lo de la mesa, pasando por detrás de la pantalla (su mano asoma por debajo)
+      Dk.windowEvent('camion');
+      Dk.stripped = new Set();
+      O.box = true;
+      await O.walkTo(30);
+      const at = (id) => { const i = RAID_ORDER.indexOf(id); return i < 0 ? RAID_ORDER.length : i; };
+      const order = ids.slice().sort((a, b) => at(a) - at(b));
+      for (let i = 0; i < order.length; i++) await O.take(order[i], Math.max(0.55, 1 - i * 0.04));
+      await wait(0.4);
+      await O.leave(110);
+      // El PC, lo último: cruza hasta el otro lado del monitor y lo empuja hacia la puerta
+      await this.say(Pz.me, Pz.pc[0], 2);
+      await O.enter(292, 130);
+      O.dir = -1;
+      await cop(Pz.pc[1], 1.8);
+      await O.takePC();
+      SN.Audio.sfx('thud');
+      SN.FX.shake(3, 0.3);
+      await wait(0.8);
+      // Lo único que no se embarga: vuelve a entrar en la habitación vacía, coge la pala de su rincón, te la
+      // enseña... y te la deja en el escritorio
+      await O.enter(250, 120);
+      await O.takePala();
+      await O.walkTo(Dk.PALA_DESK.x + 12, 90);
+      await cop(Pz.shovel, 2.6);
+      await O.givePala();
+      await wait(0.4);
+      await O.leave(120);
+      // Te quedas a solas con ella: la cámara se acerca despacio a la pala, en la mesa vacía
+      SN.Game.camTo({ x: 320, y: 250, zoom: 1.5 }, 1.6);
+      await wait(2.4);
     },
 
     // ---------- FIN y créditos ----------
@@ -556,6 +602,9 @@
       SN.Desk.stripped = null;
       SN.Desk.noPC = false;
       SN.Desk.palaHere = false;
+      SN.Desk.palaPos = null;
+      SN.Desk.handsOff = false;
+      SN.Officer.reset();
       SN.Desk.phaseOverride = null;
       SN.Desk.dirty();
       SN.Desktop.noApp = false;

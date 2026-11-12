@@ -253,6 +253,14 @@
   // Mano derecha sobre el ratón (sprite 64x64; el centro del ratón en (24, 12)).
   // La palma cubre la parte trasera; índice y corazón estirados sobre los botones, anular y meñique
   // abrazan el costado derecho y el pulgar el izquierdo. El brazo entra en diagonal desde abajo a la derecha.
+  // El ratón solo, sin la mano encima (el embargo del final B: te han apartado de la mesa)
+  function buildMouse() {
+    const sp = new PK.Sprite(64, 64);
+    sp.part(sp.mask().ellipse(24, 13, 8, 12), RAMP.mouse, { light: HAND_LIGHT, lit: 2 });
+    sp.line(24, 2, 24, 9, P.navyDD).rect(23, 4, 3, 3, P.navyLL).px(24, 5, P.cyan);
+    return sp.c;
+  }
+
   function buildMouseHand(pressed, phase) {
     const sp = new PK.Sprite(64, 64);
     const rim = RIM[phase] || RIM.evening;
@@ -572,6 +580,7 @@
 
     // Manos en primera persona (g = lienzo de 320x180): teclado en (kx, ky), ratón en (mx, my)
     drawHands(g, phase, kx, ky, mx, my) {
+      if (SN.Desk.handsOff) { g.drawImage(this.mouseOnly(), mx - 24, my - 13); return; }
       const md = this.mood();
       const by = Math.round(this.bounce.y);
       const nervous = md.expr === 'nervous' || md.expr === 'shock';
@@ -588,7 +597,7 @@
       g.drawImage(keyHand, kx - 21 + sx, ky - 14 + by + lift);
       // El reloj RÓLEZ (objeto clave): en la muñeca izquierda, brillando
       const run = SN.State.run;
-      if (run && run.owned.reloj) {
+      if (run && run.owned.reloj && !(SN.Desk.stripped && SN.Desk.stripped.has('reloj'))) {
         const wx = kx - 21 + sx + 17, wy = ky - 14 + by + lift + 31;
         SN.Px.line(g, wx - 3, wy - 2, wx + 4, wy + 2, P.yellowD, 2);
         SN.Px.rect(g, wx, wy - 1, 2, 2, P.yellowL);
@@ -691,6 +700,8 @@
 
     // La mano que señala (la del ratón, sin ratón): { c, tip } para el rescate (js/render/bailout.js)
     pointHand(phase = 'night') { return cached('point|' + phase, () => buildPointHand(phase)); },
+    // El ratón de la mesa sin la mano (mismo lienzo y mismo sitio que la mano del ratón)
+    mouseOnly() { return cached('mouse', buildMouse); },
 
     clearCache() { cache.clear(); },
   };

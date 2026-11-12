@@ -75,7 +75,7 @@
   const motes = Array.from({ length: 12 }, (_, i) => ({ x: 4 + (i * 37) % 44, y: 30 + (i * 53) % 110, s: 0.3 + (i % 5) * 0.12, ph: i }));
 
   const Desk = SN.Desk = {
-    KEYS, KB, MON, SCR,
+    KEYS, KB, MON, SCR, HANDS,
     led: 'idle',
     camShift: 0,
     phaseOverride: null,
@@ -86,6 +86,14 @@
     noPC: false,
     crawl: 0,
     palaHere: false,
+    // Dónde está la pala: null = de pie en su rincón; 'held' = la tiene el agente del embargo en la mano;
+    // 'desk' = tumbada en tu escritorio, donde te la deja (PALA_DESK: su centro)
+    palaPos: null,
+    PALA_DESK: { x: 160, y: 139 },
+    // La pala suelta (de pie, entera), para llevarla en la mano
+    palaSprite() { const c = Px.canvas(12, 42), g = Px.ctx(c); g.translate(-308, -92); drawPala(g); return c; },
+    // Sin manos en la mesa (el embargo del final B: te han apartado del teclado). El ratón se queda en su sitio
+    handsOff: false,
     dirty() { bgKey = ''; },
     keyFor(code) { return KEYS.find((k) => k.code === code); },
 
@@ -131,6 +139,35 @@
       return null;
     },
 
+    // El dibujo suelto de un objeto de la habitación: lo que cambia en las capas quietas al quitarlo, tal como se ve
+    // ahora mismo. Así el embargo del final B se lo puede llevar en la mano. id: un objeto de la tienda, 'pleyzeta'
+    // (la consola) o 'pc' (monitor, teclado y alfombrilla). Devuelve { img, x, y, w, h } o null si no se ve.
+    cutout(id) {
+      const st = this.state(), off = Object.assign({}, st);
+      if (id === 'pc') off.noPC = true;
+      else if (id === 'pleyzeta') off.console = false;
+      else { off.owned = Object.assign({}, st.owned); delete off.owned[id]; }
+      const flat = (s) => { const c = buildBack(s); Px.ctx(c).drawImage(buildFront(s), 0, 0); return c; };
+      const full = flat(st);
+      const a = Px.ctx(full).getImageData(0, 0, RW, RH), b = Px.ctx(flat(off)).getImageData(0, 0, RW, RH);
+      let x0 = RW, y0 = RH, x1 = -1, y1 = -1;
+      for (let i = 0, p = 0; i < a.data.length; i += 4, p++) {
+        if (a.data[i] === b.data[i] && a.data[i + 1] === b.data[i + 1] && a.data[i + 2] === b.data[i + 2]) { a.data[i + 3] = 0; continue; }
+        const x = p % RW, y = (p / RW) | 0;
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
+      }
+      if (x1 < 0) return null;
+      const w = x1 - x0 + 1, h = y1 - y0 + 1, img = Px.canvas(w, h), g = Px.ctx(img);
+      Px.ctx(full).putImageData(a, 0, 0);
+      g.drawImage(full, -x0, -y0);
+      // El teclado de colores se pinta cada fotograma: en el recorte, con los colores de este instante
+      if (id === 'teclado') for (const k of KEYS) R(g, k.x - x0, k.y - y0, k.w, k.h, `hsl(${(k.c * 22 + k.r * 30 + t * 120) % 360}, 85%, 62%)`);
+      return { img, x: x0, y: y0, w, h };
+    },
+
     state() {
       const run = SN.State.run, strip = this.stripped;
       const owned = run ? run.owned : {};
@@ -149,6 +186,7 @@
         console: !this.hideConsole && !(strip && strip.has('pleyzeta')),
         noPC: this.noPC,
         pala: this.palaHere || !!(SN.State.profile && SN.State.profile.pala),
+        palaPos: this.palaPos,
       };
     },
 
@@ -167,10 +205,14 @@
       rg.drawImage(fg, 0, 0);
       drawLampGlowBehind(rg, st);
       SN.Hero.update(dt);
+      // El agente del embargo (final B): el cuerpo, por detrás de la mesa y del monitor...
+      SN.Officer.drawBack(rg, dt);
       SN.Hero.drawCat(rg, 2, 142, st.phase);
       drawAnimated(rg, st, dt);
       if (this.crawl > 0) { this.crawl += dt; drawCrawl(rg, this.crawl); }
       if (!st.noPC) SN.Hero.drawHands(rg, st.phase, HANDS.kx, HANDS.ky, HANDS.mx, HANDS.my);
+      // ...y el brazo con el que coge las cosas, por delante
+      SN.Officer.drawFront(rg);
       drawLighting(rg, st, dt);
       g.drawImage(room, 0, 0);
     },
@@ -182,9 +224,10 @@
     drawWall(g, st);
     drawWindowFrame(g);
     drawRightWall(g, st);
-    if (st.pala) drawPala(g);
+    if (st.pala && !st.palaPos) drawPala(g);
     if (!st.noPC) drawMonitor(g);
     drawDesk(g);
+    if (st.pala && st.palaPos === 'desk') drawPalaOnDesk(g);
     drawConsoleBox(g, st);
     if (!st.noPC) drawPad(g, st);
     if (!st.noPC) drawKeyboard(g, st);
@@ -204,6 +247,17 @@
     R(g, x - 1, 118, 4, 2, P.coalD);
     R(g, x - 4, 120, 10, 11, P.coalL); R(g, x - 4, 120, 10, 1, P.creamD); R(g, x - 4, 121, 1, 10, P.creamDD); R(g, x + 5, 121, 1, 10, P.coal);
     R(g, x - 3, 131, 8, 1, P.coalL); R(g, x - 2, 132, 6, 1, P.coal);
+  }
+
+  // La misma pala, tumbada en el escritorio (final B: el agente te la deja ahí): girada un cuarto de vuelta, con
+  // el mango a la izquierda y la hoja a la derecha, y su sombra en la madera
+  function drawPalaOnDesk(g) {
+    const { x, y } = Desk.PALA_DESK;
+    R(g, x - 19, y + 6, 38, 1, P.woodDD);
+    g.save();
+    g.transform(0, -1, 1, 0, x - 113, y + 314); // (px, py) -> (py - 113 + x, 314 - px + y)
+    drawPala(g);
+    g.restore();
   }
 
   // Final A: las gráficas se salen del monitor y trepan por las paredes y la mesa
@@ -774,7 +828,7 @@
     // LED del monitor
     const on = Desk.led === 'busy' ? Math.floor(t * 8) % 2 === 0 : Desk.led === 'alert' ? Math.floor(t * 4) % 2 === 0 : true;
     // (en el marco, a la altura de los dos botones y a su derecha: más abajo quedaba sobre el borde de la mesa)
-    R(g, MON.x + MON.w - 16, MON.y + MON.h - 5, 2, 2, on ? (Desk.led === 'alert' ? P.coral : P.green) : P.greenDD);
+    if (!st.noPC) R(g, MON.x + MON.w - 16, MON.y + MON.h - 5, 2, 2, on ? (Desk.led === 'alert' ? P.coral : P.green) : P.greenDD);
   }
 
   function drawHeadphones(g) {

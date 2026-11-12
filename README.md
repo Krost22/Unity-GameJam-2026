@@ -110,7 +110,7 @@ La historia ya tiene final. Antes, la meta mostraba un cartel provisional; ahora
 | Final | Qué pasa |
 |---|---|
 | A — El avatar perfecto | Aceptas la última oferta: FUTURO.EXE absorbe la pantalla, el encapuchado se funde contigo, la habitación pierde el color y la app arranca con un nuevo administrador. Termina con el gato. Sin pala |
-| B — NULL.EXE | En la terminal escribes los comandos (cualquier tecla), todo cae a $0, FUTURO.EXE tiene por fin una X y las farolas se encienden. Después llegan la carta con **+1 PALA**, la Policía Fiscal (golpes fuera de plano y embargo de todo, menos la pala) y el periódico con Bravo Fines detenido |
+| B — NULL.EXE | En la terminal escribes los comandos (cualquier tecla), todo cae a $0, FUTURO.EXE tiene por fin una X y las farolas se encienden. Después llegan la carta con **+1 PALA**, la Policía Fiscal (el agente entra en la habitación por el lado de la ventana, por detrás de la mesa y del monitor: golpes fuera de plano y luego se lleva en su caja, objeto por objeto, todo lo que tienes, y empuja el PC hasta la puerta; todo, menos la pala: vuelve a por ella, te la tiende y te la deja tumbada en el escritorio vacío, y la cámara se acerca a ella) y el periódico con Bravo Fines detenido |
 
 Al terminar: créditos y vuelta al menú. **La Pala**, solo con el final B, queda en la esquina del cuarto para siempre.
 Con `index.html?debug`, **F11** salta a la meta final.
@@ -267,7 +267,7 @@ y quien hizo el tutorial antiguo ve el nuevo una vez.
 ## Pendiente antes de publicar
 
 - **Quitar el panel de depuración.** Son los botones de arriba a la izquierda que lanzan las animaciones (el rescate,
-  la videollamada, el puño de la intro, los días de la suerte, el bono del encapuchado y los dos finales) para
+  la videollamada, el puño de la intro, los días de la suerte, el bono del encapuchado, los dos finales y el embargo del final B) para
   probarlas sin llegar a ellas jugando. Para quitarlo: borrar `js/ui/debug-panel.js`, su `<script>` en `index.html` y el bloque
   "Panel de depuración" al final de `css/style.css`.
 
@@ -292,7 +292,8 @@ js/systems/           economy, debt, time, market-sim (+ PISTA), trading (+ COBR
                       tutorial, narrative, bankruptcy, finale (la meta final y los dos finales)
 js/render/            pixel.js, pixkit.js (kit de pixel art procedural), sprites.js, desk.js (habitación y ventana), hero.js (manos,
                       gato y primeros planos), hands.js, chart.js, fx.js, news-art.js, characters.js, cinematic.js,
-                      bailout.js (el rescate bancario: la llamada y la videollamada con Trompa)
+                      bailout.js (el rescate bancario: la llamada y la videollamada con Trompa),
+                      officer.js (el agente de la Policía Fiscal del embargo del final B)
 js/ui/                ui.js (UIManager), dialog.js, windows.js (mejoras y Academia, periódico con primera plana,
                       tienda, oferta, ruleta, ajustes, "Acerca de"), desktop.js (escritorio del PC, Mensajín y
                       Símbolos), keywords.js (palabras clave con color), hero-say.js (los globos del protagonista)

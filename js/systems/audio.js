@@ -287,6 +287,10 @@
     // La pantalla se apaga
     powerOff: () => { tone({ type: 'sine', f0: 900, f1: 40, dur: 0.5, vol: 0.12 }); noise({ dur: 0.25, vol: 0.08, filter: 'highpass', f0: 3000, f1: 300 }); },
     thud: () => { tone({ type: 'sine', f0: 140, f1: 50, dur: 0.25, vol: 0.35 }); noise({ dur: 0.1, vol: 0.1, filter: 'lowpass', f0: 600 }); },
+    // El agente del embargo: sus botas en el suelo, lo que mete en la caja y el PC arrastrado por la mesa
+    step: () => { tone({ type: 'sine', f0: 92, f1: 58, dur: 0.07, vol: 0.16 }); noise({ dur: 0.03, vol: 0.05, filter: 'lowpass', f0: 500 }); },
+    drop: () => { tone({ type: 'triangle', f0: 210, f1: 120, dur: 0.08, vol: 0.12 }); noise({ dur: 0.05, vol: 0.08, filter: 'bandpass', f0: 700, q: 1.2 }); },
+    drag: () => noise({ dur: 0.22, vol: 0.09, filter: 'bandpass', f0: 260, f1: 180, q: 3, attack: 0.04 }),
     // ---------- El rescate bancario (js/render/bailout.js) ----------
     // Tecla del teléfono: los dos tonos de verdad de cada número (DTMF)
     dtmf: ({ d = 1 } = {}) => {
