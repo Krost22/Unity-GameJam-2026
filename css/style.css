@@ -608,6 +608,8 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
   transform-origin: bottom center; transform: translateX(-50%) scale(var(--k, 2));
   background: rgba(7, 5, 18, .92); color: var(--ink); box-shadow: 0 0 0 1px var(--violet); z-index: 10; user-select: none; }
 #subs b { color: var(--yellow); font-weight: normal; }
+/* En la llamada del rescate el móvil ocupa el centro: el subtítulo sube, sobre la pared (js/render/bailout.js) */
+#subs.top { top: 3vh; bottom: auto; transform-origin: top center; }
 #subs.click { cursor: pointer; }
 #subs.click::after { content: ' ▶'; color: var(--yellow); animation: pulse .7s steps(2) infinite; }
 #btn-skip { position: fixed; right: 12px; top: 12px; transform-origin: top right; transform: scale(var(--k, 2));
@@ -1094,7 +1096,11 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 #app.lucky #titlebar { box-shadow: inset 0 -1px 0 0 var(--yellow); }
 #clock .lk { font-weight: normal; color: var(--yellow); margin-right: 3px; animation: pulse 1.2s steps(2) infinite; }
 .daycard.lucky { box-shadow: 0 0 0 2px var(--navyDD), 0 0 0 4px var(--yellow), 0 0 0 6px var(--navyDD); }
-.daycard.lucky .d1 { color: var(--yellow); }
+.daycard.lucky .d1 { color: var(--yellow); white-space: nowrap; margin-bottom: 4px; }
+/* Las estrellas del día de la suerte: una fila encima del título que titila (3 estrellas; 5 el día 77) */
+.daycard.lucky .lk-stars { display: flex; gap: 8px; font-size: 16px; line-height: 16px; margin-bottom: 2px; }
+.daycard.lucky .lk-stars i { font-style: normal; color: var(--yellow); text-shadow: 0 2px 0 var(--magenta); animation: lkstar .8s steps(2) infinite; }
+@keyframes lkstar { 50% { color: var(--yellowL); transform: translateY(-1px); } }
 .daycard.lucky .d3 { color: var(--ink2); margin-top: 3px; }
 #hud-days .free.lucky { color: var(--yellow); }
 #hud-days i.lucky:not(.now) { box-shadow: inset 0 2px 0 0 var(--yellow); }
@@ -1142,6 +1148,8 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 #finale-trade .ft-t { color: var(--coralL); line-height: 10px; }
 #finale-trade .ft-or { color: var(--ink3); line-height: 8px; }
 #finale-trade .btn { padding: 3px 4px 2px; }
+/* El aviso de la liquidación (js/systems/finale.js): en dos líneas y por encima del mercado TÚ (#finale, z-index 3) */
+.stamp.fin-warn { z-index: 5; font-size: 16px; line-height: 18px; text-align: center; }
 /* La X de FUTURO.EXE: solo al final de NULL.EXE */
 #btn-x { background: var(--coralD); color: var(--creamL); }
 #btn-x.call { animation: xCall .5s steps(2) infinite; }
@@ -1173,6 +1181,7 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 .tm { flex: 1; overflow-y: auto; padding: 4px 5px; background: #07061A; color: var(--green); line-height: 9px; }
 .tm p { white-space: pre-wrap; }
 .tm-cmd { color: var(--creamL); }
+.tm-lock { color: var(--coral); }
 .tm-hint { color: var(--ink3); animation: caret 1s steps(2) infinite; }
 .tm .caret { display: inline-block; width: 4px; height: 7px; margin-left: 1px; background: var(--green); animation: caret 1s steps(2) infinite; }
 @keyframes caret { 50% { opacity: 0; } }
@@ -1216,3 +1225,19 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 @keyframes dust { 0% { transform: scale(.2); opacity: 0; } 15% { opacity: 1; } 60% { transform: scale(1.6) translateX(20px); opacity: .9; } 100% { transform: scale(2.4) translateX(60px); opacity: 0; } }
 .fin-panel.fin-credits { animation: fadein .6s steps(6); }
 @keyframes fadein { from { opacity: 0; } }
+
+/* ---------- Panel de depuración (js/ui/debug-panel.js) · QUITAR ANTES DE LA VERSIÓN FINAL ---------- */
+#debug-panel { position: fixed; left: 4px; top: 4px; z-index: 50; display: flex; flex-direction: column; gap: 2px; padding: 3px;
+  background: rgba(7, 5, 18, .85); box-shadow: 0 0 0 1px var(--coral); transform-origin: top left; }
+#debug-panel .dp-h { color: var(--coral); line-height: 9px; padding: 0 1px 1px; white-space: nowrap; }
+#debug-panel .dp-h i { color: var(--ink3); font-style: normal; }
+#debug-panel .dp-h.warn { color: var(--yellow); }
+#debug-panel button { font: inherit; text-align: left; color: var(--ink); background: var(--navyM); border: 0; padding: 1px 4px; line-height: 9px;
+  cursor: pointer; box-shadow: 0 0 0 1px var(--navyL); }
+#debug-panel button:hover { background: var(--navyL); color: var(--yellowL); }
+#debug-panel button.on { background: var(--coralD); color: var(--creamL); }
+#debug-panel.mini button, #debug-panel.mini .dp-h i { display: none; }
+/* Sin sitio a la izquierda del monitor: una pestaña que se abre al pasar el ratón (no tapa FUTURO.exe) */
+#debug-panel.tab:not(:hover) button, #debug-panel.tab:not(:hover) .dp-h i { display: none; }
+#debug-panel.tab:not(:hover) { padding: 1px 3px; }
+#debug-panel.mini { padding: 1px 3px; opacity: .7; }

@@ -68,7 +68,9 @@
     },
 
     applyCam() {
-      const shot = SN.Cine.shot;
+      // El rescate bancario también es a pantalla completa: sin el zoom sobre el monitor de las ventanas pequeñas
+      // (con la escala de Windows al 125-150 % se recortaba y el móvil se veía demasiado cerca)
+      const shot = SN.Cine.shot || (SN.Bailout && SN.Bailout.active);
       let base = this.base, fx = this.cam.x, fy = this.cam.y, zoom = this.cam.zoom;
       if (shot) {
         // Planos de cinemática a pantalla completa: encuadre fijo, sin el zoom del escritorio

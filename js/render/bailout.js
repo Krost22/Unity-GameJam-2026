@@ -156,9 +156,13 @@
     const sp = new PK.Sprite(W, H), g = sp.g;
     const neck = sp.mask().poly([[70, 40], [90, 40], [89, 49], [71, 49]]);
     sp.part(neck, TAN, { light: LIGHT, base: 1, outline: false });
-    const torso = sp.mask().poly([[40, 90], [42, 66], [47, 57], [56, 51], [69, 47], [91, 47], [104, 51], [113, 57], [118, 66], [120, 90]]);
+    // El torso y, en la misma silueta, los brazos del hombro al codo (apoyados en la mesa): así son parte de él
+    const torso = sp.mask().poly([[40, 90], [42, 66], [47, 57], [56, 51], [69, 47], [91, 47], [104, 51], [113, 57], [118, 66], [120, 90]])
+      .taper(51, 56, 5.4, 45.5, 66, 4.4).taper(109, 56, 5.4, 114.5, 66, 4.4);
     sp.part(torso, SUIT, { light: LIGHT, lit: 3, sh: 4, base: 2 });
     sp.rim(torso, BACK, [0, -1]);
+    // Pliegue de la axila: separa el brazo del cuerpo
+    sp.line(55, 60, 51, 66, SUIT[1]).line(105, 60, 109, 66, SUIT[1]);
     // Solapas
     for (const s of [-1, 1]) {
       const x0 = 80 + s * 9;
@@ -269,60 +273,62 @@
     const rows = HANDS[kind], w = rows[0].length;
     sp.stamp(rows, Math.round(x - w / 2), Math.round(y - rows.length + 1), HANDPAL, flip);
   }
-  // Manga del traje (cápsulas encadenadas) y el puño blanco de la camisa en la muñeca
-  function arm(sp, pts) {
-    const sleeve = sp.mask();
-    for (let i = 1; i < pts.length; i++) sleeve.capsule(pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1], 3.6);
-    sp.part(sleeve, SUIT, { light: LIGHT, lit: 2, sh: 2, base: 2, cast: 1 });
-    sp.rim(sleeve, BACK, [0, -1]);
-    const [a, b] = [pts[pts.length - 2], pts[pts.length - 1]];
-    const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, ux = (b[0] - a[0]) / len, uy = (b[1] - a[1]) / len;
-    sp.part(sp.mask().capsule(b[0] - ux * 1.5, b[1] - uy * 1.5, b[0], b[1], 2.9), SHIRT, { light: LIGHT, base: 4, lit: 1 });
+  // El antebrazo: sale del codo (apoyado en el borde de la mesa; el brazo, del hombro al codo, es parte del
+  // cuerpo, en buildBody) hasta la muñeca, con el puño blanco de la camisa. side: 'L' (izquierda de la imagen) o 'R'
+  const ELBOW = { L: [46, 66], R: [114, 66] };
+  function arm(sp, side, wrist) {
+    const e = ELBOW[side], [x, y] = wrist;
+    const len = Math.hypot(x - e[0], y - e[1]) || 1, ux = (x - e[0]) / len, uy = (y - e[1]) / len;
+    const fore = sp.mask().taper(e[0], e[1], 4, x - ux * 1.5, y - uy * 1.5, 3.3);
+    sp.part(fore, SUIT, { light: LIGHT, lit: 2, sh: 2, base: 2, cast: 1 });
+    // El codo: un pliegue de la tela donde dobla el brazo
+    sp.px(e[0] + (side === 'L' ? 1 : -1), e[1] - 1, SUIT[0]);
+    sp.part(sp.mask().capsule(x - ux * 1.5, y - uy * 1.5, x, y, 2.9), SHIRT, { light: LIGHT, base: 4, lit: 1 });
   }
   function buildArms(gesture, k) {
     const sp = new PK.Sprite(W, H), g = sp.g;
     if (gesture === 'accordion' || gesture === 'money') {
       const s = k; // separación de las manos (0..4)
-      arm(sp, [[50, 72], [54, 66], [64 - s, 61]]);
-      arm(sp, [[110, 72], [106, 66], [96 + s, 61]]);
+      arm(sp, 'L', [64 - s, 61]);
+      arm(sp, 'R', [96 + s, 61]);
       putHand(sp, 'pinch', 66 - s, 60);
       putHand(sp, 'pinch', 94 + s, 60, true);
     } else if (gesture === 'point') {
       const p = k; // el dedo se adelanta un píxel con cada palabra
-      arm(sp, [[48, 72], [52, 62], [57, 51 - p]]);
-      arm(sp, [[110, 72], [106, 67], [100, 65]]);
+      arm(sp, 'L', [57, 51 - p]);
+      arm(sp, 'R', [101, 66]);
       putHand(sp, 'point', 58, 50 - p);
-      putHand(sp, 'rest', 96, 66, true);
+      putHand(sp, 'rest', 98, 67, true);
     } else if (gesture === 'sign') {
       // La mano derecha (izquierda de la imagen) con el rotulador sobre el papel; la otra lo sujeta
       R(g, 62, 64, 36, 3, P.creamL); R(g, 62, 66, 36, 1, P.creamD);
       for (let i = 0; i < 4; i++) R(g, 65 + i * 7, 65, 5, 1, P.creamD);
       const hx = 68 + k, hy = 64;
       if (k > 0) for (let i = 0; i < k; i += 2) R(g, 66 + i, 65 - (i % 4 ? 1 : 0), 2, 1, P.coalDD);
-      arm(sp, [[48, 74], [55, 69], [hx - 4, hy]]);
-      arm(sp, [[112, 74], [106, 69], [100, 66]]);
+      arm(sp, 'L', [hx - 4, hy]);
+      arm(sp, 'R', [100, 66]);
       putHand(sp, 'rest', 96, 66, true);
       sp.line(hx + 2, hy - 1, hx + 4, hy + 1, P.coalDD).line(hx - 1, hy - 5, hx + 2, hy - 2, P.coalD);
       putHand(sp, 'fist', hx, hy);
     } else if (gesture === 'button') {
       // 0: en reposo junto al botón · 1: la mano en alto · 2: ¡golpe!
-      arm(sp, [[48, 74], [54, 69], [62, 66]]);
-      putHand(sp, 'rest', 64, 66);
-      if (k === 0) { arm(sp, [[112, 74], [108, 68], [104, 66]]); putHand(sp, 'rest', 102, 66, true); }
-      else if (k === 1) { arm(sp, [[114, 74], [118, 62], [117, 50]]); putHand(sp, 'palm', 117, 49, true); }
-      else { arm(sp, [[112, 74], [116, 66], [119, 62]]); putHand(sp, 'fist', 120, 62, true); }
+      arm(sp, 'L', [61, 66]);
+      putHand(sp, 'rest', 63, 67);
+      if (k === 0) { arm(sp, 'R', [105, 66]); putHand(sp, 'rest', 103, 67, true); }
+      else if (k === 1) { arm(sp, 'R', [117, 50]); putHand(sp, 'palm', 117, 49, true); }
+      else { arm(sp, 'R', [119, 62]); putHand(sp, 'fist', 120, 62, true); }
     } else if (gesture === 'thumbs') {
       const b = k;
-      arm(sp, [[48, 72], [53, 64], [62, 59 - b]]);
-      arm(sp, [[112, 72], [107, 64], [98, 59 - b]]);
+      arm(sp, 'L', [62, 59 - b]);
+      arm(sp, 'R', [98, 59 - b]);
       putHand(sp, 'thumb', 63, 58 - b);
       putHand(sp, 'thumb', 97, 58 - b, true);
     } else {
       // Manos juntas sobre la mesa
-      arm(sp, [[48, 74], [58, 68], [72, 66]]);
-      arm(sp, [[112, 74], [102, 68], [88, 66]]);
-      putHand(sp, 'rest', 75, 66);
-      putHand(sp, 'rest', 85, 66, true);
+      arm(sp, 'L', [71, 66]);
+      arm(sp, 'R', [89, 66]);
+      putHand(sp, 'rest', 75, 67);
+      putHand(sp, 'rest', 85, 67, true);
     }
     return sp.c;
   }
@@ -341,9 +347,9 @@
     // La firma: un sismógrafo (con una Ш en medio, si te fijas)
     signature(g, 60, y + 18, 40, 6, 1, P.coalDD, 1);
     // Los codos en la mesa y las manos sujetando los lados
-    for (const [x, d] of [[55, -1], [105, 1]]) {
-      arm(sp, [[x + d * 7, 74], [x + d * 4, 70], [x + d * 1, 65]]);
-      putHand(sp, 'grip', x, 64, d > 0);
+    for (const [x, side] of [[55, 'L'], [105, 'R']]) {
+      arm(sp, side, [x + (side === 'L' ? -1 : 1), 65]);
+      putHand(sp, 'grip', x, 64, side === 'R');
     }
     return sp.c;
   }
@@ -429,10 +435,13 @@
   // =====================================================================================================
   // EL TELÉFONO (primera persona, de noche en tu cuarto)
   // =====================================================================================================
+  // El móvil va 10 px más abajo de como está dibujado (lo sujetas desde abajo; el pie queda fuera del encuadre):
+  // así el subtítulo cabe arriba, sobre la pared, sin taparlo. Todo lo del móvil está en sus coordenadas sin mover.
+  const PDY = 10;
   const SCR = { x: 55, y: 9, w: 50, h: 73 };          // la pantalla del móvil (búfer)
   const BTN = (i) => ({ x: SCR.x + 3, y: SCR.y + 15 + i * 17, w: SCR.w - 6, h: 14 }); // botones del menú (0..2)
   const ACCEPT = { x: 89, y: 72 }, DECLINE = { x: 71, y: 72 };
-  const REST = { x: 124, y: 73 }; // donde espera el dedo (asoma por abajo a la derecha)
+  const REST = { x: 129, y: 55 }; // donde espera el dedo (asoma por abajo a la derecha)
   const SEND = { x: SCR.x + 3, y: SCR.y + 62, w: SCR.w - 6, h: 8 };
 
   function buildRoom() {
@@ -461,45 +470,37 @@
     return sp.c;
   }
   // La mano izquierda sujeta el móvil por abajo: el pulgar por delante, los dedos asoman por el otro lado
+  // Las yemas que agarran el móvil, dibujadas a mano (a este tamaño, las formas automáticas parecen salchichas).
+  // La mano que pulsa es la del ratón de la partida (SN.Hero.pointHand) y el pulgar, de las mismas piezas.
+  // K contorno, D pliegue, m sombra, s piel, L luz, n/N uña y su sombra. La luz llega de la pantalla y de la ventana
+  // (izquierda); el contraluz de la noche, muy suave.
+  const MYPAL = { K: '#5B2A3A', D: P.skinD, m: P.skinM, s: P.skin, L: P.skinL, n: '#FCE6EC', N: '#E9B9C9' };
+  const SOFT_RIM = '#D9A3CF';
+  // Las yemas que asoman por el borde derecho: rodean el canto y apoyan la punta (con la uña) en el marco
+  const TIPS = {
+    mid: ['..KKKKK.', '.KnnLssK', 'KnNnssmK', 'KLsssmmK', '.KmmmDDK', '..KKKKK.'],
+    big: ['..KKKKKK.', '.KnnLsssK', 'KnNnsssmK', 'KLssssmmK', '.KmmmmDDK', '..KKKKKK.'],
+    small: ['..KKKK.', '.KnLssK', 'KnNsmmK', '.KmmDDK', '..KKKK.'],
+  };
   function buildHoldHand() {
-    // Detrás del móvil: la palma (solo asoma por abajo a la izquierda) y el antebrazo hacia la esquina
+    // Detrás del móvil: la palma (asoma abajo a la izquierda) y el antebrazo hacia la esquina
     const back = new PK.Sprite(W, H);
-    const palm = back.mask().ellipse(54, 90, 10, 7).taper(46, 92, 7, 34, 104, 8);
+    const palm = back.mask().ellipse(53, 90, 9, 7).taper(46, 92, 7, 34, 104, 8);
     back.part(palm, SKIN, { light: [0, -1], lit: 2, sh: 3 });
-    back.rim(palm, NIGHT, [-1, 0]);
-    // Delante: la base del pulgar y el pulgar sobre el borde izquierdo; las yemas de los otros dedos asoman
-    // por el borde derecho, agarrándolo
+    back.rim(palm, SOFT_RIM, [-1, 0]);
+    // Delante: el pulgar y las cuatro yemas (índice, corazón, anular y meñique, de arriba abajo)
     const front = new PK.Sprite(W, H);
-    const thumb = front.mask().ellipse(49, 84, 4.5, 6).taper(49, 82, 3.6, 53, 66, 2.4);
+    // El pulgar: en diagonal sobre el marco izquierdo, con la punta apoyada en el borde de la pantalla
+    const thumb = front.mask().ellipse(46, 86, 5.5, 7).taper(47, 82, 3.6, 56.5, 64, 2.5);
     front.part(thumb, SKIN, { light: [1, -1], lit: 2, sh: 2, cast: 1 });
     front.rim(thumb, NIGHT, [-1, 0]);
-    front.px(53, 64, P.skinL).px(52, 65, P.skinL).line(50, 78, 52, 79, P.skinM);
-    const tips = front.mask();
-    for (const [y, r] of [[50, 2], [59, 2.3], [68, 2.3], [77, 2.1]]) tips.capsule(114, y + 1, 108.5, y, r);
-    front.part(tips, SKIN, { light: [0, -1], lit: 2, sh: 2, cast: 1 });
-    front.rim(tips, NIGHT, [1, 0]);
-    for (const y of [50, 59, 68, 77]) front.px(108, y - 1, P.skinL);
+    front.stamp(['nn', 'nN'], 55, 63, MYPAL);      // la uña
+    front.line(50, 72, 53, 74, P.skinD);           // el pliegue del nudillo
+    front.stamp(TIPS.mid, 105, 49, MYPAL).stamp(TIPS.big, 104, 56, MYPAL).stamp(TIPS.mid, 105, 63, MYPAL).stamp(TIPS.small, 106, 70, MYPAL);
+    // Sombra de las yemas sobre el marco del móvil
+    for (const [x, y] of [[104, 51], [103, 58], [104, 65], [105, 72]]) front.px(x, y, P.coalDD).px(x, y + 1, P.coalDD);
     return { back: back.c, front: front.c };
   }
-  // La mano derecha con el índice estirado (la punta del dedo en (12, 1) del sprite)
-  function buildTapHand() {
-    const sp = new PK.Sprite(48, 60);
-    const m = sp.mask()
-      .taper(12, 2.5, 1.9, 13, 16, 2.5)                    // índice
-      .ellipse(19, 22, 8, 7)                               // puño
-      .ellipse(25, 18, 3, 3).ellipse(26, 23, 3, 3).ellipse(25, 28, 3, 2.6) // dedos doblados
-      .taper(10, 27, 2.4, 13, 20, 2)                       // pulgar
-      .taper(22, 28, 6.5, 30, 60, 7.5);                    // antebrazo
-    sp.part(m, SKIN, { light: [0, -1], hi: 1, lit: 3, sh: 3, cast: 1 });
-    sp.rim(m, NIGHT, [1, 0]);
-    sp.px(12, 2, P.skinL).px(13, 3, P.skinL);
-    sp.line(22, 18, 24, 21, P.skinD).line(23, 23, 25, 26, P.skinD);
-    const sleeve = sp.mask().poly([[19, 44], [37, 40], [42, 60], [20, 60]]);
-    sp.part(sleeve, SLEEVE, { light: [0, -1], base: 3, lit: 2, sh: 2 });
-    sp.line(21, 48, 38, 45, P.shirtD);
-    return sp.c;
-  }
-
   // Iconos de 10x10 para los botones: banco, banco enorme, persona
   function icon(b, kind, x, y, col) {
     if (kind === 1) {
@@ -558,8 +559,10 @@
       }
       R(b, s.x + 12, s.y + 57, 26, 3, P.navyL);
       const ready = V.typed >= TX().bankName.length;
-      R(b, SEND.x, SEND.y, SEND.w, SEND.h, ready ? P.greenD : P.navyM);
-      R(b, SEND.x, SEND.y, SEND.w, 1, ready ? P.green : P.navyL);
+      // Listo para enviar: el botón parpadea (se puede pulsar con el ratón o con Enter)
+      const blink = ready && Math.floor(V.t * 3) % 2 === 0;
+      R(b, SEND.x, SEND.y, SEND.w, SEND.h, ready ? (blink ? P.green : P.greenD) : P.navyM);
+      R(b, SEND.x, SEND.y, SEND.w, 1, ready ? P.greenL : P.navyL);
     } else if (ui === 'check') {
       for (let i = 0; i < 8; i++) {
         const a = i / 8 * Math.PI * 2, on = (Math.floor(t * 10) % 8) === i;
@@ -598,18 +601,18 @@
   }
   // Los textos de la pantalla, a la resolución del escenario (g = lienzo de 640x360)
   function screenText(g, V) {
-    const s = SCR, X = TX(), x0 = s.x * Z, y0 = s.y * Z;
+    const s = SCR, X = TX(), x0 = s.x * Z, y0 = (s.y + PDY) * Z;
     Px.text(g, X.header, x0 + 48, y0 + 30, P.creamL, { size: 16 });
     const mm = String(Math.floor(V.t / 60)).padStart(2, '0'), ss = String(Math.floor(V.t % 60)).padStart(2, '0');
-    if (V.ui !== 'dial') Px.text(g, `${mm}:${ss}`, x0 + 8, y0 + 289, P.creamDD);
+    if (V.ui !== 'dial') Px.text(g, `${mm}:${ss}`, x0 + 8, y0 + 57, P.creamDD); // (a la izquierda: a la derecha está la raja)
     const cx = (s.x + s.w / 2) * Z, ui = V.ui;
     if (ui === 'dial') Px.text(g, X.dialing, cx, y0 + 230, P.creamL, { align: 'center', size: 16 });
     if (ui === 'welcome') Px.text(g, X.connected, cx, y0 + 230, P.green, { align: 'center', size: 16 });
     if (ui === 'menu' || ui === 'wrong') {
       for (let i = 0; i < 3; i++) {
         const r = BTN(i), on = V.sel === i + 1, bad = ui === 'wrong' && on;
-        Px.text(g, String(i + 1), (r.x + 6) * Z + 1, (r.y + 7) * Z + 8, bad || on ? P.coalD : P.creamL, { align: 'center', size: 16 });
-        Px.text(g, X.options[i], (r.x + 25) * Z, (r.y + 7) * Z + 4, bad ? P.creamL : on ? P.coalD : P.creamL, {});
+        Px.text(g, String(i + 1), (r.x + 6) * Z + 1, (r.y + PDY + 7) * Z + 8, bad || on ? P.coalD : P.creamL, { align: 'center', size: 16 });
+        Px.text(g, X.options[i], (r.x + 25) * Z, (r.y + PDY + 7) * Z + 4, bad ? P.creamL : on ? P.coalD : P.creamL, {});
       }
     }
     if (ui === 'name') {
@@ -620,7 +623,7 @@
       Px.text(g, l2, x0 + 18, y0 + 122, P.coal);
       if (Math.floor(V.t * 3) % 2 === 0) { const w = Px.textWidth(g, l2 || l1); R(g, x0 + 19 + w, (l2 ? y0 + 113 : y0 + 89), 2, 11, P.coalL); }
       const ready = V.typed >= X.bankName.length;
-      Px.text(g, X.send, cx, (SEND.y + 6) * Z + 1, ready ? P.creamL : P.creamDD, { align: 'center' });
+      Px.text(g, X.send, cx, (SEND.y + PDY + 6) * Z + 1, ready ? P.creamL : P.creamDD, { align: 'center' });
     }
     if (ui === 'check') Px.text(g, X.checkingShort, cx, y0 + 210, P.creamL, { align: 'center' });
     if (ui === 'verdict' && V.ut > 0.18) X.stamp.forEach((l, i) => Px.text(g, l, cx, y0 + 116 + i * 24, P.coral, { align: 'center', size: i === 1 ? 16 : 8 }));
@@ -634,20 +637,31 @@
   // =====================================================================================================
   // DIBUJO DE UN FOTOGRAMA (V = lo que hay que enseñar; también lo usan las pruebas para hacer capturas)
   // =====================================================================================================
-  function drawPhone(b, V) {
-    b.drawImage(cached('room', buildRoom), 0, 0);
+  // layer: 'base' (la habitación, el móvil y su pantalla), 'hands' (las manos, que van por encima de los textos
+  // de la pantalla: el dedo tapa el texto, no al revés) o nada (todo junto)
+  function drawPhone(b, V, layer) {
     const hold = cached('holdHand', buildHoldHand);
     const bob = Math.round(Math.sin(V.t * 1.3) * 0.6);
-    b.save(); b.translate(0, bob);
-    b.drawImage(hold.back, 0, 0);
-    b.drawImage(cached('phone', buildPhone), 0, 0);
-    drawScreen(b, V);
-    b.drawImage(hold.front, 0, 0);
-    b.restore();
-    // El dedo: hacia el objetivo (y se hunde un píxel al pulsar)
-    const f = V.finger, tap = cached('tapHand', buildTapHand);
-    if (f) b.drawImage(tap, Math.round(f.x) - 12, Math.round(f.y) - 1 + (f.down ? 1 : 0) + bob);
-    if (f && f.down) { b.globalAlpha = 0.5; Px.circleOutline(b, Math.round(f.x), Math.round(f.y) + bob, 3, P.creamL); b.globalAlpha = 1; }
+    if (layer !== 'hands') {
+      b.drawImage(cached('room', buildRoom), 0, 0);
+      b.save(); b.translate(0, bob + PDY);
+      b.drawImage(hold.back, 0, 0);
+      b.drawImage(cached('phone', buildPhone), 0, 0);
+      drawScreen(b, V);
+      b.restore();
+    }
+    if (layer !== 'base') {
+      b.save(); b.translate(0, bob + PDY);
+      b.drawImage(hold.front, 0, 0);
+      // El dedo: la mano del ratón de la partida, señalando; va al objetivo y se hunde un píxel al pulsar
+      const f = V.finger;
+      if (f) {
+        const tap = SN.Hero.pointHand('night');
+        b.drawImage(tap.c, Math.round(f.x) - tap.tip[0], Math.round(f.y) - tap.tip[1] + (f.down ? 1 : 0));
+        if (f.down) { b.globalAlpha = 0.5; Px.circleOutline(b, Math.round(f.x), Math.round(f.y), 3, P.creamL); b.globalAlpha = 1; }
+      }
+      b.restore();
+    }
   }
 
   function drawCall(b, V) {
@@ -671,22 +685,30 @@
 
   function draw(g, V) {
     const b = draw.buf || (draw.buf = Px.ctx(Px.canvas(W, H)));
+    const up = () => g.drawImage(b.canvas, 0, 0, W, H, 0, 0, 640, 360);
     b.clearRect(0, 0, W, H);
     b.imageSmoothingEnabled = false;
-    if (V.scene === 'phone') drawPhone(b, V);
-    else if (V.scene === 'call') drawCall(b, V);
-    else if (V.scene === 'insert') V.tip = drawInsert(b, V.sig, V.t);
-    else R(b, 0, 0, W, H, P.coalDD);
     g.imageSmoothingEnabled = false;
-    // Zoom hacia la pantalla del móvil (al aceptar la videollamada)
     const z = V.zoom || 0;
     if (V.scene === 'phone' && z > 0) {
+      // Zoom hacia la pantalla del móvil (al aceptar la videollamada): todo junto y sin textos
+      drawPhone(b, V);
       const k = U.ease.inOutSine(z);
       const sw = U.lerp(W, SCR.w, k), sh = U.lerp(H, SCR.w * H / W, k);
-      const sx = U.lerp(0, SCR.x, k), sy = U.lerp(0, SCR.y + 16, k);
+      const sx = U.lerp(0, SCR.x, k), sy = U.lerp(0, SCR.y + 16 + PDY, k);
       g.drawImage(b.canvas, sx, sy, sw, sh, 0, 0, 640, 360);
-    } else g.drawImage(b.canvas, 0, 0, W, H, 0, 0, 640, 360);
-    if (V.scene === 'phone' && !z) screenText(g, V);
+    } else if (V.scene === 'phone') {
+      // El móvil, los textos de su pantalla y, encima de todo, las manos
+      drawPhone(b, V, 'base'); up();
+      screenText(g, V);
+      b.clearRect(0, 0, W, H);
+      drawPhone(b, V, 'hands'); up();
+    } else {
+      if (V.scene === 'call') drawCall(b, V);
+      else if (V.scene === 'insert') V.tip = drawInsert(b, V.sig, V.t);
+      else R(b, 0, 0, W, H, P.coalDD);
+      up();
+    }
     if (V.scene === 'call') callUI(g, V);
     if (V.scene === 'insert') {
       Px.text(g, TX().order[0], 312, 92, P.coalL, { align: 'center', size: 16 });
@@ -738,13 +760,18 @@
     speed: 1, // (las pruebas la reproducen más deprisa)
     draw,     // (pruebas y capturas)
 
-    play({ coins = 0 } = {}) {
+    // from: 'phone' (toda la escena) o 'call' (directamente la videollamada; lo usa el panel de depuración)
+    play({ coins = 0, from = 'phone' } = {}) {
       this.active = true;
       this.coins = coins;
+      this.from = from;
       this.V = { scene: 'phone', ui: 'dial', clock: 0, t: 0, ut: 0, eyes: 'open', mouth: 'o', gesture: 'idle', finger: { x: REST.x, y: REST.y }, bills: [] };
       this.cv = $('cine');
       this.g = Px.ctx(this.cv);
       this.cv.classList.remove('hidden');
+      // En el móvil, el subtítulo va arriba (en la videollamada, abajo)
+      if (from !== 'call') $('subs').classList.add('top');
+      else this.V.scene = 'call';
       SN.Audio.setMood('silent');
       this.waiters = [];
       const down = (e) => {
@@ -812,6 +839,7 @@
       this.off = null;
       this.cv.classList.add('hidden');
       $('subs').classList.add('hidden');
+      $('subs').classList.remove('top');
       this.say_ = null;
     },
 
@@ -834,10 +862,12 @@
       const el = $('subs');
       el.classList.remove('hidden');
       el.classList.toggle('click', !auto && !hold);
-      this.say_ = { name, full: text, shown: 0, voice, auto, hold, t: 0, done: false };
+      const me = this.say_ = { name, full: text, shown: 0, voice, auto, hold, t: 0, done: false };
       this.renderSubs();
-      if (hold) return this.until(() => this.say_ && this.say_.shown >= this.say_.full.length);
-      return this.until(() => this.say_ && this.say_.done).then(() => this.clearSay());
+      // Un subtítulo también termina si otro ocupa su lugar (p. ej., empiezas a escribir el nombre del banco
+      // antes de que el contestador acabe la frase): si no, el guion se quedaría esperándolo para siempre
+      if (hold) return this.until(() => this.say_ !== me || me.shown >= me.full.length);
+      return this.until(() => me.done || this.say_ !== me).then(() => { if (this.say_ === me) this.clearSay(); });
     },
     clearSay() { this.say_ = null; $('subs').classList.add('hidden'); },
     renderSubs() {
@@ -854,6 +884,8 @@
     },
 
     // ---------- Entrada ----------
+    // En el móvil, las coordenadas del dibujo (sin los 10 px que baja)
+    toPhone(e) { const p = this.toBuf(e); return { x: p.x, y: p.y - PDY }; },
     toBuf(e) {
       const p = SN.Game.toStage(e.clientX, e.clientY);
       return { x: p.x / Z, y: p.y / Z };
@@ -862,18 +894,18 @@
     onMove(e) {
       const V = this.V;
       if (!this.active || V.ui !== 'menu' || V.scene !== 'phone') return;
-      const p = this.toBuf(e);
+      const p = this.toPhone(e);
       V.hover = 0;
       for (let i = 0; i < 3; i++) if (this.inRect(p, BTN(i))) V.hover = i + 1;
     },
     onPointer(e) {
-      const V = this.V, p = this.toBuf(e);
+      const V = this.V, p = this.toBuf(e), q = this.toPhone(e);
       if (V.scene === 'phone' && V.ui === 'menu' && this.pick) {
-        for (let i = 0; i < 3; i++) if (this.inRect(p, BTN(i))) { this.pick(i + 1); return; }
+        for (let i = 0; i < 3; i++) if (this.inRect(q, BTN(i))) { this.pick(i + 1); return; }
         return;
       }
       if (V.scene === 'phone' && V.ui === 'name') {
-        if (this.inRect(p, SEND)) this.sendName(); else this.typeKey();
+        if (this.inRect(q, SEND)) this.sendName(); else this.typeKey();
         return;
       }
       // La firma de Trompa: un garabato... con una letra del idioma secreto
@@ -918,6 +950,11 @@
 
     // ---------- El guion ----------
     async script() {
+      if (this.from !== 'call') await this.phonePart();
+      await this.callPart();
+    },
+    // La llamada a la Línea de Rescate (el móvil, en primera persona)
+    async phonePart() {
       const X = TX(), V = this.V;
       // 1) Llamando...
       V.ui = 'dial'; V.ut = 0;
@@ -943,7 +980,8 @@
       // 3) El nombre del banco: lo escribes tú
       V.ui = 'name'; V.ut = 0; V.typed = 0; V.sent = false;
       await this.say(X.line, X.askName, { voice: 'robot', auto: 0.4 });
-      this.say_ = { name: X.you, full: '', shown: 0, hold: true, caret: true, t: 0 };
+      // (lo que ya hayas tecleado mientras hablaba el contestador se conserva)
+      this.say_ = { name: X.you, full: X.bankName.slice(0, V.typed), shown: V.typed, hold: true, caret: true, t: 0 };
       $('subs').classList.remove('hidden', 'click');
       this.renderSubs();
       await this.until(() => V.sent);
@@ -972,8 +1010,13 @@
       await this.tween(0.55, (k) => { V.zoom = k; });
       V.flash = 0.8;
       SN.Audio.sfx('static', { dur: 0.25 });
+    },
+    // La videollamada con el Presidente
+    async callPart() {
+      const X = TX(), V = this.V;
       // 7) La llamada con el Presidente
       V.scene = 'call'; V.t = 0; V.zoom = 0; V.finger = null; V.hero = 'worried';
+      $('subs').classList.remove('top');
       await this.wait(0.5);
       for (const ln of X.call) await this.line(ln);
       // 8) Cuelga

@@ -287,6 +287,38 @@
     return sp.c;
   }
 
+  // Mano derecha señalando con el índice (la que toca la pantalla del móvil en el rescate, js/render/bailout.js).
+  // Es la misma mano que coge el ratón (mismas piezas, luz, contraluz y manga remangada) sin el ratón: el índice
+  // estirado, el corazón, el anular y el meñique doblados y el pulgar recogido sobre ellos.
+  // Sprite de 64x64; devuelve { c, tip } (tip: la punta del índice).
+  function buildPointHand(phase) {
+    const sp = new PK.Sprite(64, 64);
+    const rim = RIM[phase] || RIM.evening;
+    const hand = sp.mask()
+      .taper(26, 31, 6, 33, 46, 7)
+      .poly([[16, 19], [19, 16], [24, 15], [29, 16], [33, 19], [34, 24], [32, 30], [28, 34], [21, 34], [17, 29]])
+      .taper(18.5, 28, 3, 22, 22.5, 2.1); // pulgar: recogido hacia dentro, sobre los dedos doblados
+    const K = [[20, 17], [24.5, 16], [28.5, 17.5], [32, 20]];
+    const tips = [
+      finger(hand, K[0][0], K[0][1], -3, 8, 2.2, 1.9), // índice estirado
+      finger(hand, K[1][0], K[1][1], 4, 2.2, 2.3, 2.1),
+      finger(hand, K[2][0], K[2][1], 14, 2, 2.1, 2),
+      finger(hand, K[3][0], K[3][1], 30, 1.6, 1.9, 1.8),
+    ];
+    sp.part(hand, RAMP.skin, { light: HAND_LIGHT, hi: 1, lit: 3, sh: 3, cast: 1 });
+    // Los dedos doblados: un pliegue entre cada uno, a la altura de los nudillos
+    for (let i = 1; i < 3; i++) sp.px(Math.round((K[i][0] + K[i + 1][0]) / 2), Math.round((K[i][1] + K[i + 1][1]) / 2) - 1, P.skinD);
+    sp.line(22, 19, 23, 21, P.skinD); // el índice nace de la mano
+    // La uña del índice, los nudillos con luz y los tendones hacia la muñeca
+    sp.px(tips[0][0], tips[0][1] + 1, P.skinL).px(tips[0][0], tips[0][1] + 2, P.skinL);
+    sp.px(25, 17, P.skinL).px(29, 18, P.skinL);
+    sp.line(22, 24, 23, 28, P.skinM).line(26, 23, 26, 27, P.skinM);
+    sleeve(sp, 33, 38, -28, phase, [1, 0]);
+    sp.px(21, 23, P.skinL); // la uña del pulgar
+    sp.rim(hand, rim, [1, 0]);
+    return { c: sp.c, tip: tips[0] };
+  }
+
   // Mano izquierda sobre el teclado (sprite 64x64; nudillos hacia y=14). mask: bit i = dedo i pulsado
   // (0 meñique ... 3 índice). Dedos en abanico y de distinto largo, curvados sobre la fila central:
   // al pulsar, el dedo se encoge un poco (se dobla hacia la tecla); con tensión se cierran en puño.
@@ -656,6 +688,9 @@
         g.fillStyle = P.cyanL; g.fillRect(96, Math.round(sy), 1, 1);
       }
     },
+
+    // La mano que señala (la del ratón, sin ratón): { c, tip } para el rescate (js/render/bailout.js)
+    pointHand(phase = 'night') { return cached('point|' + phase, () => buildPointHand(phase)); },
 
     clearCache() { cache.clear(); },
   };

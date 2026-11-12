@@ -103,6 +103,7 @@
       this.open = true;
       // El aviso de mensaje de Kevo sobra en el escritorio: el chat ya muestra lo que no has leído
       const tst = document.querySelector('.msg-toast:not(.shop)'); if (tst) tst.remove();
+      document.querySelectorAll('#layer-float .tip').forEach((t) => t.remove()); // (los consejos son de FUTURO.exe)
       SN.Audio.sfx('close');
       $('app').classList.add('minimizing');
       $('desktop').classList.remove('hidden');
@@ -114,6 +115,7 @@
     },
     restore() {
       if (!this.open || this.noApp) return;
+      if (this.termLocked()) { this.refuse(); return; }
       this.open = false;
       SN.Audio.sfx('open');
       clearTimeout(this.animT);
@@ -124,12 +126,14 @@
     },
 
     launch(id) {
+      // NULL.EXE ya se está ejecutando: su icono te lleva a la terminal (no al LÉEME)
+      if (id === 'null' && this.termLocked()) id = 'term';
       if (id === 'futuro') return this.restore();
       if (this.wins[id]) return this.focus(id);
       const w = U.el('div', 'dt-win dt-' + id);
       const title = id === 'chat' ? C().app : TITLES[id];
       w.innerHTML = `<div class="dt-head"><span>${title}</span><button class="dt-x" title="Cerrar (Esc)">×</button></div><div class="dt-body"></div>`;
-      w.querySelector('.dt-x').addEventListener('click', (e) => { e.stopPropagation(); this.closeWin(id); });
+      w.querySelector('.dt-x').addEventListener('click', (e) => { e.stopPropagation(); this.userClose(id); });
       w.addEventListener('mousedown', () => this.focus(id));
       $('desktop').querySelector('.dt-wins').appendChild(w);
       this.wins[id] = w;
@@ -146,6 +150,25 @@
       if (id === 'term') this.renderTerm();
       this.focus(id);
       this.refresh();
+    },
+    // Cerrar una ventana a petición del jugador (la X o Escape): la terminal de NULL.EXE no se cierra mientras corre
+    userClose(id) {
+      if (id === 'term' && this.termLocked()) { this.refuse(); return; }
+      this.closeWin(id);
+    },
+    // ¿Se está ejecutando NULL.EXE? (la terminal del final B: js/systems/finale.js)
+    termLocked() { return !!(SN.Finale && SN.Finale.termLock); },
+    // No se puede: la terminal tiembla y lo dice (una vez por intento)
+    refuse() {
+      SN.Audio.sfx('error');
+      const w = this.wins.term;
+      if (w) { this.focus('term'); w.classList.remove('nudge'); void w.offsetWidth; w.classList.add('nudge'); }
+      const T = SN.Finale && SN.Finale.term;
+      if (!T) return;
+      T.notice = SN.Data.finale.term.locked;
+      this.renderTerm();
+      clearTimeout(this.noticeT);
+      this.noticeT = setTimeout(() => { if (SN.Finale.term) { SN.Finale.term.notice = null; this.renderTerm(); } }, 2200);
     },
     closeWin(id) {
       const w = this.wins[id];
@@ -197,7 +220,7 @@
       }
       e.preventDefault();
       const top = this.topWin();
-      if (e.code === 'Escape') { if (top) this.closeWin(top); else this.restore(); return true; }
+      if (e.code === 'Escape') { if (top) this.userClose(top); else this.restore(); return true; }
       // La terminal de NULL.EXE: cualquier tecla escribe el comando (js/systems/finale.js)
       if (top === 'term' && SN.Finale && SN.Finale.termKey(e)) return true;
       if (top === 'chat' && this.onKevo() && this.chat().phase === 'reply') {
@@ -718,7 +741,8 @@
       const lines = T.lines.map((l) => `<p class="tm-${l.k || 'out'}">${esc(l.t)}</p>`).join('');
       const cur = T.typing ? `<p class="tm-cmd">${esc(T.prompt + T.typing.text.slice(0, T.typing.shown))}<i class="caret"></i></p>` : '';
       const hint = T.typing && !T.typing.shown ? '<p class="tm-hint">Pulsa cualquier tecla para escribir</p>' : '';
-      body.innerHTML = `<div class="tm">${lines}${cur}${hint}</div>`;
+      const note = T.notice ? `<p class="tm-lock">${esc(T.notice)}</p>` : '';
+      body.innerHTML = `<div class="tm">${lines}${cur}${hint}${note}</div>`;
       const box = body.querySelector('.tm');
       box.scrollTop = box.scrollHeight;
     },

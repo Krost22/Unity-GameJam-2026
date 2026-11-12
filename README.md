@@ -264,6 +264,13 @@ Los finales A/B quedan para futuras fases (hay un adelanto al llegar a $25,000).
 Las partidas guardadas de la versión 1.0 no se cargan (cambió el formato); el perfil (intro vista, ajustes) se conserva
 y quien hizo el tutorial antiguo ve el nuevo una vez.
 
+## Pendiente antes de publicar
+
+- **Quitar el panel de depuración.** Son los botones de arriba a la izquierda que lanzan las animaciones (el rescate,
+  la videollamada, el puño de la intro, los días de la suerte, el bono del encapuchado y los dos finales) para
+  probarlas sin llegar a ellas jugando. Para quitarlo: borrar `js/ui/debug-panel.js`, su `<script>` en `index.html` y el bloque
+  "Panel de depuración" al final de `css/style.css`.
+
 ## Estructura
 
 Cada sistema del documento es un archivo independiente; se comunican con un bus de eventos (`SN.Events`).

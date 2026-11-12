@@ -258,6 +258,18 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
     await b.key('Digit3', '3');
     ok(await waitFor('SN.Bailout.V.ui === "wrong"', 4000) && await waitFor('SN.Bailout.V.ui === "menu"', 8000), 'pulsar 3 (persona) no rescata: vuelve al menú');
     await shot('p5b-persona');
+    // Solo con el ratón: clic en el botón 2, escribir el nombre a clics nada más pedirlo (sin esperar a que el
+    // contestador acabe la frase: así se colgaba) y clic en ENVIAR. (x, y del dibujo del móvil, que baja 10 px)
+    const onPhone = (x, y) => ev(`(() => { const r = document.getElementById("cine").getBoundingClientRect(); return { x: r.left + r.width * ${x} / 160, y: r.top + r.height * (${y} + 10) / 90 }; })()`);
+    let pt = await onPhone(80, 48);
+    await b.click(pt.x, pt.y);
+    ok(await waitFor('SN.Bailout.V.ui === "name"', 6000), 'clic en el botón 2 (banco enorme): pide el nombre del banco');
+    pt = await onPhone(80, 38);
+    for (let i = 0; i < 40 && await ev('SN.Bailout.V.typed < SN.Data.story.rescue.bankName.length'); i++) { await b.click(pt.x, pt.y); await b.sleep(40); }
+    ok(await ev('SN.Bailout.V.typed') === await ev('SN.Data.story.rescue.bankName.length'), 'a clics también se escribe el nombre');
+    pt = await onPhone(80, 75);
+    await b.click(pt.x, pt.y);
+    ok(await waitFor('SN.Bailout.V.ui === "check" || SN.Bailout.V.ui === "verdict"', 6000), 'clic en ENVIAR: sigue la llamada (aunque empezaras a escribir mientras hablaba el contestador)');
     await ev('SN.Game.toMenu(); true');
     await b.sleep(400);
 

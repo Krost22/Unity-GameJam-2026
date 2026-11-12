@@ -39,7 +39,9 @@
       'No sabemos si tu amigo volverá. Solo sabemos que el ciclo puede detenerse.',
     ],
     term: {
-      prompt: 'C:\\> ',
+      // Si intentas cerrar la terminal (o volver a FUTURO.exe) mientras NULL.EXE se ejecuta
+      locked: 'NULL.EXE está en ejecución. No se puede cerrar.',
+      prompt:'C:\\> ',
       // Primero: ¿el encapuchado es un programa? ({capital}: lo que tienes)
       intro: [
         { cmd: 'tasklist', out: ['FUTURO.EXE          memoria: {capital}', 'encapuchado.exe     memoria: ∞      usuario: TÚ'] },

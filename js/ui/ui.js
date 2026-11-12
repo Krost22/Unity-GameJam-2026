@@ -812,7 +812,8 @@
     tip(id, text) {
       const prof = S.profile;
       prof.tips = prof.tips || {};
-      if (prof.tips[id] || SN.Tutorial.active) return;
+      // (con el escritorio abierto o durante un final no: se verían encima de otra cosa; ya saldrá luego)
+      if (prof.tips[id] || SN.Tutorial.active || SN.Desktop.open || (SN.Finale && SN.Finale.active())) return;
       prof.tips[id] = true;
       SN.Save.saveProfile();
       const el = U.el('div', 'tip', text);
@@ -908,9 +909,10 @@
       SN.Audio.sfx('lucky');
       const cap = this.posIn($('hud-capital'));
       SN.FX.coins(cap.x + 60, cap.y + 14, 7 * l.k, 1.6);
-      const stars = '★'.repeat(l.k);
+      // Las estrellas van en su propia fila, encima: a los lados del título no caben (32 px ocupa casi todo el ancho)
+      const stars = Array.from({ length: l.k * 2 + 1 }, (_, i) => `<i style="animation-delay:${(i % 2) * 0.4}s">★</i>`).join('');
       const evs = l.events.map((e) => D.luck.specials[e].name).join(' · ');
-      return this.card(`<div class="d1">${stars} ¡DÍA DE LA SUERTE! ${stars}</div><div class="d2">${evs}</div><div class="d3">Los mercados crecen · +${7 * l.k}% en cada ganancia</div>`, 'daycard lucky', 3.2);
+      return this.card(`<div class="lk-stars">${stars}</div><div class="d1">¡DÍA DE LA SUERTE!</div><div class="d2">${evs}</div><div class="d3">Los mercados crecen · +${7 * l.k}% en cada ganancia</div>`, 'daycard lucky', 3.2);
     },
     dayCard(day, sub, warn) { return this.card(`<div class="d1">DÍA ${day}</div><div class="d2${warn ? ' warn' : ''}">${sub}</div>`, 'daycard', 1.3); },
     stamp(text, cls = '', sub = '', time = 1.6) { return this.card(`${text}${sub ? `<small>${sub}</small>` : ''}`, 'stamp ' + cls, time); },

@@ -57,7 +57,10 @@
       this.showYou(true);
       SN.FX.glitch(0.9, 1.6);
       SN.Audio.sfx('notifyBad');
-      await SN.UI.stamp(F().you.warn, 'coral', '', 2.4);
+      // El aviso, en dos líneas y por encima del mercado TÚ (en una línea a 24 px no cabía en la pantalla y
+      // además quedaba por debajo del panel del mercado)
+      const [w1, w2] = F().you.warn.split(': ');
+      await SN.UI.stamp(w2 ? `${esc(w1)}:<br>${esc(w2)}` : esc(F().you.warn), 'coral fin-warn', '', 2.4);
       this.enterChoice();
       SN.Save.saveRun();
     },
@@ -299,6 +302,9 @@
       // 1) La terminal: primero se comprueba qué es el encapuchado; luego, la secuencia de NULL.EXE
       SN.Desktop.closeWin('null');
       this.term = { prompt: T.prompt, lines: [], typing: null };
+      // Mientras dure la terminal, ni se cierra ni se vuelve a FUTURO.exe (js/ui/desktop.js): el final espera a que
+      // escribas en ella, y si se cerraba se quedaba esperando para siempre
+      this.termLock = true;
       SN.Desktop.launch('term');
       SN.Music.pulse('danger');
       const money = U.money(S.run.capital);
@@ -315,6 +321,7 @@
       SN.Music.pulse(null);
       // 2) EXECUTE: los mercados y el mercado TÚ caen a cero, y el dinero desaparece
       await wait(0.6);
+      this.termLock = false;
       SN.Desktop.closeWin('term');
       SN.Desktop.restore();
       await wait(0.5);
@@ -526,6 +533,7 @@
     reset() {
       this.busy = false;
       this.term = null;
+      this.termLock = false;
       this.you = null;
       SN.Music.force(null);
       SN.Music.pulse(null);

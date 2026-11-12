@@ -121,6 +121,16 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
     await b.sleep(900);
     await shot('B-02-terminal');
     ok(await ev('SN.Finale.term.lines.some((l) => /tasklist/.test(l.t))'), 'cualquier tecla escribe el comando (tasklist)');
+    // Mientras NULL.EXE se ejecuta, la terminal no se cierra ni se vuelve a FUTURO.exe (antes se quedaba todo
+    // esperando una terminal cerrada); el icono de NULL.EXE te devuelve a ella
+    await click('.dt-term .dt-x');
+    await b.key('Escape');
+    await click('.dt-icon[data-app="futuro"]');
+    await b.sleep(300);
+    ok(await ev('!!SN.Desktop.wins.term && SN.Desktop.open && SN.Desktop.topWin() === "term" && !!SN.Finale.term.notice'), 'la terminal no se cierra (ni con la X ni con Escape) ni se vuelve a FUTURO.exe: "NULL.EXE está en ejecución"');
+    await click('.dt-icon[data-app="notes"]');
+    await click('.dt-icon[data-app="null"]');
+    ok(await ev('SN.Desktop.topWin() === "term"'), 'el icono de NULL.EXE te lleva a la terminal');
     ok(await playOut(200000), 'final B entero hasta los créditos: terminal, colapso, la X, farolas, despedida, carta, Hacienda y periódico');
     await shot('B-creditos');
     ok(await ev('/NULL\\.EXE/.test(document.querySelector(".fin-credits").textContent) && /PALA/.test(document.querySelector(".fin-credits").textContent)'), 'créditos del final B, con la pala');
