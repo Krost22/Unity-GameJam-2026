@@ -109,7 +109,7 @@
       });
       // Clic en la habitación (fuera del monitor): hay cosas escondidas (gato, cuervo, póster...)
       stage.addEventListener('click', (e) => {
-        if (e.target.closest('#monitor') || SN.Cine.running || SN.Sneak.active) return;
+        if (e.target.closest('#monitor') || SN.Cine.running || SN.Bailout.active) return;
         const p = SN.Game.toStage(e.clientX, e.clientY);
         if (SN.Desk.hotspot) SN.Desk.hotspot(p.x / 2, p.y / 2);
       });
@@ -229,12 +229,14 @@
       const goal = SN.Unlocks.currentGoal();
       const fill = $('goal-fill');
       if (goal) {
-        $('goal-title').textContent = goal.type === 'debt' ? `Deuda: ${goal.label}` : goal.type === 'item' ? `Oferta: ${goal.label}` : `Meta ${U.short(goal.amount)}`;
+        $('goal-title').textContent = goal.type === 'debt' ? `Deuda: ${goal.label}` : goal.type === 'item' ? `Oferta: ${goal.label}` : 'Meta';
         fill.style.width = (U.clamp(run.capital / goal.amount, 0, 1) * 100).toFixed(1) + '%';
         fill.classList.toggle('debt', goal.type === 'debt');
         fill.classList.toggle('item', goal.type === 'item');
-        // La oferta no pide dinero: se enseña lo que dejará a deber
-        $('goal-text').textContent = goal.type === 'item' ? `Hoy $0 · debes ${U.short(goal.amount)}` : `${U.short(run.capital)} / ${U.short(goal.amount)}`;
+        // A la derecha, solo lo que debes (o la meta): tu dinero ya sale a la izquierda, en grande.
+        // La oferta no pide dinero: se enseña lo que dejará a deber.
+        const amt = goal.amount >= 100000 ? U.short(goal.amount) : U.money(goal.amount);
+        $('goal-text').textContent = goal.type === 'item' ? `Hoy $0 · debes ${U.short(goal.amount)}` : amt;
         if (goal.type === 'item') fill.style.width = '100%';
       } else {
         $('goal-title').textContent = 'Sin límites';

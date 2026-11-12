@@ -1,5 +1,5 @@
 // Personajes y objetos grandes en pixel art, dibujados por código (fáciles de sustituir por sprites):
-// el encapuchado, la cara del protagonista con expresiones, el cerdito de arcilla y la consola.
+// el encapuchado, Bravo Fines, la cara del protagonista con expresiones y la consola.
 (function (SN) {
   'use strict';
   const P = SN.PAL, Px = SN.Px;
@@ -238,49 +238,6 @@
       const qx = hx + 36, qy = top - 10 + Math.round(Math.sin(t * 4));
       Px.box(g, qx, qy, 11, 13, P.creamL, P.coal);
       Px.text(g, '?', qx + 3, qy + 11, P.coralD);
-    }
-  };
-
-  // ---------- Cerdito de Timmy (unos 80x64), en coordenadas locales ----------
-  // El mismo cerdito rosa que se roba en su cuarto (js/render/sneak.js, drawPig), en grande
-  Chars.piggy = function (g, cx, cy, opts = {}) {
-    const body = '#E8899E', dark = '#D4708A', deep = '#C9607A', light = '#F5B3C2';
-    // Patas
-    for (const lx of [-20, -9, 7, 18]) {
-      R(g, cx + lx - 1, cy + 14, 9, 13, P.coal);
-      R(g, cx + lx, cy + 15, 7, 11, dark);
-      R(g, cx + lx, cy + 15, 3, 10, body);
-      R(g, cx + lx, cy + 24, 7, 2, deep);
-    }
-    // Cuerpo
-    Px.ellipse(g, cx, cy, 31, 23, P.coal);
-    Px.ellipse(g, cx, cy, 30, 22, dark);
-    Px.ellipse(g, cx - 2, cy - 2, 27, 19, body);
-    Px.ellipse(g, cx - 10, cy - 10, 10, 5, light);
-    R(g, cx - 16, cy - 13, 4, 2, P.creamL);
-    // Ranura de las monedas
-    R(g, cx - 7, cy - 21, 14, 3, P.coal); R(g, cx - 6, cy - 20, 12, 1, P.coalDD);
-    // Rabito
-    R(g, cx - 34, cy - 6, 4, 2, P.coal); R(g, cx - 36, cy - 9, 2, 4, P.coal); R(g, cx - 34, cy - 11, 3, 2, P.coal);
-    // Oreja
-    R(g, cx + 10, cy - 27, 9, 8, P.coal); R(g, cx + 11, cy - 26, 7, 7, dark); R(g, cx + 12, cy - 25, 4, 4, light);
-    R(g, cx - 4, cy - 27, 9, 8, P.coal); R(g, cx - 3, cy - 26, 7, 7, dark); R(g, cx - 2, cy - 25, 4, 4, light);
-    // Hocico
-    Px.ellipse(g, cx + 30, cy + 2, 7, 8, P.coal);
-    Px.ellipse(g, cx + 30, cy + 2, 6, 7, dark);
-    R(g, cx + 28, cy, 2, 4, '#8A3A50'); R(g, cx + 32, cy, 2, 4, '#8A3A50');
-    // Ojo y moflete
-    if (opts.dizzy) {
-      R(g, cx + 15, cy - 9, 1, 1, P.coal); R(g, cx + 17, cy - 9, 1, 1, P.coal); R(g, cx + 16, cy - 8, 1, 1, P.coal); R(g, cx + 15, cy - 7, 1, 1, P.coal); R(g, cx + 17, cy - 7, 1, 1, P.coal);
-    } else {
-      R(g, cx + 15, cy - 10, 3, 4, P.coal); R(g, cx + 15, cy - 10, 1, 1, P.creamL);
-    }
-    R(g, cx + 12, cy - 2, 6, 3, '#F7C6D2');
-    // Grietas
-    if (opts.cracks) {
-      for (const c of opts.cracks) {
-        for (let i = 1; i < c.length; i++) Px.line(g, cx + c[i - 1][0], cy + c[i - 1][1], cx + c[i][0], cy + c[i][1], i % 2 ? P.coal : deep);
-      }
     }
   };
 

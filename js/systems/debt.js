@@ -64,11 +64,31 @@
       d.paid = true;
       d.paidDay = S.run.day;
       if (d.id === 'pleyzeta') S.run.flags.debtPaid = true;
-      // Bono por usar la app: nunca te quedas a cero al saldar una deuda
+      // Bono por usar la app: nunca te quedas a cero al saldar una deuda. No llega todavía: lo entrega
+      // el encapuchado en su escena (giveBonus, desde js/systems/narrative.js)
       d.bonus = D.payBonusFor(d.amount, SN.Unlocks.nextDebtAmount(), S.run.capital);
-      SN.Economy.add(d.bonus, 'reward');
+      d.bonusPending = true;
       SN.Events.emit('debt:paid', { auto: !!auto, amount: d.amount, debt: d, bonus: d.bonus });
       return true;
+    },
+
+    // El encapuchado entrega el bono de una deuda saldada: ahora sí se suma al dinero
+    giveBonus(d) {
+      if (!d || !d.bonusPending) return 0;
+      d.bonusPending = false;
+      SN.Economy.add(d.bonus, 'reward');
+      return d.bonus;
+    },
+    // Bonos ya ganados que todavía no te ha dado (cuentan como tuyos: no te arruinas esperándolos)
+    pendingBonus() {
+      const run = S.run;
+      if (!run) return 0;
+      return [run.debt, ...(run.debts || [])].reduce((t, d) => t + (d && d.bonusPending ? d.bonus : 0), 0);
+    },
+    // Partida cargada con un bono sin entregar (se cerró el juego en medio de la escena): se entrega ya
+    flushBonuses() {
+      const run = S.run;
+      if (run) for (const d of [run.debt, ...(run.debts || [])]) this.giveBonus(d);
     },
   };
 

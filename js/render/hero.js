@@ -146,37 +146,75 @@
     return sp.c;
   }
 
-  // Brazo cercano (el izquierdo de la imagen) en distintas poses
-  const NEAR = {
-    chin: { elbow: [22, 134], wrist: [50, 92], hand: [54, 84, 6, 4.5] },
-    head: { elbow: [18, 134], wrist: [40, 72], hand: [44, 56, 6, 6], fingers: [[41, 58, 45, 46], [45, 59, 49, 46], [49, 60, 53, 48]] },
-    fist: { elbow: [16, 112], wrist: [18, 76], hand: [18, 68, 5.5, 5.5] },
-    facepalm: { elbow: [26, 132], wrist: [48, 86], hand: [59, 62, 8, 5.5] },
-    desk: { elbow: [20, 134], wrist: [50, 140], hand: [56, 140, 6, 4] },
-  };
-  function buildNearArm(pose, phase) {
+  // ---------- Puño en alto (la intro: "¡ES MÍA!") ----------
+  // El brazo derecho del protagonista (izquierda de la imagen) sale del hombro de la camisa: manga blanca hasta
+  // el codo, la manga remangada (como en las manos de la partida) y el antebrazo hacia arriba, con la misma luz
+  // que la cara (monitor desde la derecha) y el contraluz naranja de la ventana. El puño está dibujado a mano:
+  // cuatro dedos doblados hacia la cámara (nudillos arriba), el pulgar cruzado por delante y su uña.
+  // Letras: K/k contorno (sombra/luz, como el contorno de PK.part), d pliegue, D sombra, m medio, s piel,
+  // L brillo, r contraluz.
+  const FIST = [
+    '.....kkk.......',
+    '.kkkKsLLkkk....',
+    'KrsLDssLDsLk...',
+    'KrssDsssDsskkk.',
+    'KrsmDssmDsmDsLk',
+    'KrmmDsmmDmmDsmk',
+    'KmDDdmDDdmDdmDk',
+    'KrsdddddddDmssk',
+    'KrssssssLLdssmk',
+    'KrssmmmmmDdsmDk',
+    'KrmdddddddDmDDk',
+    '.KrmmmDDDDDdK..',
+  ];
+  const FIST_POS = [7, 52];                        // esquina del puño (coordenadas locales, como el cuerpo)
+  const SHOULDER = [29, 94], ELBOW = [6, 96], WRIST = [13, 64];
+  // dx, dy: cuánto se mueve el puño (y la muñeca) en el gesto; el codo y el hombro no se mueven
+  function buildFistArm(dx, dy, phase) {
     const sp = new PK.Sprite(FW, FH);
     const rim = RIM[phase] || RIM.evening;
-    const a = NEAR[pose] || NEAR.chin;
-    const sh = [28, 96];
-    const sleeve = sp.mask().capsule(sh[0], sh[1], a.elbow[0], a.elbow[1], 7.6);
-    sp.part(sleeve, RAMP.shirt, { light: LIGHT, lit: 4, cast: 1 });
-    sp.rim(sleeve, rim, [-1, -1]);
-    // Puño remangado
-    const ex = a.elbow[0] + (a.wrist[0] - a.elbow[0]) * 0.12, ey = a.elbow[1] + (a.wrist[1] - a.elbow[1]) * 0.12;
-    const cuff = sp.mask().capsule(a.elbow[0], a.elbow[1], ex, ey, 7.2);
-    sp.part(cuff, RAMP.shirt, { light: LIGHT, base: 3, cast: 1 });
-    const fore = sp.mask().taper(ex, ey, 5.6, a.wrist[0], a.wrist[1], 4.2);
-    sp.part(fore, RAMP.skin, { light: LIGHT, lit: 3, cast: 1 });
-    const hd = a.hand;
-    const hand = sp.mask().ellipse(hd[0], hd[1], hd[2], hd[3]);
-    if (a.fingers) for (const [x0, y0, x1, y1] of a.fingers) hand.capsule(x0, y0, x1, y1, 1.7);
-    sp.part(hand, RAMP.skin, { light: LIGHT, lit: 2, cast: 1 });
-    // Dedos insinuados
-    if (pose === 'fist') sp.line(15, 66, 21, 66, P.skinD).line(15, 69, 21, 69, P.skinD);
-    else if (pose === 'facepalm') sp.line(54, 60, 64, 60, P.skinD).line(54, 63, 64, 63, P.skinD);
-    else if (pose !== 'head') sp.line(hd[0] - 3, hd[1] + 1, hd[0] + 3, hd[1] + 1, P.skinD);
+    const E = ELBOW, W = [WRIST[0] + dx, WRIST[1] + dy];
+    // Brazo (manga): del hombro al codo, con un par de arrugas de la tela
+    const upper = sp.mask().capsule(SHOULDER[0], SHOULDER[1], E[0], E[1], 7.2);
+    sp.part(upper, RAMP.shirt, { light: LIGHT, lit: 4, sh: 3, cast: 1 });
+    sp.rim(upper, rim, [-1, -1]);
+    sp.line(22, 90, 20, 95, P.shirtD).line(15, 91, 14, 96, P.shirtD).line(26, 97, 29, 100, P.shirtD);
+    // Antebrazo: más ancho junto al codo, más fino en la muñeca
+    const len = Math.hypot(W[0] - E[0], W[1] - E[1]), ux = (W[0] - E[0]) / len, uy = (W[1] - E[1]) / len;
+    // (empieza bajo la manga remangada: si empezara en el codo, asomaría por debajo de la tela)
+    const fore = sp.mask().taper(E[0] + ux * 5.5, E[1] + uy * 5.5, 5, W[0], W[1], 3.9);
+    sp.part(fore, RAMP.skin, { light: LIGHT, lit: 3, sh: 2, cast: 1 });
+    sp.rim(fore, rim, [-1, 0]);
+    // La manga remangada: una franja de tela cruzada al antebrazo, justo encima del codo
+    const px = -uy, py = ux, at = (d, w) => [[E[0] + ux * d - px * w, E[1] + uy * d - py * w], [E[0] + ux * d + px * w, E[1] + uy * d + py * w]];
+    const [a0, a1] = at(0, 6.8), [b0, b1] = at(6, 6.2);
+    const roll = sp.mask().poly([a0, a1, b1, b0]);
+    sp.part(roll, RAMP.shirt, { light: LIGHT, base: 3, lit: 2, sh: 2, cast: 1 });
+    sp.rim(roll, rim, [-1, -1]);
+    const [f0, f1] = at(3, 4.5);
+    sp.line(Math.round(f0[0]), Math.round(f0[1]), Math.round(f1[0]), Math.round(f1[1]), P.shirt);
+    // El puño (y la línea de la muñeca)
+    const FPAL_FIST = { K: '#451D35', k: '#904353', d: P.skinDD, D: P.skinD, m: P.skinM, s: P.skin, L: P.skinL, r: rim };
+    sp.stamp(FIST, FIST_POS[0] + dx, FIST_POS[1] + dy, FPAL_FIST);
     return sp.c;
+  }
+  // El gesto de "¡sí!" (t en segundos desde que empieza el plano):
+  //   · Entrada: el brazo sube desde abajo, frenando al llegar (sin pasarse: así la manga nunca se despega
+  //     del hombro). El rebote lo hace solo el puño, que se estira 2 px y vuelve.
+  //   · Un respiro y después, cada 0,6 s: baja un poco (anticipación) y sube de golpe, con 1 px de más.
+  // Devuelve { lift (px que le faltan para llegar arriba), dx, dy (del puño), snap (0..1: el golpe, para las líneas) }
+  function fistPump(t) {
+    const ENTER = 0.26, SETTLE = 0.14, REST = 0.22, PERIOD = 0.6;
+    if (t < ENTER) return { lift: Math.round(Math.pow(1 - t / ENTER, 3) * 40), dx: 0, dy: 0, snap: 0 };
+    const s = t - ENTER;
+    if (s < SETTLE) return { lift: 0, dx: 0, dy: s < SETTLE / 2 ? -2 : -1, snap: 1 - s / SETTLE };
+    if (s < SETTLE + REST) return { lift: 0, dx: 0, dy: 0, snap: 0 };
+    const p = (s - SETTLE - REST) % PERIOD;
+    let dy = 0, snap = 0;
+    if (p < 0.14) dy = Math.round(3 * (p / 0.14) * (p / 0.14));      // baja (cada vez más rápido)
+    else if (p < 0.2) { dy = -1; snap = 1; }                           // ¡arriba!
+    else if (p < 0.3) { dy = 0; snap = 1 - (p - 0.2) / 0.1; }
+    return { lift: 0, dx: dy >= 2 ? -1 : 0, dy, snap };
   }
 
   // ---------- Manos en primera persona ----------
@@ -379,6 +417,7 @@
   function heart(g, x, y, c) { SN.Px.rect(g, x, y, 2, 1, c); SN.Px.rect(g, x + 3, y, 2, 1, c); SN.Px.rect(g, x, y + 1, 5, 1, c); SN.Px.rect(g, x + 1, y + 2, 3, 1, c); SN.Px.rect(g, x + 2, y + 3, 1, 1, c); }
 
   // ---------- Estado y animación ----------
+  const FOLLOW = 40; // rapidez con la que la mano alcanza al cursor (antes 12: tardaba ~0,4 s y se sentía con lag)
   const H = SN.Hero = {
     t: 0,
     expr: 'worried', pose: 'chin',
@@ -440,11 +479,16 @@
       return { expr: 'worried', pose: 'chin' };
     },
 
+    // La mano del ratón sigue al cursor real con el tiempo real (js/core/game.js), no con el del mundo: la cámara
+    // lenta y el golpe congelado del drama no la frenan. Suavizado corto (llega en ~0,1 s), igual a cualquier FPS.
+    follow(dt) {
+      const m = this.mouse, k = 1 - Math.exp(-dt * FOLLOW);
+      m.x += (m.tx - m.x) * k;
+      m.y += (m.ty - m.y) * k;
+    },
+
     update(dt) {
       this.t += dt;
-      const m = this.mouse;
-      m.x += (m.tx - m.x) * Math.min(1, dt * 12);
-      m.y += (m.ty - m.y) * Math.min(1, dt * 12);
       this.click = Math.max(0, this.click - dt);
       if (this.react && (this.react.t -= dt) <= 0) this.react = null;
       this.shake = Math.max(0, this.shake - dt);
@@ -568,9 +612,20 @@
       g.drawImage(body, ox, oy);
       g.drawImage(head, ox, oy);
       if (opts.fist) {
-        const near = cached('near|fist|evening', () => buildNearArm('fist', 'evening'));
-        const k = Math.round(Math.abs(Math.sin(t * 10)) * 4);
-        g.drawImage(near, ox, oy - k);
+        const f = fistPump(t);
+        const arm = cached(`fist|${f.dx}|${f.dy}|evening`, () => buildFistArm(f.dx, f.dy, 'evening'));
+        g.drawImage(arm, ox, oy + f.lift);
+        // Líneas de impacto alrededor del puño cuando sube de golpe
+        if (f.snap > 0) {
+          const fx = ox + FIST_POS[0] + f.dx, fy = oy + FIST_POS[1] + f.dy + f.lift;
+          const n = f.snap > 0.5 ? 3 : 2;
+          g.fillStyle = f.snap > 0.5 ? P.yellowL : P.yellow;
+          for (let i = 0; i < n; i++) {
+            g.fillRect(fx - 3 - i, fy + 2 - i, 1, 1);   // arriba a la izquierda
+            g.fillRect(fx + 7, fy - 3 - i, 1, 1);        // arriba
+            g.fillRect(fx + 16 + i, fy + 2 - i, 1, 1);  // arriba a la derecha
+          }
+        }
       }
       g.drawImage(bangs, ox, oy);
       // Final A: la capucha del encapuchado va cubriendo la cara (hood: 0..1)

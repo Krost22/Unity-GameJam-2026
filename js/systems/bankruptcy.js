@@ -1,30 +1,27 @@
 // BankruptcyManager: qué pasa al perder. Se pierde sin dinero ni para la apuesta mínima (nunca por tener
 // dinero comprometido en una operación), cuando vence el plazo sin pagar, o cuando ya es imposible pagar a tiempo.
-// 1) VIDA EXTRA: el cerdito de Timmy (tu hermano pequeño). Te cuelas en su cuarto a escondidas (SN.Sneak),
-//    lo traes a tu mesa y lo rompes tú mismo a golpes: su dinero es tuyo y la partida sigue
-//    (si el problema era el plazo, con eso convences al cobrador: 2 días más). Uno por meta.
-// 2) SIN CERDITO: pierdes de verdad y vuelves al inicio de la meta en la que ibas, con los fondos que
+// 1) VIDA EXTRA: el rescate bancario (js/render/bailout.js). Llamas a la Línea de Rescate Financiero, te haces
+//    pasar por un banco "demasiado grande para caer" y Donald Trompa te transfiere el dinero de los
+//    contribuyentes. La partida sigue (si el problema era el plazo: nadie embarga a un banco sistémico, 2 días
+//    más). Uno por meta.
+// 2) SIN RESCATE: pierdes de verdad y vuelves al inicio de la meta en la que ibas, con los fondos que
 //    tenías al empezarla (punto de control de SN.State). Nunca se pierde toda la partida.
 (function (SN) {
   'use strict';
-  const S = SN.State, D = SN.Data, U = SN.Util, P = SN.PAL, Px = SN.Px;
-  const HITS = 5;
-  const CX = 210, CY = 110;
-  const SC = 2; // el cerdito se dibuja al doble de tamaño: es el protagonista del momento
+  const S = SN.State, D = SN.Data, U = SN.Util;
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   const B = SN.Bankruptcy = {
     active: false,
-    pig: null,
-    dim: 0,
     ui: null,
-    buf: null,
+    coins: 0,
 
     shouldTrigger() {
       const run = S.run;
-      return !!run && !run.position && run.capital + run.committed < D.sim.bankruptcyThreshold;
+      return !!run && !run.position && run.capital + run.committed + SN.Debt.pendingBonus() < D.sim.bankruptcyThreshold;
     },
 
-    // Sin fondos para seguir apostando: aviso corto y directo al cerdito
+    // Sin fondos para seguir apostando: aviso corto y directo a la vida extra
     async broke() {
       SN.Game.setState('BANKRUPTCY');
       SN.Game.resetTime();
@@ -47,7 +44,7 @@
       const b = b0.replace('{amount}', U.money(S.run.debt ? S.run.debt.amount : D.sim.startDebt));
       SN.Audio.sfx('notifyBad');
       SN.FX.shake(4, 0.6);
-      const last = S.run.piggy === 'ready' ? D.story.embargoPiggy : `${c}: ${U.money(S.run.capital)}`;
+      const last = S.run.rescue === 'ready' ? D.story.rescue.embargo : `${c}: ${U.money(S.run.capital)}`;
       await SN.UI.card(`<div class="overlay-panel"><div class="t1">${a}</div><div class="t2">${b}</div><div class="t2">${last}</div></div>`, 'daycard embargo', 2.6);
       await SN.wait(0.4);
       return this.lose(early ? 'hopeless' : 'deadline');
@@ -60,20 +57,56 @@
       SN.Dialog.hide();
       SN.UI.clearSpot();
       SN.Hands.drumming = false;
-      if (S.run.piggy === 'ready') return this.extraLife();
+      if (S.run.rescue === 'ready') return this.extraLife();
       return this.finalLoss();
     },
 
-    // Vida extra: colarse en el cuarto de Timmy y romper su cerdito en tu mesa
+    // Vida extra: la llamada a la Línea de Rescate y la videollamada con el Presidente
     async extraLife() {
-      const st = D.story.piggyLife;
+      const st = D.story.rescue.card;
       SN.Audio.setMood('tense');
       await SN.UI.card(`<div class="overlay-panel"><div class="t1">${st.title}</div><div class="t2">${st.lines[0]}</div><div class="t3">${st.lines[1]}</div></div>`, 'daycard', 3.2);
-      await SN.Sneak.play();
-      return this.start();
+      this.coins = S.rescueAmount();
+      this.active = true;
+      const done = await SN.Bailout.play({ coins: this.coins });
+      if (!done) return; // se salió al menú en mitad de la llamada
+      return this.showRescue();
     },
 
-    // Sin cerdito: vuelves al inicio de la meta con lo que tenías entonces
+    // De vuelta en FUTURO.exe: el justificante de la transferencia y el mensaje
+    showRescue() {
+      const R = D.story.rescue, rc = R.receipt, st = R.done;
+      const late = this.reason === 'deadline' || this.reason === 'hopeless';
+      SN.Audio.setMood('normal');
+      SN.Audio.sfx('notify');
+      SN.Audio.sfx('cash');
+      const el = U.el('div', 'overlay-panel rescue-ui');
+      el.innerHTML = `<div class="rc-receipt">
+          <div class="rc-h"><span class="rc-seal"></span>${esc(rc.title)}</div>
+          <div class="rc-row"><span>De</span><b>${esc(rc.from)}</b></div>
+          <div class="rc-row"><span>Para</span><b>${esc(rc.to)}</b></div>
+          <div class="rc-row"><span>Concepto</span><b>${esc(rc.concept)}</b></div>
+          <div class="rc-amt">+${U.money(this.coins)}</div>
+        </div>
+        <div class="t1">${esc(st.title)}</div><div class="t2">${esc(st.message)}</div>
+        <div class="t3">${esc(late ? st.extension : st.extra)}</div>
+        <div class="row"><button class="btn btn-yellow" id="bk-continue">Seguir jugando</button></div>`;
+      // El escudo del justificante: la moneda con el ojo
+      const seal = U.el('canvas');
+      seal.width = 9; seal.height = 9;
+      const g = seal.getContext('2d');
+      SN.Px.ellipse(g, 4, 4, 4, 4, SN.PAL.yellowD); SN.Px.ellipse(g, 4, 4, 3, 3, SN.PAL.yellow);
+      SN.Px.rect(g, 2, 4, 5, 1, SN.PAL.coalD); SN.Px.rect(g, 4, 4, 1, 1, SN.PAL.coalDD);
+      seal.style.width = '9px'; seal.style.height = '9px';
+      el.querySelector('.rc-seal').replaceWith(seal);
+      SN.KW.apply(el);
+      document.getElementById('layer-top').appendChild(el);
+      this.ui = el;
+      el.querySelector('#bk-continue').addEventListener('click', () => this.finish('continue'));
+      return new Promise((resolve) => { this.resolve = resolve; });
+    },
+
+    // Sin rescate: vuelves al inicio de la meta con lo que tenías entonces
     async finalLoss() {
       const run = S.run, cp = run.checkpoint, st = D.story.finalLoss;
       SN.Audio.setMood('silent');
@@ -101,113 +134,18 @@
       });
     },
 
-    start() {
-      if (this.active) return;
-      this.active = true;
-      SN.Game.setState('BANKRUPTCY');
-      SN.Audio.setMood('silent');
-      SN.Audio.sfx('thud');
-      SN.Desk.led = 'alert';
-      SN.Hands.drumming = false;
-      this.dim = 0;
-      this.pig = { state: 'wait', t: 0, y: -130, vy: 0, sx: 1, sy: 1, hits: 0, cracks: [], shake: 0, coins: S.piggyAmount() };
-      this.buf = Px.canvas(100, 80);
-      SN.ScreenCanvas.take('piggy');
-      const app = document.getElementById('app');
-      app.style.transition = 'opacity .7s steps(7), transform .7s steps(7)';
-      // Los paneles desaparecen después de oscurecerse
-      SN.after(0.7, () => { app.style.opacity = '0'; app.style.transform = 'scale(.96)'; });
-      SN.after(1.5, () => { this.pig.state = 'enter'; this.pig.vy = 60; SN.Audio.sfx('whoosh'); });
-      const canvas = SN.ScreenCanvas.canvas;
-      this.onClick = (e) => this.click(e);
-      canvas.addEventListener('pointerdown', this.onClick);
-      return new Promise((resolve) => { this.resolve = resolve; });
-    },
-
-    click(e) {
-      const pig = this.pig;
-      if (!pig || pig.state !== 'idle') return;
-      const r = SN.ScreenCanvas.canvas.getBoundingClientRect();
-      const x = (e.clientX - r.left) / r.width * 420, y = (e.clientY - r.top) / r.height * 236;
-      if (Math.abs(x - CX) > 36 * SC || Math.abs(y - (pig.y + 4)) > 28 * SC) return;
-      pig.hits++;
-      pig.shake = 0.25;
-      pig.sx = 1.12; pig.sy = 0.88;
-      SN.Hands.press();
-      SN.Audio.sfx('crack', { n: pig.hits });
-      SN.FX.burst(x, y, { n: 10, colors: [P.orangeD, P.orange, P.creamD], speed: 60, life: 0.5 });
-      SN.FX.shake(1.5 + pig.hits * 0.6, 0.2);
-      // Grieta que parte del punto del golpe
-      const lx = U.clamp(Math.round((x - CX) / SC), -26, 26), ly = U.clamp(Math.round((y - pig.y) / SC), -18, 18);
-      const crack = [[lx, ly]];
-      let ang = U.rand(0, Math.PI * 2);
-      for (let i = 0; i < 4 + pig.hits; i++) {
-        ang += U.rand(-0.9, 0.9);
-        const [px, py] = crack[crack.length - 1];
-        crack.push([U.clamp(Math.round(px + Math.cos(ang) * U.rand(4, 8)), -26, 26), U.clamp(Math.round(py + Math.sin(ang) * U.rand(3, 6)), -18, 18)]);
-      }
-      pig.cracks.push(crack);
-      if (pig.hits % 2 === 0) SN.FX.coins(x, y, 1, 0.5);
-      if (pig.hits >= HITS) this.shatter();
-    },
-
-    shatter() {
-      const pig = this.pig;
-      pig.state = 'broken';
-      SN.Audio.sfx('shatter');
-      SN.FX.flash(P.creamL, 0.2, 0.6);
-      SN.FX.shake(6, 0.5);
-      SN.FX.ring(CX, pig.y, P.yellow, 120, 0.8);
-      // Fragmentos de arcilla: el dibujo del cerdito troceado en bloques
-      const g = Px.ctx(this.buf);
-      g.clearRect(0, 0, 100, 80);
-      SN.Chars.piggy(g, 50, 40, { cracks: pig.cracks, dizzy: true });
-      const data = g.getImageData(0, 0, 100, 80).data;
-      for (let by = 0; by < 80; by += 6) {
-        for (let bx = 0; bx < 100; bx += 6) {
-          if (data[((by + 3) * 100 + bx + 3) * 4 + 3] < 10) continue;
-          const dx = bx - 50, dy = by - 40;
-          const d = Math.hypot(dx, dy) || 1;
-          SN.FX.shard(this.buf, bx, by, 6, 6, CX + (bx - 50) * SC, pig.y + (by - 40) * SC, dx / d * U.rand(70, 190), dy / d * U.rand(60, 150) - 130, SC);
-        }
-      }
-      SN.FX.coins(CX, pig.y, 22, 2);
-      SN.after(1.1, () => this.showMessage());
-    },
-
-    showMessage() {
-      const st = D.story.bankrupt;
-      const extra = st.extra[1].replace('{coins}', U.money(this.pig.coins));
-      const late = this.reason === 'deadline' || this.reason === 'hopeless';
-      const el = U.el('div', 'overlay-panel piggy-ui');
-      el.innerHTML = `<div class="msg"><div class="t1">${st.title}</div><div class="t2">${st.message}</div><div class="t3">${extra}<br>${late ? st.extension : st.extra[0]}</div></div>
-        <div class="row"><button class="btn btn-yellow" id="bk-continue">Seguir jugando</button></div>`;
-      SN.KW.apply(el);
-      document.getElementById('layer-top').appendChild(el);
-      this.ui = el;
-      SN.Audio.sfx('notify');
-      el.querySelector('#bk-continue').addEventListener('click', () => this.finish('continue'));
-    },
-
     // Limpia la secuencia (también se usa al salir al menú)
     reset() {
-      if (this.onClick) SN.ScreenCanvas.canvas.removeEventListener('pointerdown', this.onClick);
+      if (SN.Bailout) SN.Bailout.abort();
       if (this.ui) this.ui.remove();
       this.ui = null;
-      this.pig = null;
       this.active = false;
-      SN.ScreenCanvas.release('piggy');
-      const app = document.getElementById('app');
-      app.style.transition = '';
-      app.style.opacity = '';
-      app.style.transform = '';
-      SN.FX.clear();
       SN.Desk.led = 'idle';
     },
 
     finish(choice) {
       SN.Audio.sfx('click');
-      const coins = this.pig ? this.pig.coins : 0;
+      const coins = this.coins;
       this.reset();
       const r = this.resolve;
       this.resolve = null;
@@ -217,74 +155,31 @@
       if (r) r(choice);
     },
 
-    // Tras romper el cerdito: su dinero entra y la partida sigue donde estaba
+    // Tras el rescate: el dinero entra y la partida sigue donde estaba
     resume(coins) {
-      const run = S.run;
-      run.piggy = 'broken';
-      run.piggyBroken = (run.piggyBroken || 0) + 1;
+      const run = S.run, R = D.story.rescue;
+      run.rescue = 'used';
+      run.rescues = (run.rescues || 0) + 1;
       if (this.reason === 'deadline' || this.reason === 'hopeless') {
         run.debt.deadlineDay = Math.max(run.debt.deadlineDay, run.day) + 2;
         run.debt.defaulted = false;
       }
       SN.Game.setState('GAMEPLAY');
       SN.Audio.setMood('normal');
-      SN.Economy.add(coins, 'piggy');
+      SN.Economy.add(coins, 'rescue');
+      // El dinero llega a la cuenta: monedas sobre el capital
+      const cap = SN.UI.posIn(document.getElementById('hud-capital'));
+      SN.FX.coins(cap.x + 60, cap.y + 14, 14, 1.4);
+      SN.FX.float(`+${U.money(coins)}`, cap.x + cap.w / 2, cap.y + cap.h + 6, 'gain');
+      SN.Audio.sfx('coin');
+      SN.Narrative.addNews(Object.assign({}, R.news));
       SN.UI.busy = false;
       SN.UI.allow = null;
       SN.UI.renderAll();
-      SN.Events.emit('piggy:broken', { coins });
+      SN.Events.emit('rescue:done', { coins });
       SN.Save.saveRun();
       SN.after(1, () => SN.Desktop.check());
     },
-
-    render(g, dt) {
-      const pig = this.pig;
-      g.clearRect(0, 0, 420, 236);
-      if (!pig) return;
-      this.dim = Math.min(1, this.dim + dt * 1.4);
-      g.globalAlpha = 0.72 * this.dim;
-      Px.rect(g, 0, 0, 420, 236, P.coalDD);
-      g.globalAlpha = 1;
-      pig.t += dt;
-      if (pig.state === 'enter') {
-        // Caída con rebote y aplastamiento
-        pig.vy += 900 * dt;
-        pig.y += pig.vy * dt;
-        if (pig.y >= CY) {
-          pig.y = CY;
-          if (pig.vy > 120) { pig.vy = -pig.vy * 0.35; pig.sx = 1.25; pig.sy = 0.75; SN.Audio.sfx('thud'); SN.FX.burst(CX, CY + 26 * SC, { n: 10, colors: [P.creamDD], speed: 50, up: 10 }); SN.FX.shake(2, 0.2); }
-          else { pig.vy = 0; pig.state = 'idle'; }
-        }
-      }
-      pig.sx += (1 - pig.sx) * Math.min(1, dt * 10);
-      pig.sy += (1 - pig.sy) * Math.min(1, dt * 10);
-      pig.shake = Math.max(0, pig.shake - dt);
-      if (pig.state === 'broken') {
-        if (this.ui) return;
-        return;
-      }
-      // Foco de luz cálido bajo el cerdito
-      g.globalAlpha = 0.22 * this.dim;
-      Px.ellipse(g, CX, CY + 27 * SC, 120, 14, P.yellow);
-      g.globalAlpha = 0.3 * this.dim;
-      Px.ellipse(g, CX, CY + 27 * SC, 80, 9, P.yellow);
-      g.globalAlpha = 1;
-      // Sombra (encoge cuando el cerdito está en el aire)
-      const air = U.clamp((CY - pig.y) / 150, 0, 1);
-      Px.ellipse(g, CX, CY + 27 * SC, Math.round(64 * (1 - air * 0.6)), 6, 'rgba(0,0,0,0.35)');
-      const bg = Px.ctx(this.buf);
-      bg.clearRect(0, 0, 100, 80);
-      const breath = pig.state === 'idle' ? Math.sin(pig.t * 3) * 0.015 : 0;
-      SN.Chars.piggy(bg, 50, 40, { cracks: pig.cracks, dizzy: pig.hits >= 3 });
-      // Aplastamiento con el borde inferior fijo (squash & stretch)
-      const w = Math.round(100 * SC * pig.sx), h = Math.round(80 * SC * (pig.sy + breath));
-      const sx = pig.shake > 0 ? Math.round(Math.sin(pig.t * 80) * 3) : 0;
-      g.drawImage(this.buf, Math.round(CX - w / 2) + sx, Math.round(pig.y + 40 * SC - h), w, h);
-      if (pig.state === 'idle') {
-        g.globalAlpha = 0.6 + Math.sin(pig.t * 6) * 0.4;
-        Px.text(g, pig.hits ? `${HITS - pig.hits}...` : D.story.bankrupt.hint, CX, CY + 34 * SC + 8, P.yellow, { align: 'center', size: 16 });
-        g.globalAlpha = 1;
-      }
-    },
   };
+  void B;
 })(window.SN);

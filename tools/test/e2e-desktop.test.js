@@ -44,6 +44,17 @@ const ok = (c, msg) => { if (c) pass++; else fail++; console.log(`  ${c ? 'ok   
     const typed = await ev('document.querySelector(".ch-box").textContent');
     ok(typed.length > 0 && reply.startsWith(typed.trim()), `las teclas escriben la respuesta del guion ("${typed.trim()}")`);
     ok(await ev('SN.State.run.capital') === before && !(await ev('!!SN.State.run.position')), 'teclear en el chat no dispara atajos de FUTURO.exe');
+    // En la pestaña de otro contacto (Bravo Fines) las teclas no le escriben a Kevo
+    await ev('SN.Desktop.bravo().log.push({ who: "b", t: "Hola, campeón." }); SN.Desktop.renderChat(); true');
+    await clickSel('.ch-tab.bravo');
+    await b.sleep(200);
+    const tk = await ev('SN.State.run.chat.typed');
+    for (let i = 0; i < 6; i++) await b.key('KeyJ', 'j');
+    await b.key('Enter');
+    ok(await ev('SN.Desktop.contact') === 'bravo' && await ev('SN.State.run.chat.typed') === tk && await ev('SN.State.run.chat.phase') === 'reply' &&
+      await ev('document.querySelector(".ch-box").textContent.includes("no lee")'), 'en otro chat (Bravo Fines) no se le escribe a Kevo');
+    await clickSel('.ch-tab[data-c="kevo"]');
+    await b.sleep(200);
     // El clic no escribe: solo las teclas
     const t0 = await ev('SN.State.run.chat.typed');
     await clickSel('.ch-box');
@@ -104,7 +115,7 @@ const ok = (c, msg) => { if (c) pass++; else fail++; console.log(`  ${c ? 'ok   
     await clickSel('.dt-icon[data-app="symbols"]');
     ok(await wait('document.querySelectorAll(".sy-cell.on").length === 1', 2000), 'Símbolos enseña la letra descubierta');
     await b.screenshot(path.join(OUT, '8-simbolos.png'));
-    ok(await ev('JSON.parse(localStorage.getItem("saldonegro.profile.v1")).cipher.known.E === true'), 'la letra se guarda en el perfil (para siempre)');
+    ok(await ev('JSON.parse(localStorage.getItem("saldonegro.run.v1")).cipher.known.E === true'), 'la letra se guarda en la partida (una partida nueva empieza sin letras)');
     for (let i = 0; i < 8 && await ev('SN.Desktop.open'); i++) await b.key('Escape');
     await wait('!SN.Desktop.open', 2000);
 
@@ -122,7 +133,7 @@ const ok = (c, msg) => { if (c) pass++; else fail++; console.log(`  ${c ? 'ok   
     ok(await ev('(() => { const w = SN.Desktop.wins.notes, b = w.querySelector(".dt-body"), p = w.querySelector(".nt"); return p.scrollWidth <= b.clientWidth + 1 && (p.offsetHeight <= b.clientHeight || getComputedStyle(b).overflowY === "auto"); })()'), 'Notas.txt no se sale de su ventana');
     await ev('SN.Desktop.closeWin("notes"); if (!SN.Desktop.open) document.getElementById("desktop").classList.add("hidden"); true');
     await b.sleep(300);
-    // La historia de Kevo sigue los hitos: pagar la deuda, cada regalo, los ahorros de Timmy...
+    // La historia de Kevo sigue los hitos: pagar la deuda, cada regalo, el rescate...
     const arc = await ev(`(() => {
       const D = SN.Desktop, ch = D.chat(), ids = SN.Data.chat.convos.map((c) => c.id);
       clearTimeout(D.timer); D.timer = null;
@@ -140,9 +151,9 @@ const ok = (c, msg) => { if (c) pass++; else fail++; console.log(`  ${c ? 'ok   
       D.flag('debtPaid'); ch.clock += 1;
       out.libre = start(ids.indexOf('libre'));
       out.saltaPlazo = start(ids.indexOf('plazo'));
-      D.flag('piggy'); ch.clock += 1;
-      out.cerdito = start(ids.indexOf('hospital'));
-      ch.sideDone.piggy = true;
+      D.flag('rescue'); ch.clock += 1;
+      out.rescate = start(ids.indexOf('hospital'));
+      ch.sideDone.rescue = true;
       // Volver a un punto de control: Kevo reacciona... mientras no haya desaparecido
       D.flag('rewind'); ch.clock += 1;
       out.rebobinaAntes = start(ids.indexOf('ventana'));
@@ -155,7 +166,7 @@ const ok = (c, msg) => { if (c) pass++; else fail++; console.log(`  ${c ? 'ok   
     })()`);
     ok(arc.esperaDeuda === null && arc.libre === 'libre', 'las conversaciones de después de la deuda esperan a que la pagues');
     ok(arc.saltaPlazo === 'libre', 'si ya pagaste, Kevo no te pregunta por el plazo');
-    ok(arc.cerdito === 'piggy', 'si rompes los ahorros de Timmy, Kevo reacciona antes de seguir la historia');
+    ok(arc.rescate === 'rescue', 'si te rescata el presidente, Kevo reacciona antes de seguir la historia');
     ok(arc.rebobinaAntes === 'rewind' && !arc.goneAntes, 'mientras Kevo sigue ahí, reacciona a lo que te pasa (volver a un punto de control)');
     ok(arc.goneDespues && arc.madre === 'madre', 'desaparecido Kevo, ya no reacciona ("no contestas desde ayer"...): la historia sigue con su madre');
     ok(arc.madre === 'madre' && arc.ultima === 'mira', 'Kevo sigue hasta el final (su madre escribe tras el regalo que abre Minería)');

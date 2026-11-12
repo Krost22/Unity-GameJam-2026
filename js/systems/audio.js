@@ -241,6 +241,10 @@
     type: ({ voice = 'hood' } = {}) => {
       const K = keyNow(), g = Math.floor(Math.random() * 3);
       if (voice === 'bravo') return tone({ type: 'sawtooth', f0: deg(K, g - 2, 0), dur: 0.035, vol: 0.028 });
+      // Trompa: grave, nasal y cayendo al final de cada sílaba (habla como si todo fuera tremendo)
+      if (voice === 'trompa') return tone({ type: 'square', f0: deg(K, g - 1, -1), f1: deg(K, g - 3, -1), dur: 0.05, vol: 0.026 });
+      // El contestador de la Línea de Rescate: un robot que siempre dice la misma nota
+      if (voice === 'robot') return tone({ type: 'sine', f0: deg(K, 0, 1), dur: 0.028, vol: 0.035 });
       if (voice === 'hood') return tone({ type: 'triangle', f0: deg(K, g - 2, -1), dur: 0.03, vol: 0.06 });
       tone({ type: 'square', f0: deg(K, g, 1), dur: 0.03, vol: 0.022 });
     },
@@ -283,6 +287,34 @@
     // La pantalla se apaga
     powerOff: () => { tone({ type: 'sine', f0: 900, f1: 40, dur: 0.5, vol: 0.12 }); noise({ dur: 0.25, vol: 0.08, filter: 'highpass', f0: 3000, f1: 300 }); },
     thud: () => { tone({ type: 'sine', f0: 140, f1: 50, dur: 0.25, vol: 0.35 }); noise({ dur: 0.1, vol: 0.1, filter: 'lowpass', f0: 600 }); },
+    // ---------- El rescate bancario (js/render/bailout.js) ----------
+    // Tecla del teléfono: los dos tonos de verdad de cada número (DTMF)
+    dtmf: ({ d = 1 } = {}) => {
+      const row = [697, 770, 852, 941], col = [1209, 1336, 1477];
+      const i = Math.max(0, Math.min(11, (d || 11) - 1));
+      tone({ type: 'sine', f0: row[Math.floor(i / 3)], dur: 0.09, vol: 0.035 });
+      tone({ type: 'sine', f0: col[i % 3], dur: 0.09, vol: 0.035 });
+    },
+    // Tono de llamada ("tuuu...")
+    ringback: () => { tone({ type: 'sine', f0: 440, dur: 0.75, vol: 0.035, attack: 0.02 }); tone({ type: 'sine', f0: 480, dur: 0.75, vol: 0.035, attack: 0.02 }); },
+    // Música de espera: una melodía de ascensor, alegre y un poco desafinada (como por teléfono)
+    holdMusic: () => {
+      const mel = [76, 79, 81, 79, 76, 74, 72, 74, 76, 76, 74, 72];
+      mel.forEach((n, i) => tone({ type: 'square', f0: note(n), dur: 0.16, vol: 0.016, at: i * 0.17, detune: (i % 3) * 7 }));
+      [48, 55, 52, 55].forEach((n, i) => tone({ type: 'triangle', f0: note(n), dur: 0.5, vol: 0.03, at: i * 0.51 }));
+    },
+    // Rotulador sobre papel: un trazo rápido
+    scribble: () => noise({ dur: 0.07, vol: 0.06, filter: 'bandpass', f0: 2600 + Math.random() * 1600, q: 3 }),
+    // La impresora de dinero: "brrrrr"
+    printer: ({ dur = 1.6 } = {}) => {
+      const n = Math.floor(dur / 0.055);
+      for (let i = 0; i < n; i++) tone({ type: 'square', f0: 70 + (i % 2) * 8, dur: 0.045, vol: 0.05, at: i * 0.055 });
+      noise({ dur, vol: 0.05, filter: 'bandpass', f0: 900, q: 0.8, attack: 0.05 });
+    },
+    // Botón rojo de la mesa: golpe de goma y un "clac"
+    bigButton: () => { tone({ type: 'sine', f0: 220, f1: 70, dur: 0.18, vol: 0.32 }); noise({ dur: 0.05, vol: 0.14, filter: 'highpass', f0: 2200, at: 0.02 }); },
+    // Colgar: tres pitidos
+    hangup: () => { for (let i = 0; i < 3; i++) tone({ type: 'sine', f0: 620, dur: 0.16, vol: 0.04, at: i * 0.3 }); },
     cheer: () => {
       const K = keyNow();
       [2, 3, 4].forEach((g, i) => pluck(deg(K, g, 2), { vol: 0.055, dur: 0.12, at: i * 0.07 }));

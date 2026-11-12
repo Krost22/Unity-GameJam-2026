@@ -222,10 +222,10 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 #hud-capital .coin { width: 8px; height: 8px; background-size: 8px 8px; image-rendering: pixelated; flex: none; }
 #capital { display: block; font-size: 16px; line-height: 16px; color: var(--yellow); transform-origin: left center; white-space: nowrap; }
 #capital.small { font-size: 8px; line-height: 10px; }
-#hud-goal { flex: 1; padding: 2px 4px 0; }
-.goal-top { display: flex; justify-content: space-between; line-height: 9px; height: 9px; }
+#hud-goal { flex: 1; min-width: 0; padding: 2px 4px 0; }
+.goal-top { display: flex; justify-content: space-between; gap: 6px; line-height: 9px; height: 9px; }
 #goal-title { color: var(--coralL); }
-#goal-text { color: var(--ink); }
+#goal-text { flex: none; white-space: nowrap; color: var(--ink); }
 #hud-goal .bar { margin-top: 2px; height: 8px; background: var(--navyDD); position: relative; box-shadow: 0 0 0 1px var(--line); }
 #hud-goal .bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--green); box-shadow: inset 0 2px 0 0 var(--greenL), inset 0 -1px 0 0 var(--greenD); transition: width .5s cubic-bezier(.2, 1.4, .4, 1); }
 #hud-goal .bar i.debt { background: var(--yellow); box-shadow: inset 0 2px 0 0 var(--yellowL), inset 0 -1px 0 0 var(--yellowD); }
@@ -585,15 +585,21 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 .embargo { background: var(--coralD); }
 .embargo .t1 { color: var(--creamL); font-size: 24px; line-height: 24px; }
 .embargo .t2 { color: var(--creamL); }
-.piggy-ui { pointer-events: none; }
-.piggy-ui .row { pointer-events: auto; }
-.piggy-ui .hint { position: absolute; bottom: 30px; left: 0; right: 0; text-align: center; color: var(--yellow); animation: pulse .7s steps(2) infinite; }
-.piggy-ui .msg { position: absolute; top: 14px; left: 10px; right: 10px; text-align: center; }
-.piggy-ui .msg .t1 { font-size: 16px; line-height: 16px; color: var(--yellow); animation: popin .5s cubic-bezier(.2, 1.8, .4, 1) both; }
+/* El rescate (js/systems/bankruptcy.js): el justificante de la transferencia y el mensaje */
+.rescue-ui { z-index: 8; background: rgba(7, 5, 18, .78); animation: dayin .3s steps(4) both; }
+.rescue-ui .t1 { animation: popin .5s .5s cubic-bezier(.2, 1.8, .4, 1) both; max-width: 330px; }
 @keyframes popin { 0% { transform: scale(2.4); opacity: 0; } 60% { transform: scale(.92, 1.08); opacity: 1; } 100% { transform: none; } }
-.piggy-ui .msg .t2 { margin-top: 6px; color: var(--ink); line-height: 10px; animation: dlgin .4s .3s both; }
-.piggy-ui .msg .t3 { margin-top: 4px; color: var(--ink2); line-height: 10px; animation: dlgin .4s .6s both; }
-.piggy-ui .row { position: absolute; bottom: 14px; left: 0; right: 0; justify-content: center; animation: dlgin .4s .9s both; }
+.rescue-ui .t2 { animation: dlgin .4s .8s both; }
+.rescue-ui .t3 { animation: dlgin .4s 1s both; }
+.rescue-ui .row { animation: dlgin .4s 1.2s both; }
+.rc-receipt { width: 210px; padding: 6px 8px 7px; background: var(--creamL); color: var(--coal); text-align: left;
+  box-shadow: 0 0 0 1px var(--coal), 0 0 0 2px var(--yellow), 4px 5px 0 2px rgba(7, 5, 18, .6); animation: receipt .45s cubic-bezier(.2, 1.5, .4, 1) both; }
+@keyframes receipt { 0% { transform: translateY(-60px) rotate(-6deg); opacity: 0; } 100% { transform: rotate(-1deg); opacity: 1; } }
+.rc-h { display: flex; align-items: center; gap: 5px; padding-bottom: 4px; margin-bottom: 4px; border-bottom: 1px dashed var(--creamD); color: var(--greenDD); }
+.rc-h canvas { image-rendering: pixelated; }
+.rc-row { display: flex; justify-content: space-between; gap: 8px; line-height: 10px; }
+.rc-row span { color: var(--creamDD); }
+.rc-amt { margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--creamD); text-align: right; font-size: 16px; line-height: 16px; color: var(--greenD); }
 
 /* ---------- Cinemáticas ---------- */
 /* Fuera del escenario: se escalan con --k (la escala base) pero no con el zoom de la cámara */
@@ -729,7 +735,7 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 #hud-goal .bar i.item { background: var(--cyan); box-shadow: inset 0 2px 0 0 var(--cyanL), inset 0 -1px 0 0 var(--cyanD); }
 #btn-item { position: absolute; inset: 2px 3px 3px 3px; text-align: center; line-height: 16px; padding: 0; z-index: 2; }
 #btn-item kbd { margin-left: 3px; }
-#goal-title { white-space: nowrap; overflow: hidden; text-overflow: clip; max-width: 120px; }
+#goal-title { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: clip; }
 #hud-days.wide { gap: 1px; }
 #hud-days.wide i { width: 12px; letter-spacing: -1px; }
 

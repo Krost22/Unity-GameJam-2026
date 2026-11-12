@@ -195,7 +195,9 @@ const bestLev = (SN, want) => SN.Data.sim.leverages.map((l) => l.value).filter((
   let paid = null;
   SN2.Events.on('debt:paid', (d) => { paid = d; });
   for (let i = 0; i < 21; i++) SN2.Trading.skipTurn();
-  ok(paid && paid.auto && SN2.State.run.capital === 50 + 75, 'si te alcanza al vencer, se cobra sola (y llega el bono de la app)');
+  ok(paid && paid.auto && SN2.State.run.capital === 50 && SN2.Debt.pendingBonus() === 75, 'si te alcanza al vencer, se cobra sola (el bono llega luego, con el encapuchado)');
+  SN2.Debt.giveBonus(paid.debt);
+  ok(SN2.State.run.capital === 50 + 75, 'y al dártelo él, se suma');
 
   const SN3 = load();
   SN3.State.newRun();
@@ -206,7 +208,7 @@ const bestLev = (SN, want) => SN.Data.sim.leverages.map((l) => l.value).filter((
   Object.assign(r3, { day: 7, turn: 2, capital: 90 });
   ok(!SN3.Debt.hopeless(), 'día 7, noche, con $90: todavía hay una última oportunidad');
   r3.capital = 260;
-  ok(SN3.Debt.pay() && r3.debt.paid && r3.capital === 10 + 75 && !SN3.Debt.hopeless(), 'pago anticipado de la deuda (+ bono de $75)');
+  ok(SN3.Debt.pay() && r3.debt.paid && r3.capital === 10 && SN3.Debt.giveBonus(r3.debt) === 75 && r3.capital === 10 + 75 && !SN3.Debt.hopeless(), 'pago anticipado de la deuda (+ bono de $75 al dártelo el encapuchado)');
   // La escalera: Pleyzeta pagada -> paso completado -> primer regalo (LÍMITE + una deuda)
   let ev = SN3.Unlocks.check();
   ok(ev && ev.type === 'done' && ev.step.id === 'pleyzeta', 'pagar la Pleyzeta completa el primer paso');
@@ -283,7 +285,9 @@ const bestLev = (SN, want) => SN.Data.sim.leverages.map((l) => l.value).filter((
   ok(!U.canBuyItem('tele').ok && U.canBuyItem('tele').locked, 'la tele no se puede comprar antes de su paso');
   run.capital = 253;
   SN.Debt.pay();
-  ok(run.capital === 3 + 75 && run.debts.length === 0 && run.debt.bonus === 75, `al saldar la Pleyzeta con $253 te quedan $3... y el bono de la app (30%): $78 (${run.capital})`);
+  ok(run.capital === 3 && run.debt.bonus === 75 && run.debt.bonusPending && SN.Debt.pendingBonus() === 75, `al saldar la Pleyzeta con $253 te quedan $3: el bono todavía no ha llegado (${run.capital})`);
+  ok(SN.Debt.giveBonus(run.debt) === 75 && run.capital === 3 + 75 && run.debts.length === 0 && !run.debt.bonusPending, `el bono (30%) llega cuando te lo da el encapuchado: $78 (${run.capital})`);
+  ok(SN.Debt.giveBonus(run.debt) === 0 && run.capital === 78 && SN.Debt.pendingBonus() === 0, 'el bono solo se entrega una vez');
   run.capital = 5000;
   ok(drain() === 'done,gift', 'tras la Pleyzeta llega el primer regalo');
   ok(SN.Data.chain.slice(0, -1).every((st) => st.kind !== 'goal'), 'no hay metas de dinero entre deudas: solo la final');
@@ -376,14 +380,16 @@ const bestLev = (SN, want) => SN.Data.sim.leverages.map((l) => l.value).filter((
   const SN3 = load();
   SN3.State.newRun();
   const r3 = SN3.State.run;
-  r3.capital = 300; SN3.Debt.pay(); SN3.Unlocks.check(); SN3.Unlocks.check();
+  r3.capital = 300; SN3.Debt.pay(); SN3.Debt.flushBonuses(); SN3.Unlocks.check(); SN3.Unlocks.check();
   r3.capital = 900;
   let paid = null;
   SN3.Events.on('debt:paid', (d) => { paid = d; });
   for (let i = 0; i < 40 && !paid; i++) SN3.Trading.skipTurn();
   const owed = R1.debt, bonus = Math.max(60, Math.round(owed * SN3.Data.payBonus.frac));
-  ok(paid && paid.auto && paid.debt.id === 'regalo1' && paid.bonus === bonus && r3.capital === 900 - owed + bonus,
-    `si al vencer te alcanza, el regalo se cobra solo (y llega el bono de la app: $${bonus})`);
+  ok(paid && paid.auto && paid.debt.id === 'regalo1' && paid.bonus === bonus && r3.capital === 900 - owed && paid.debt.bonusPending,
+    `si al vencer te alcanza, el regalo se cobra solo (el bono de la app, $${bonus}, queda pendiente)`);
+  SN3.Debt.flushBonuses();
+  ok(r3.capital === 900 - owed + bonus && SN3.Debt.pendingBonus() === 0, 'una partida cargada con bonos sin entregar los recibe al momento');
 }
 
 // 14) RESISTENCIA: menos giros en las últimas velas
@@ -463,18 +469,19 @@ ok(sized > follow + 0.15, 'comprar el ×5 y ajustar la apuesta a la fuerza de la
 
 // 15) La partida entera: un bot sensato (sigue la pista, opera en el mercado abierto de mayor tope, paga en
 // cuanto puede, acepta las ofertas en cuanto FUTURO.exe le deja, compra alguna mejora y nodos de la Academia).
-// Al perder hace lo mismo que el juego: rompe los ahorros de Timmy (una vez por paso) o vuelve al punto de
+// Al perder hace lo mismo que el juego: el rescate bancario (una vez por paso) o vuelve al punto de
 // control. Sirve para ajustar la cadena de deudas.
 function fullRun(maxDays) {
   const SN = load({ real: true });
   SN.State.newRun();
   const S = SN.State, U = SN.Unlocks, T = SN.Trading;
-  let run = S.run, last = -1, rewinds = 0, piggies = 0;
+  let run = S.run, last = -1, rewinds = 0, rescues = 0;
   const stepDay = {};
   const mark = () => { if (run.step !== last) { last = run.step; stepDay[run.step] = run.day; S.checkpoint('x'); } };
   mark();
   for (let guard = 0; guard < 20000 && U.step() && run.day <= maxDays; guard++) {
     if (SN.Debt.canPay()) SN.Debt.pay();
+    SN.Debt.flushBonuses(); // (también los de los pagos automáticos al vencer)
     while (U.check()) mark();
     mark();
     const st = U.step();
@@ -499,13 +506,13 @@ function fullRun(maxDays) {
       const p0 = proj(L0, lim0), p1 = proj(L1, lim1);
       if (p1 >= 1.3 * owed1 || ((id === 'multiplicador' || id === 'limite') && p1 - owed1 > p0 - owed0)) SN.Upgrades.buy(id);
     }
-    // ¿Se ha perdido? Cerdito (con 2 días más si era por el plazo) o vuelta al punto de control
+    // ¿Se ha perdido? Rescate (con 2 días más si era por el plazo) o vuelta al punto de control
     const late = (run.debt && run.debt.defaulted) || SN.Debt.hopeless();
     if (late || run.capital + run.committed < SN.Data.sim.bankruptcyThreshold) {
-      if (run.piggy === 'ready') {
-        piggies++;
-        SN.Economy.add(S.piggyAmount(), 'piggy');
-        run.piggy = 'broken';
+      if (run.rescue === 'ready') {
+        rescues++;
+        SN.Economy.add(S.rescueAmount(), 'rescue');
+        run.rescue = 'used';
         if (late) { run.debt.deadlineDay = Math.max(run.debt.deadlineDay, run.day) + 2; run.debt.defaulted = false; }
       } else {
         // Al volver, un jugador no repite exactamente lo mismo: el bot tampoco (si no, las mismas velas)
@@ -531,7 +538,7 @@ function fullRun(maxDays) {
     if (!T.open(best.h.dir)) { T.skipTurn(); continue; }
     T.close();
   }
-  return { done: !U.step(), day: run.day, rewinds, piggies, reached: run.step, stepDay };
+  return { done: !U.step(), day: run.day, rewinds, rescues, reached: run.step, stepDay };
 }
 {
   const N = 30, MAX = 140, runs = [];
@@ -539,12 +546,12 @@ function fullRun(maxDays) {
   const done = runs.filter((r) => r.done);
   const avg = (a, f) => a.reduce((s, r) => s + f(r), 0) / Math.max(1, a.length);
   console.log(`Partida entera (${N} bots, máximo ${MAX} días):`);
-  console.log(`  la terminan: ${(done.length / N * 100).toFixed(0)}% · días de media: ${avg(done, (r) => r.day).toFixed(0)} · cerditos: ${avg(runs, (r) => r.piggies).toFixed(1)} · vueltas al punto de control: ${avg(runs, (r) => r.rewinds).toFixed(1)}`);
+  console.log(`  la terminan: ${(done.length / N * 100).toFixed(0)}% · días de media: ${avg(done, (r) => r.day).toFixed(0)} · rescates: ${avg(runs, (r) => r.rescues).toFixed(1)} · vueltas al punto de control: ${avg(runs, (r) => r.rewinds).toFixed(1)}`);
   const by = SN0().Data.chain.map((st, i) => `${st.id}:${avg(runs.filter((r) => r.stepDay[i] != null), (r) => r.stepDay[i]).toFixed(0)}`);
   console.log('  día medio en que empieza cada paso: ' + by.join(' '));
   ok(done.length / N >= 0.5, 'un jugador sensato puede terminar la escalera');
   // (1.8: un jugador sensato pierde una vez cada una o dos partidas; 30 bots dan una media de ~0.6, con margen)
-  ok(avg(runs, (r) => r.rewinds + r.piggies) >= 0.25, 'pero no es un paseo: alguna vez se pierde');
+  ok(avg(runs, (r) => r.rewinds + r.rescues) >= 0.25, 'pero no es un paseo: alguna vez se pierde');
   ok(runs.every((r) => r.rewinds < 25), `nunca se queda atascado volviendo al mismo punto de control (máx. ${Math.max(...runs.map((r) => r.rewinds))})`);
 }
 
@@ -621,8 +628,8 @@ function fullRun(maxDays) {
   ok(news && news.items.some((x) => x.key === 'shop:planta'), 'y se avisa (una vez)');
   news = null; W.afterTurn();
   ok(!news, 'el mismo aviso no se repite');
-  run.capital = 500; SN.Debt.pay(); while (SN.Unlocks.check());
-  SN.Debt.pay(); while (SN.Unlocks.check());
+  run.capital = 500; SN.Debt.pay(); SN.Debt.flushBonuses(); while (SN.Unlocks.check());
+  SN.Debt.pay(); SN.Debt.flushBonuses(); while (SN.Unlocks.check());
   W.afterTurn();
   ok(prompt && prompt.item.id === 'tele' && prompt.why === 'new', 'pagada la deuda anterior, la oferta de la tele salta sola');
   prompt = null; W.afterTurn();
@@ -659,6 +666,8 @@ function fullRun(maxDays) {
   SN.State.checkpoint('inicio');
   run.capital = 250;
   SN.Debt.pay(); // te quedarías con $0... pero llega el bono de la app
+  ok(run.capital === 0 && SN.Debt.pendingBonus() >= SN.Data.sim.bankruptcyThreshold, 'mientras el encapuchado no te lo da, el bono pendiente cuenta como tuyo (no es bancarrota)');
+  SN.Debt.flushBonuses();
   ok(run.capital >= SN.Data.sim.bankruptcyThreshold, `pagar justo lo que debes ya no te deja a cero: el bono de la app (${run.capital})`);
   run.capital = 3;
   ok(SN.State.checkpoint('sin dinero') === false && run.checkpoint.label === 'inicio' && run.checkpoint.capital === 100,
@@ -666,7 +675,7 @@ function fullRun(maxDays) {
 }
 function SN0() { return load(); }
 
-// 17) Idioma secreto: traducción progresiva, tildes, se guarda en el perfil y todo texto cifrado tiene pistas
+// 17) Idioma secreto: traducción progresiva, tildes, se guarda en la partida (no pasa a una nueva) y todo texto cifrado tiene pistas
 {
   const SN = load();
   SN.State.newRun();
@@ -680,9 +689,23 @@ function SN0() { return load(); }
   ok(C.html('NO LE CREAS', 'A').includes('<span class="cx-k cx-new">A</span>') && C.html('NO').includes('<span class="cx">И</span>'), 'en HTML se marcan las letras (y la recién encontrada)');
   ok(C.discover(clueA.id) === null, 'una pista solo cuenta una vez');
   ok(C.text('Señor, está aquí') === C.text('SENOR, ESTA AQUI'), 'las tildes y la Ñ no cambian el cifrado');
-  ok(JSON.parse(SN.__store['saldonegro.profile.v1']).cipher.known.A, 'lo descubierto se guarda en el perfil');
+  ok(JSON.parse(SN.__store['saldonegro.run.v1']).cipher.known.A && !JSON.parse(SN.__store['saldonegro.profile.v1']).cipher, 'lo descubierto se guarda en la partida, no en el perfil');
+  SN.State.checkpoint('test');
+  const clueB = X.clues.find((c) => c.letter !== 'A');
+  C.discover(clueB.id);
+  SN.State.restoreCheckpoint();
+  ok(C.knows('A') && C.knows(clueB.letter) && C.found(clueB.id), 'volver a un punto de control no quita las letras encontradas');
   SN.State.newRun();
-  ok(C.knows('A'), 'y sigue ahí en una partida nueva');
+  ok(!C.knows('A') && C.count() === 0 && !C.found(clueA.id), 'una partida nueva empieza sin ninguna letra');
+  ok(C.discover(clueA.id) && C.knows('A'), 'y sus pistas se pueden volver a encontrar');
+  {
+    // Partida guardada cuando las letras iban en el perfil: pasan a la partida
+    const SNm = load();
+    SNm.State.newRun();
+    delete SNm.State.run.cipher;
+    SNm.State.profile.cipher = { known: { A: true }, found: { [clueA.id]: true } };
+    ok(SNm.Cipher.knows('A') && SNm.State.run.cipher.known.A && !SNm.State.profile.cipher, 'las letras de una partida guardada antes del cambio se conservan');
+  }
   const letters = new Set(X.clues.map((c) => c.letter));
   const texts = [X.contact.name, ...X.messages.filter((m) => m.text).map((m) => m.text), ...X.news.map((n) => n.text), ...Object.values(X.hidden)];
   const bad = texts.filter((t) => C.letters(t).some((ch) => !letters.has(ch)));

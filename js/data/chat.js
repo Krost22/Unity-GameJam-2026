@@ -6,7 +6,7 @@
 //   day/turn  -> a partir de ese día y turno
 //   when      -> cuando pasa algo ('debtPaid', un paso de la escalera: 'regalo1', 'tele', 'regalo2'... y delay turnos después)
 //   skipIf    -> se salta si ya pasó eso (p. ej. no preguntar por el plazo si ya pagaste)
-// side = conversaciones que solo llegan si pasa algo concreto ('piggy', 'bigLoss', 'rewind').
+// side = conversaciones que solo llegan si pasa algo concreto ('rescue', 'bigLoss', 'rewind').
 // msgs = lo que escribe Kevo · reply = lo que escribe el protagonista (el jugador solo pulsa teclas)
 // after = la respuesta de Kevo. Líneas especiales: '!zumbido' sacude la ventana · '*texto' aviso del
 // sistema · '>ventana' hace que pase algo al otro lado de la ventana (ver SN.Desk.windowEvent) ·
@@ -53,8 +53,8 @@
       {
         id: 'hermano', day: 5, turn: 0,
         msgs: ['mi hermana dice que estoy raro', 'que hablo dormido. de velas', '¿tú tienes hermanos?'],
-        reply: 'Tengo a Timmy. Tiene 8 años y ahorra para su cirugía.',
-        after: ['qué bonito', 'cuídalo', 'en serio, bro. cuídalo'],
+        reply: 'Tengo a Timmy. Tiene 8 años y ya ahorra más que yo.',
+        after: ['jaja', 'cuídalo', 'en serio, bro. que no se descargue ninguna app'],
       },
       {
         id: 'plazo', day: 6, turn: 2, skipIf: 'debtPaid',
@@ -156,10 +156,10 @@
     // Reacciones de Kevo a lo que te pasa. Solo mientras Kevo sigue ahí (antes de la conversación con `gone`).
     side: [
       {
-        id: 'piggy', when: 'piggy', delay: 1,
-        msgs: ['bro', 'no contestas desde ayer', '¿estás bien?'],
-        reply: 'Rompí los ahorros de Timmy. El dinero de su cirugía.',
-        after: ['...', 'yo rompí los ahorros de mi abuela', 'no se lo digas a nadie', 'ella ya no se acuerda de que los tenía'],
+        id: 'rescue', when: 'rescue', delay: 1,
+        msgs: ['bro', '¿eres tú el de las noticias?', '¿"el Banco de Mi Cuarto"?'],
+        reply: 'Me rescató el presidente. Por videollamada. Ahora soy un banco.',
+        after: ['...', 'a mí también me rescataron una vez', 'no era el presidente', 'llevaba capucha'],
       },
       {
         id: 'bigloss', when: 'bigLoss', delay: 0,

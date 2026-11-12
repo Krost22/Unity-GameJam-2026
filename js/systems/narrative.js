@@ -93,14 +93,17 @@
         this.addNews({ title: `Deuda saldada: ${debt.label}`, tone: 'pos', art: 'sello' });
         SN.Events.emit('chat:flag', { flag: 'paid-' + debt.id });
       }
-      if (debt && debt.bonus) await this.payBonus(debt.bonus);
+      if (debt && debt.bonusPending) await this.payBonus(debt);
       SN.UI.renderAll();
     },
 
     // Bono por usar la app: el encapuchado premia cada deuda saldada (así nunca empiezas la siguiente a cero)
-    async payBonus(bonus) {
+    async payBonus(debt) {
+      const bonus = debt.bonus;
       const lines = this.fill(story().payBonus, { bonus: U.money(bonus) });
       await this.hoodedScene([U.pick(lines)], { smile: true });
+      // Te lo da él: es ahora cuando el dinero llega a tu cuenta
+      SN.Debt.giveBonus(debt);
       const cap = SN.UI.posIn(document.getElementById('hud-capital'));
       SN.FX.coins(cap.x + 60, cap.y + 14, 12, 1.2);
       SN.FX.float(`+${U.money(bonus)} bono`, cap.x + cap.w / 2, cap.y + cap.h + 6, 'gain');
@@ -281,7 +284,7 @@
   // ---------- Suscripciones ----------
   // Lo que se ve por la ventana: las noticias que pasan en tu calle, y la ciudad que va cambiando
   SN.Events.on('market:event', ({ event }) => { if (event.window) SN.after(1.2, () => SN.Desk.windowEvent(event.window)); });
-  SN.Events.on('piggy:broken', () => SN.after(1.5, () => SN.Desk.windowEvent('lluvia')));
+  SN.Events.on('rescue:done', () => SN.after(1.5, () => SN.Desk.windowEvent('fuegos')));
   SN.Events.on('turn:ready', () => {
     const run = S.run;
     if (!run || SN.Game.state !== 'GAMEPLAY') return;
@@ -343,11 +346,11 @@
     if (Math.random() < chance) N.darkNews(r.market);
   });
 
-  // Dueño de la capa #screen-canvas (cinemáticas, encapuchado, cerdito)
+  // Dueño de la capa #screen-canvas (cinemáticas y el encapuchado)
   SN.ScreenCanvas = {
     owner: null, canvas: null, g: null,
     init() { this.canvas = document.getElementById('screen-canvas'); this.g = Px.ctx(this.canvas); },
-    take(owner) { this.owner = owner; this.canvas.classList.remove('hidden'); this.canvas.classList.toggle('clickable', owner === 'piggy'); },
+    take(owner) { this.owner = owner; this.canvas.classList.remove('hidden'); },
     release(owner) {
       if (this.owner !== owner) return;
       this.owner = null;
@@ -358,7 +361,6 @@
     render(dt) {
       if (!this.owner) return;
       if (this.owner === 'hood') N.renderHood(this.g, dt);
-      else if (this.owner === 'piggy') SN.Bankruptcy.render(this.g, dt);
       else if (this.owner === 'cine') SN.Cine.renderScreen(this.g, dt);
     },
   };

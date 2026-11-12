@@ -1,5 +1,6 @@
 // CipherManager: el idioma secreto. Traduce los textos según las letras que ya conoces y registra las
-// pistas encontradas. Todo lo descubierto se guarda en el PERFIL: se conserva entre partidas.
+// pistas encontradas. Lo descubierto es de la PARTIDA: una partida nueva empieza sin ninguna letra
+// (volver a un punto de control no las quita: lo encontrado, encontrado está).
 // No toca la interfaz: avisa con 'cipher:found' y la interfaz hace el ruido (js/ui/ui.js).
 (function (SN) {
   'use strict';
@@ -11,9 +12,14 @@
 
   const Ci = SN.Cipher = {
     state() {
-      const p = S.profile;
-      if (!p.cipher) p.cipher = { known: {}, found: {} };
-      return p.cipher;
+      const run = S.run;
+      if (!run) return { known: {}, found: {} };
+      if (!run.cipher) {
+        // Partidas guardadas cuando las letras iban en el perfil: pasan a la partida (y el perfil las olvida)
+        run.cipher = S.profile.cipher || { known: {}, found: {} };
+        delete S.profile.cipher;
+      }
+      return run.cipher;
     },
     knows(letter) { return !!this.state().known[letter]; },
     count() { return Object.keys(this.state().known).length; },
@@ -49,12 +55,13 @@
 
     // Encuentra la pista: su letra queda descifrada para siempre. Devuelve la pista si es nueva.
     discover(clueId) {
+      if (!S.run) return null;
       const st = this.state(), clue = this.clue(clueId);
       if (!clue || st.found[clueId]) return null;
       st.found[clueId] = true;
       const isNew = !st.known[clue.letter];
       st.known[clue.letter] = true;
-      if (SN.Save) SN.Save.saveProfile();
+      if (SN.Save) SN.Save.saveRun();
       SN.Events.emit('cipher:found', { clue, letter: clue.letter, glyph: A()[clue.letter], isNew, count: this.count(), total: this.total() });
       return clue;
     },

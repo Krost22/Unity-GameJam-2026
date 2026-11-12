@@ -37,29 +37,36 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
   // Avanza diálogos y subtítulos abiertos (clic en el escritorio, lejos del texto)
   const advance = async () => { if (await ev('SN.Dialog.active || !!SN.Cine.say_')) await b.click(90, 640); };
 
-  // Cuarto de Timmy: mantener ESPACIO mientras duerme, soltar cuando se mueve; al final, clic en el cerdito
-  const playSneak = async () => {
-    const t0 = Date.now();
-    let holding = false;
-    while (Date.now() - t0 < 45000) {
-      const o = JSON.parse(await ev('JSON.stringify({ st: SN.Sneak.timmy.st, s: SN.Sneak.state })'));
-      if (o.s !== 'walk') break;
-      const want = o.st === 'sleep';
-      if (want && !holding) { await b.cdp('Input.dispatchKeyEvent', { type: 'keyDown', code: 'Space', key: ' ' }); holding = true; }
-      if (!want && holding) { await b.cdp('Input.dispatchKeyEvent', { type: 'keyUp', code: 'Space', key: ' ' }); holding = false; }
-      await b.sleep(50);
+  // El rescate bancario (js/render/bailout.js), con teclas y clics de verdad: en el contestador, 2 (banco enorme);
+  // escribir el nombre del banco; la videollamada con Trompa (ESPACIO para seguir) y un clic en su firma, que
+  // esconde una letra del idioma secreto. Se reproduce al triple de velocidad.
+  const playRescue = async () => {
+    await ev('SN.Bailout.speed = 3; true');
+    if (!(await waitFor('SN.Bailout.V.ui === "menu"', 12000))) return false;
+    await b.key('Digit2', '2');
+    if (!(await waitFor('SN.Bailout.V.ui === "name"', 6000))) return false;
+    await waitFor('!!(SN.Bailout.say_ && SN.Bailout.say_.caret)', 6000);
+    for (let i = 0; i < 40 && await ev('SN.Bailout.V.typed < SN.Data.story.rescue.bankName.length'); i++) { await b.key('KeyK', 'k'); await b.sleep(40); }
+    await b.key('Enter', 'Enter');
+    if (!(await waitFor('SN.Bailout.V.scene === "call"', 15000))) return false;
+    const seen = {};
+    for (let i = 0; i < 400 && await ev('SN.Bailout.active'); i++) {
+      const st = JSON.parse(await ev('JSON.stringify({ g: SN.Bailout.V.gesture, s: SN.Bailout.V.scene, full: !!(SN.Bailout.say_ && SN.Bailout.say_.shown >= SN.Bailout.say_.full.length) })'));
+      if (st.s === 'call') seen[st.g] = true;
+      if (st.s === 'insert') seen.firmando = true;
+      if (st.g === 'show' && st.full && !seen.clic) {
+        seen.clic = true;
+        const p = await ev('(() => { const r = document.getElementById("cine").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height * 67 / 90 }; })()');
+        await b.click(p.x, p.y);
+        await shot('22b-la-firma');
+      }
+      if (st.full) await b.key('Space', ' ');
+      await b.sleep(80);
     }
-    if (holding) await b.cdp('Input.dispatchKeyEvent', { type: 'keyUp', code: 'Space', key: ' ' });
-    const reached = await ev('SN.Sneak.state') === 'reach';
-    await b.click(640, 300);
-    return reached;
+    rescueSeen = Object.keys(seen);
+    return ['accordion', 'point', 'sign', 'firmando', 'show', 'button', 'money', 'thumbs'].every((k) => seen[k]) && waitFor('!!document.getElementById("bk-continue")', 6000);
   };
-  const breakPig = async () => {
-    await waitFor('SN.Bankruptcy.pig && SN.Bankruptcy.pig.state === "idle"', 12000);
-    const r = await ev('(() => { const r = document.getElementById("screen-canvas").getBoundingClientRect(); return { x: r.left + r.width * 210 / 420, y: r.top + r.height * 112 / 236 }; })()');
-    for (let i = 0; i < 5; i++) { await b.click(r.x + (i - 2) * 6, r.y + (i % 2) * 5); await b.sleep(250); }
-    return waitFor('!!document.getElementById("bk-continue")', 6000);
-  };
+  let rescueSeen = [];
 
   try {
     await waitFor('(document.querySelector("#boot .thanks button")?.click(), SN.Game && SN.Game.state === "MENU")', 8000);
@@ -212,16 +219,22 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
     await b.sleep(400);
     ok(await ev('!document.getElementById("btn-pay").classList.contains("hidden")'), 'aparece el botón PAGAR DEUDA');
     await shot('15-pagar-deuda');
+    const capPay = await ev('SN.State.run.capital - SN.State.run.debt.amount');
     await mouse('#btn-pay');
-    let sawStamp = false, sawHood = false;
+    let sawStamp = false, sawHood = false, bonusLate = null;
     for (let i = 0; i < 120 && await ev('SN.UI.busy'); i++) {
       if (!sawStamp && await ev('!!document.querySelector(".stamp")')) { sawStamp = true; await b.sleep(400); await shot('16-deuda-saldada'); }
+      if (bonusLate == null && await ev('SN.State.run.debt.id === "pleyzeta" && SN.State.run.debt.bonusPending && !!SN.Narrative.hood && SN.Dialog.active'))
+        bonusLate = await ev(`SN.State.run.capital === ${capPay}`);
       if (!sawHood && await ev('!!SN.Narrative.hood && SN.Dialog.active')) { sawHood = true; await b.sleep(800); await shot('17-encapuchado-vuelve'); }
       await ev('SN.Cine.beatResolve && SN.Cine.advance(); true');
       await advance();
       await b.sleep(300);
     }
     ok(await ev('SN.State.run.flags.debtPaid'), 'deuda de la Pleyzeta pagada');
+    const pb = await ev('(SN.State.run.debts.find((d) => d.id === "pleyzeta") || {}).bonus');
+    ok(bonusLate === true && await ev(`SN.State.run.capital === ${capPay} + ${pb} && !SN.Debt.pendingBonus()`),
+      `el bono ($${pb}) no está en tu dinero mientras el encapuchado habla: se suma cuando te lo da`);
     ok(await ev('!SN.Trading.leverageAvailable(10)'), 'pagar la deuda ya no regala el ×10: se compra');
     ok(sawHood && await ev('SN.Debt.active() && SN.State.run.debt.id === "regalo1" && SN.Upgrades.isUnlocked("limite") && SN.Upgrades.level("limite") === 0'),
       'el "regalo" del encapuchado: LÍMITE para comprar... y una deuda nueva');
@@ -288,29 +301,28 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
     ok(await ev('SN.State.run.selected') === 'tecno', 'se cambia de mercado con un clic');
     await shot('21-tecnologia');
 
-    // --- Sin dinero: el cerdito de Timmy es una vida extra ---
+    // --- Sin dinero: el rescate bancario es una vida extra ---
     const cp = await ev('SN.State.run.checkpoint.capital');
     await ev('SN.Economy.spend(SN.State.run.capital - 4, "test"); SN.UI.setBusy(true); SN.Game.afterTurn(null); true');
     await waitFor('!!document.querySelector(".stamp")', 6000);
     ok(await ev('document.querySelector(".stamp").textContent.includes("SIN FONDOS")'), 'con menos de la apuesta mínima: SIN FONDOS');
-    ok(await waitFor('SN.Sneak.active', 10000), 'vida extra: te cuelas en el cuarto de Timmy');
+    ok(await waitFor('SN.Bailout.active', 10000), 'vida extra: llamas a la Línea de Rescate Financiero');
     await b.sleep(400);
-    await shot('22-cuarto-timmy');
-    ok(await playSneak(), 'avanzando a escondidas se llega a la estantería');
-    ok(await breakPig(), 'en tu mesa rompes el cerdito a golpes');
-    await b.sleep(800);
-    await shot('23-timmy');
-    ok(await ev('document.querySelector(".piggy-ui").textContent.toUpperCase().includes("TIMMY")'), 'aparece el mensaje de Timmy');
-    ok(await ev('/cirugía del pequeño Timmy/i.test(document.querySelector(".piggy-ui").textContent) && document.querySelector(".piggy-ui").textContent.includes("velas japonesas")'),
-      '"Rompiste los ahorros para la cirugía del pequeño Timmy" y el cirujano no acepta velas japonesas');
-    const coins = await ev('SN.Bankruptcy.pig.coins');
+    await shot('22-linea-de-rescate');
+    const known = await ev('SN.Cipher.knows("I")');
+    ok(await playRescue(), 'te haces pasar por un banco enorme y Trompa te rescata en videollamada: ' + rescueSeen.join(', '));
+    ok(known || await ev('SN.Cipher.knows("I")'), 'la firma de Trompa esconde la letra I del idioma secreto');
+    await b.sleep(1600);
+    await shot('23-rescatado');
+    ok(await ev('document.querySelector(".rescue-ui").textContent.includes("TRANSFERENCIA RECIBIDA") && /Banco de Mi Cuarto/.test(document.querySelector(".rescue-ui").textContent)'), 'el justificante: transferencia de la Presidencia al Banco de Mi Cuarto S.A.');
+    const coins = await ev('SN.Bankruptcy.coins');
     await mouse('#bk-continue');
     await b.sleep(900);
-    ok(await ev('SN.Game.state') === 'GAMEPLAY' && await ev('SN.State.run.capital') === 4 + coins && await ev('SN.State.run.piggy') === 'broken', `la partida sigue con el dinero del cerdito (+${coins})`);
+    ok(await ev('SN.Game.state') === 'GAMEPLAY' && await ev('SN.State.run.capital') === 4 + coins && await ev('SN.State.run.rescue') === 'used', `la partida sigue con el dinero del rescate (+${coins})`);
     ok(await ev('SN.Save.hasRun()'), 'la partida no se borra');
-    // --- Sin cerdito: se vuelve al inicio de la meta con lo que tenías ---
+    // --- Sin rescate: se vuelve al inicio de la meta con lo que tenías ---
     await ev('SN.Economy.spend(SN.State.run.capital - 3, "test"); SN.UI.setBusy(true); SN.Game.afterTurn(null); true');
-    ok(await waitFor('!!document.querySelector(".final-loss")', 9000), 'sin cerdito: se acaba de verdad');
+    ok(await waitFor('!!document.querySelector(".final-loss")', 9000), 'sin rescate: se acaba de verdad');
     await b.sleep(400);
     await shot('24-final');
     ok(await ev('document.querySelector(".final-loss").textContent.includes("inicio de")'), 'dice a qué paso vuelves y con cuánto');
@@ -318,7 +330,7 @@ const ok = (c, m) => { if (c) passed++; else { failed++; console.log('  FALLO:',
     await b.sleep(1500);
     for (let i = 0; i < 20 && await ev('SN.Dialog.active || SN.UI.busy'); i++) { await advance(); await b.sleep(300); }
     ok(await ev('SN.Game.state') === 'GAMEPLAY' && await ev('SN.State.run.capital') === cp && await ev('SN.Unlocks.isUnlocked("tecno")'), `vuelves al inicio de la meta con ${cp} y lo desbloqueado`);
-    ok(await ev('SN.State.run.piggy') === 'ready', 'Timmy ha vuelto a llenar el cerdito');
+    ok(await ev('SN.State.run.rescue') === 'ready', 'la Línea de Rescate vuelve a coger el teléfono');
     await shot('25-vuelta-al-punto-de-control');
   } catch (e) {
     failed++;

@@ -34,6 +34,7 @@
         // Mientras dura no se guarda nada: la partida real queda intacta en el guardado.
         this.replaying = true;
         S.newRun();
+        S.run.cipher = U.copy(snapshot.cipher || { known: {}, found: {} }); // las letras que ya tenías
         SN.Chart.setMarket(S.run.selected);
         SN.Desk.dirty();
       }

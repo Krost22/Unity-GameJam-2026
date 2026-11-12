@@ -133,23 +133,71 @@
       generic: ['cartel', 'documento', 'columpio'],
     },
 
-    bankrupt: {
-      title: '¡Felicidades! Rompiste los ahorros para la cirugía del pequeño Timmy',
-      message: 'El cirujano no aceptará velas japonesas como forma de pago.',
-      extra: ['Timmy lo entenderá. Probablemente.', 'Recuperas {coins}.'],
-      extension: 'Con eso convences al cobrador: 2 días más.',
-      hint: '¡Rompe los ahorros!',
+    // Vida extra: el rescate bancario (js/render/bailout.js). Una por meta. Donald Trompa es la parodia de las
+    // noticias (js/data/events.js): nunca el nombre de verdad.
+    rescue: {
+      card: { title: 'Queda una salida...', lines: ['La Línea de Rescate Financiero del Gobierno.', 'Solo rescatan bancos. Tú no eres un banco... todavía.'] },
+      embargo: 'Pero aún queda una llamada que hacer...',
+      line: 'Línea de Rescate',
+      you: 'Tú',
+      president: 'Donald Trompa',
+      // La pantalla del móvil
+      header: 'RESCATE',
+      dialing: 'LLAMANDO...',
+      connected: 'CONECTADO',
+      options: ['BANCO', 'BANCO ENORME', 'PERSONA'],
+      nameLabel: 'NOMBRE DEL BANCO:',
+      send: 'ENVIAR',
+      checkingShort: 'COMPROBANDO...',
+      stamp: ['DEMASIADO', 'GRANDE', 'PARA CAER'],
+      holdShort: 'EN ESPERA',
+      videoCall: 'VIDEOLLAMADA',
+      // El contestador
+      welcome: 'Bienvenido a la Línea de Rescate Financiero. Su llamada es muy importante para nosotros.',
+      menu: 'Pulse 1 si es un banco. Pulse 2 si es un banco muy grande. Pulse 3 si es una persona.',
+      wrong: [
+        'Los bancos pequeños no se rescatan. O grande, o nada. Volvemos al menú.',
+        null,
+        'Las personas no se rescatan. Gracias por su comprensión. Volvemos al menú.',
+      ],
+      askName: 'Excelente. Diga el nombre de su banco.',
+      bankName: 'Banco de Mi Cuarto S.A.',
+      bankNameBreak: 12, // dónde parte la línea en la pantalla del móvil ("BANCO DE MI " / "CUARTO S.A.")
+      checking: 'Comprobando... Un empleado. Cero clientes. Una consola a plazos.',
+      verdict: 'Calificación: DEMASIADO GRANDE PARA CAER. Le pasamos con el Presidente.',
+      holdLine: '(Musiquita de espera) Su llamada es muy importante para nosotros...',
+      // La videollamada: g = gesto, hero = tu cara en la ventanita
+      live: 'EN DIRECTO',
+      place: 'DESPACHO OVALADO',
+      call: [
+        { g: 'accordion', hero: 'confused', t: '¿El Banco de Mi Cuarto? Tremendo banco. Precioso. Mucha gente dice que es el mejor banco del mundo.' },
+        { g: 'point', t: 'Y grande. Muy grande. Demasiado grande para caer. Lo sé porque me lo has dicho tú.' },
+        { g: 'sign', t: 'Así que lo rescato. Firmo aquí. Firmo muy bien: la gente llora cuando me ve firmar.' },
+        { g: 'show', hero: 'happy', t: 'Mira qué firma. Preciosa. Nadie ha firmado nunca así.' },
+        { g: 'button', t: 'Y ahora, el botón rojo. Antes era para pedir refrescos.' },
+        { g: 'money', hero: 'star', t: 'Te mando {coins}. Una cifra tremenda. Dinero de los contribuyentes: ni se van a enterar.' },
+        { g: 'thumbs', t: 'Que Dios bendiga al Banco de Mi Cuarto. Y a mí. Sobre todo a mí.' },
+      ],
+      order: ['ORDEN EJECUTIVA', 'RESCATE DEL BANCO DE MI CUARTO S.A.'],
+      ended: 'LLAMADA FINALIZADA',
+      heroLine: '¿Me acaba de rescatar el presidente?',
+      // Al volver a FUTURO.exe
+      receipt: { title: 'TRANSFERENCIA RECIBIDA', from: 'Presidencia del Gobierno', to: 'Banco de Mi Cuarto S.A.', concept: 'Rescate (sistémico)' },
+      done: {
+        title: '¡Rescatado! Eras demasiado grande para caer',
+        message: 'Lo pagan los contribuyentes. Entre ellos, tú.',
+        extra: 'Las pérdidas, para todos. Las ganancias, para ti.',
+        extension: 'Nadie embarga a un banco sistémico: el cobrador te da 2 días más.',
+      },
+      news: { title: 'RESCATADO EL BANCO DE MI CUARTO', text: '"Era sistémico", declara su único empleado.', more: 'El banco tiene cero clientes y una consola a plazos. Trompa dice que es "tremendo".', tone: 'neu', art: 'trompa' },
     },
-    // Vida extra: antes de perder del todo
-    piggyLife: { title: 'Queda una salida...', lines: ['Los ahorros de Timmy. El dinero de su cirugía.', 'Está durmiendo. No hagas ruido.'] },
-    embargoPiggy: 'Pero aún te quedan los ahorros de Timmy...',
-    // Sin ahorros que romper: se vuelve al inicio del paso
+    // Sin rescate posible: se vuelve al inicio del paso
     finalLoss: {
       title: 'Se acabó',
-      message: 'Ya no quedan ahorros que romper.',
+      message: 'La Línea de Rescate ya no te coge el teléfono. Un rescate es política; dos, un escándalo.',
       back: 'FUTURO.exe te devuelve al inicio de {where}, con {money}.',
     },
-    rewindGreeting: ['Vaya. Otra vez sin nada.', 'Te devuelvo al principio de este tramo. Con lo que tenías entonces.', 'Y tu hermano ha vuelto a juntar sus ahorros. Qué niño tan ahorrador.'],
+    rewindGreeting: ['Vaya. Otra vez sin nada.', 'Te devuelvo al principio de este tramo. Con lo que tenías entonces.', 'Y la Línea de Rescate vuelve a cogerte el teléfono. Qué país tan generoso.'],
     // Noticias de la ciudad: rellenan el periódico (nunca sale vacío) y cada día nuevo trae una.
     // minDark: solo salen cuando la ciudad ya está así de oscura.
     // (1.6: palabras sencillas; more = lo que se lee en primera plana al hacer clic)
@@ -189,7 +237,7 @@
       academy: ['Ya está. Ahora soy un emprendedor.', 'Bravo dice que esto se paga solo. Ojalá.'],
       income: ['La limonada da dinero. ¿Quién lo diría?', 'Dinero mientras duermo. Bueno, yo no duermo.'],
       shopNew: ['Me llega para algo... Tentador.', 'Podría permitírmelo...', 'Un caprichito. Me lo merezco.'],
-      timmy: ['Lo siento, Timmy. Te lo devolveré. Te lo juro.', 'Timmy no puede enterarse.'],
+      rescue: ['Soy un banco. Un banco sistémico.', 'Me ha rescatado el presidente. Con el dinero de todos.', 'Demasiado grande para caer. Con una consola a plazos.'],
       night: ['Debería dormir. Una más y lo dejo.', 'Otra noche sin dormir...', 'Las velas no duermen. Yo tampoco.'],
       lastDay: ['Último día. No llego. No llego...', 'Hoy o nunca.'],
       // Kevo ha desaparecido: el protagonista empieza a entender que la app no es buena

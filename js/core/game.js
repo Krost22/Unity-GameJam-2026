@@ -169,6 +169,7 @@
       SN.Cine.update(dt);
       SN.Finale.update(dt);
       SN.FX.update(w, dt);
+      SN.Hero.follow(dt); // la mano va con el ratón real: tiempo real, no el del mundo
       SN.Desk.render(this.deskCtx, w);
       if (S.run && !$('app').classList.contains('hidden')) SN.Chart.render();
       SN.ScreenCanvas.render(dt);
@@ -339,7 +340,7 @@
     },
 
     toMenu() {
-      SN.Sneak.abort();
+      SN.Bailout.abort();
       if (SN.Bankruptcy.active) SN.Bankruptcy.reset();
       if (S.run && !S.run.over && !S.run.position) SN.Save.saveRun();
       this.resetTime();
@@ -355,14 +356,17 @@
       const run = S.run;
       // Partida sin punto de control (por si acaso): se guarda uno ahora
       if (!run.checkpoint) S.checkpoint(SN.Narrative.stepLabel(SN.Unlocks.step()));
-      if (run.piggy == null) run.piggy = 'ready';
+      // La vida extra (el rescate). Las partidas de antes la llamaban "piggy" (el cerdito): 'broken' = gastada
+      if (run.rescue == null) run.rescue = run.piggy === 'broken' ? 'used' : 'ready';
+      delete run.piggy;
       SN.Finale.reset();
       SN.Desktop.reset();
       SN.HeroSay.clear();
-      SN.Sneak.abort();
+      SN.Bailout.abort();
       if (SN.Bankruptcy.active) SN.Bankruptcy.reset();
       this.resetTime();
       SN.Narrative.pending = [];
+      SN.Debt.flushBonuses(); // (un bono que quedó a medio entregar al cerrar el juego)
       SN.Narrative.profitableSinceDebt = 0;
       SN.FX.clear();
       SN.Chart.anim = null;

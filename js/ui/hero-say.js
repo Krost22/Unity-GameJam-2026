@@ -7,7 +7,7 @@
   const S = SN.State, D = SN.Data;
   const GAP = 5;          // segundos mínimos entre globos
   const REPEAT = 35;      // segundos antes de repetir el mismo suceso (salvo los importantes)
-  const IMPORTANT = ['debtPaid', 'gift', 'offer', 'black', 'timmy', 'bravo', 'newMarket', 'kevoGone'];
+  const IMPORTANT = ['debtPaid', 'gift', 'offer', 'black', 'rescue', 'bravo', 'newMarket', 'kevoGone'];
 
   const H = SN.HeroSay = {
     el: null, queue: [], cur: null, wait: 0, last: {}, used: {},
@@ -42,7 +42,7 @@
     },
     // ¿Se puede hablar ahora? (nada de globos en cinemáticas, diálogos ni fuera de la partida)
     free() {
-      return SN.Game.state === 'GAMEPLAY' && !SN.Dialog.active && !(SN.Cine && SN.Cine.running) && !(SN.Sneak && SN.Sneak.active) &&
+      return SN.Game.state === 'GAMEPLAY' && !SN.Dialog.active && !(SN.Cine && SN.Cine.running) && !(SN.Bailout && SN.Bailout.active) &&
         !(SN.Narrative && SN.Narrative.hood) && !(SN.Bankruptcy && SN.Bankruptcy.active);
     },
     clear() { this.queue = []; this.hide(); },
@@ -104,7 +104,7 @@
   E.on('academy:bought', () => H.say('academy'));
   E.on('academy:income', () => H.say('income', { chance: 0.4 }));
   E.on('shop:new', () => H.say('shopNew', { chance: 0.5 }));
-  E.on('piggy:broken', () => SN.after(1.5, () => H.say('timmy')));
+  E.on('rescue:done', () => SN.after(2.5, () => H.say('rescue')));
   E.on('turn:ready', () => {
     const run = S.run;
     if (!run) return;

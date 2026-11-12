@@ -74,10 +74,12 @@ El teclado es un atajo y cada botón muestra su tecla:
   Ruleta de la Fortuna (en la tienda), Estrella de la Suerte (un mercado vale ×1.77) o Bendición de la Fortuna.
 - **Perder:** si no te alcanza para la apuesta mínima ($10), si vence el plazo, o si ya es matemáticamente imposible
   pagar a tiempo, se pierde en ese momento (nada de pasar turnos esperando lo inevitable). Pero no se pierde todo:
-  - **Vida extra: los ahorros de Timmy.** Te cuelas en el cuarto de tu hermano pequeño (mantén pulsado para avanzar
-    y suelta cuando se mueva), coges el cerdito con sus ahorros para la cirugía y lo rompes tú mismo en tu mesa. Su
-    dinero es tuyo y la partida sigue (si era por el plazo, el cobrador te da 2 días más). Una vez por paso.
-  - **Sin ahorros que romper:** vuelves al inicio del paso en el que ibas (una deuda, un regalo, una oferta) con el
+  - **Vida extra: el rescate bancario.** Llamas a la Línea de Rescate Financiero del Gobierno. Las personas no se
+    rescatan y los bancos pequeños tampoco: pulsa 2 (banco enorme), escribe el nombre de tu banco ("Banco de Mi
+    Cuarto S.A.", cualquier tecla pone las letras) y te pasan por videollamada con Donald Trompa, que firma la orden,
+    aplasta el botón rojo y te transfiere el dinero de los contribuyentes. La partida sigue (si era por el plazo:
+    nadie embarga a un banco sistémico, 2 días más). Una vez por paso.
+  - **Sin rescate:** vuelves al inicio del paso en el que ibas (una deuda, un regalo, una oferta) con el
     dinero, las mejoras y los mercados que tenías al empezarlo.
 
 ## El idioma secreto (no lo leas si quieres descubrirlo tú)
@@ -85,7 +87,8 @@ El teclado es un atajo y cada botón muestra su tecla:
 Algunas cosas están escritas con letras que parecen rusas: "erratas" del periódico (la primera la ves en el tutorial,
 y el encapuchado dice que no es relevante) y los mensajes de **LOS DESFASADOS**, alguien que te escribe por Mensajín y a
 quien no se puede contestar. Es una sustitución de letras: cada símbolo escondido que encuentras (en el escritorio, en
-la habitación, en las ventanas de la app...) se traduce para siempre, en todos los textos y en todas las partidas.
+la habitación, en las ventanas de la app...) se traduce en todos los textos durante el resto de la partida (volver a un punto de control no lo
+quita; una partida nueva empieza sin ninguna letra).
 La app **Símbolos** aparece al encontrar el primero, con una pista vaga más cada día de la suerte.
 Hasta el nombre del programa, **FUTURO**, está escrito así (la F tiene su propia pista).
 El encapuchado sabe leerlo. No le gusta que lo leas.
@@ -130,7 +133,7 @@ cambios esperan al siguiente compás y la pista nueva entra por el mismo punto d
 | Día de la suerte | `LuckyDay` |
 | Habla Bravo Fines o estás en su Academia | `BravosFines` |
 | Aparece el encapuchado | `AparicionEncapuchado`, con el resto en silencio |
-| Sin dinero o embargo | la cinta se frena hasta pararse; si no queda el cerdito, una caja de música rota |
+| Sin dinero o embargo | la cinta se frena hasta pararse; si no queda el rescate, una caja de música rota |
 | El final | `CancionIntroParte2`, lenta y dos semitonos más grave |
 
 **Efectos de sonido a juego:** cada nota de los efectos sale de la escala de la pista que suena (y va a su misma
@@ -282,7 +285,7 @@ js/systems/           economy, debt, time, market-sim (+ PISTA), trading (+ COBR
                       tutorial, narrative, bankruptcy, finale (la meta final y los dos finales)
 js/render/            pixel.js, pixkit.js (kit de pixel art procedural), sprites.js, desk.js (habitación y ventana), hero.js (manos,
                       gato y primeros planos), hands.js, chart.js, fx.js, news-art.js, characters.js, cinematic.js,
-                      sneak.js (el cuarto de Timmy)
+                      bailout.js (el rescate bancario: la llamada y la videollamada con Trompa)
 js/ui/                ui.js (UIManager), dialog.js, windows.js (mejoras y Academia, periódico con primera plana,
                       tienda, oferta, ruleta, ajustes, "Acerca de"), desktop.js (escritorio del PC, Mensajín y
                       Símbolos), keywords.js (palabras clave con color), hero-say.js (los globos del protagonista)
@@ -316,7 +319,7 @@ Apuesta mínima, velas de la zona de peligro, error de la pista y la operación 
 `js/render/pixkit.js` convierte formas (polígonos, elipses, cápsulas) en pixel art con sombreado según la luz y
 contorno selectivo; con él se dibujan las manos, el gato, la cara del protagonista (`js/render/hero.js`) y los objetos
 de la habitación (`js/render/desk.js`). La paleta está en `js/core/sn.js` (y en las variables de `css/style.css`).
-Los iconos son dibujos en texto en `js/render/sprites.js`; el encapuchado, el cerdito y la consola de la intro en
+Los iconos son dibujos en texto en `js/render/sprites.js`; el encapuchado, Bravo Fines y la consola de la intro en
 `js/render/characters.js`; las fotos del periódico en `js/render/news-art.js`.
 
 **Fuente:** `node tools/build-font.js` regenera `css/font.css` a partir de los glifos dibujados en ese archivo: SaldoPixel
@@ -332,7 +335,7 @@ Kevo, la respuesta del protagonista y lo que Kevo contesta.
 
 ```
 node tools/test/logic.test.js       # fórmulas, COBRAR, giros, pista, topes, cadena de deudas, Academia, números rojos, palabras clave, noticias, idioma secreto, suerte y equilibrio (con un bot que juega la partida entera)
-node tools/test/e2e.test.js         # partida completa en Chrome/Edge sin ventana: tutorial (errata, mejoras y tienda), regalo, oferta que salta sola, mercado negro, ahorros de Timmy
+node tools/test/e2e.test.js         # partida completa en Chrome/Edge sin ventana: tutorial (errata, mejoras y tienda), regalo, oferta que salta sola, mercado negro, el rescate bancario con Trompa (jugado con teclas y clics)
 node tools/test/e2e-paths.test.js   # continuar (también tras cobrar), repetir tutorial, tienda, Bravo Fines y su Academia, primera plana, día de la suerte y ruleta, los 3 finales y pantallas pequeñas
 node tools/test/e2e-desktop.test.js # minimizar, Mensajín, la historia de Kevo, LOS DESFASADOS, una pista que traduce sus mensajes, Símbolos
 node tools/test/e2e-music.test.js   # la pista de cada momento, cambios a compás, bucle sin cortes, la cinta (perdiendo, sin dinero, el final) y todos los efectos

@@ -26,7 +26,7 @@
       { id: 'azotea', letter: 'T', where: 'La azotea de enfrente', hint: 'A veces mira desde una azotea. No dura mucho.' },
       { id: 'calavera', letter: 'C', where: 'La calavera del mercado negro', hint: 'Tres golpes a la calavera.' },
       { id: 'poster', letter: 'M', where: 'El póster de tu cuarto', hint: 'Cuando la ciudad se apaga, el póster habla.' },
-      { id: 'dibujo', letter: 'I', where: 'El dibujo de Timmy', hint: 'Todos los niños lo dibujan. Timmy también.' },
+      { id: 'firma', letter: 'I', where: 'La firma de Trompa', hint: 'La firma del presidente parece un garabato. Mírala bien cuando te la enseñe.' },
       { id: 'avatar', letter: 'P', where: 'La foto de LOS DESFASADOS', hint: 'Llama tres veces a su puerta.' },
       { id: 'estrella', letter: 'G', where: 'La Estrella de la Suerte', hint: 'Una estrella que solo sale los días de suerte.' },
       { id: 'acerca', letter: 'F', where: 'Acerca de FUTURO.exe', hint: 'Todo programa tiene su "Acerca de". Mira bien el icono.' },

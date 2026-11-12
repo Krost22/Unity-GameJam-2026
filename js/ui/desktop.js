@@ -70,7 +70,7 @@
       this.renderIcons();
       SN.Events.on('turn:ready', () => { if (S.run) this.chat().clock++; this.check(); this.serCheck(); this.bravoCheck(); this.refreshNotes(); this.refreshTrash(); });
       SN.Events.on('chat:flag', ({ flag }) => { this.flag(flag); this.serCheck(); this.bravoCheck(); });
-      SN.Events.on('piggy:broken', () => this.flag('piggy'));
+      SN.Events.on('rescue:done', () => this.flag('rescue'));
       SN.Events.on('trade:closed', (r) => { if (r && (r.liquidated || r.pnl <= -Math.max(50, r.amount * 0.6))) this.flag('bigLoss'); });
       SN.Events.on('debt:paid', () => this.refreshNotes());
       SN.Events.on('debt:opened', () => this.refreshNotes());
@@ -83,6 +83,8 @@
       clearTimeout(this.bravoT); this.bravoT = null;
       this.contact = 'kevo';
       this.renderIcons();
+      const nm = $('desktop') && $('desktop').querySelector('.dt-icon[data-app="futuro"] .nm');
+      if (nm) nm.innerHTML = SN.Cipher.brand();
       for (const id of Object.keys(this.wins)) { this.wins[id].remove(); delete this.wins[id]; }
       this.open = false;
       const d = $('desktop'); if (d) d.classList.add('hidden');
@@ -198,7 +200,7 @@
       if (e.code === 'Escape') { if (top) this.closeWin(top); else this.restore(); return true; }
       // La terminal de NULL.EXE: cualquier tecla escribe el comando (js/systems/finale.js)
       if (top === 'term' && SN.Finale && SN.Finale.termKey(e)) return true;
-      if (top === 'chat' && this.contact !== 'ser' && this.chat().phase === 'reply') {
+      if (top === 'chat' && this.onKevo() && this.chat().phase === 'reply') {
         if (e.code === 'Enter' && this.replyDone()) this.send();
         else if (!e.repeat || Math.random() < 0.35) {
           // (con la tecla mantenida, los dedos también se mueven: el primer toque ya lo hace ui.js)
@@ -412,18 +414,20 @@
     },
 
     replyDone() { const c = this.convo(); return !!c && this.chat().typed >= c.reply.length; },
+    // ¿Está abierta la conversación con Kevo? (a los demás contactos no se les puede escribir)
+    onKevo() { return (this.contact || 'kevo') === 'kevo'; },
 
     // Cada tecla pone un trocito de la respuesta (de 1 a 3 letras, como quien escribe rápido)
     typeChunk() {
       const ch = this.chat(), c = this.convo();
-      if (!c || ch.phase !== 'reply' || this.replyDone()) return;
+      if (!c || !this.onKevo() || ch.phase !== 'reply' || this.replyDone()) return;
       ch.typed = Math.min(c.reply.length, ch.typed + 1 + Math.floor(Math.random() * 3));
       this.renderInput();
     },
 
     send() {
       const ch = this.chat(), c = this.convo();
-      if (!c || ch.phase !== 'reply' || !this.replyDone()) return;
+      if (!c || !this.onKevo() || ch.phase !== 'reply' || !this.replyDone()) return;
       ch.log.push({ who: 'm', t: c.reply });
       ch.phase = 'out'; ch.k = 0; ch.typed = 0;
       SN.Audio.sfx('select');
