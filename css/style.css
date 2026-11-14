@@ -1225,19 +1225,3 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 @keyframes dust { 0% { transform: scale(.2); opacity: 0; } 15% { opacity: 1; } 60% { transform: scale(1.6) translateX(20px); opacity: .9; } 100% { transform: scale(2.4) translateX(60px); opacity: 0; } }
 .fin-panel.fin-credits { animation: fadein .6s steps(6); }
 @keyframes fadein { from { opacity: 0; } }
-
-/* ---------- Panel de depuración (js/ui/debug-panel.js) · QUITAR ANTES DE LA VERSIÓN FINAL ---------- */
-#debug-panel { position: fixed; left: 4px; top: 4px; z-index: 50; display: flex; flex-direction: column; gap: 2px; padding: 3px;
-  background: rgba(7, 5, 18, .85); box-shadow: 0 0 0 1px var(--coral); transform-origin: top left; }
-#debug-panel .dp-h { color: var(--coral); line-height: 9px; padding: 0 1px 1px; white-space: nowrap; }
-#debug-panel .dp-h i { color: var(--ink3); font-style: normal; }
-#debug-panel .dp-h.warn { color: var(--yellow); }
-#debug-panel button { font: inherit; text-align: left; color: var(--ink); background: var(--navyM); border: 0; padding: 1px 4px; line-height: 9px;
-  cursor: pointer; box-shadow: 0 0 0 1px var(--navyL); }
-#debug-panel button:hover { background: var(--navyL); color: var(--yellowL); }
-#debug-panel button.on { background: var(--coralD); color: var(--creamL); }
-#debug-panel.mini button, #debug-panel.mini .dp-h i { display: none; }
-/* Sin sitio a la izquierda del monitor: una pestaña que se abre al pasar el ratón (no tapa FUTURO.exe) */
-#debug-panel.tab:not(:hover) button, #debug-panel.tab:not(:hover) .dp-h i { display: none; }
-#debug-panel.tab:not(:hover) { padding: 1px 3px; }
-#debug-panel.mini { padding: 1px 3px; opacity: .7; }

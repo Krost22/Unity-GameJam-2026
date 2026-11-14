@@ -1,0 +1,16 @@
+{
+    "name": "SaldoNegro.Draw",
+    "rootNamespace": "SaldoNegro",
+    "references": [
+        "SaldoNegro.Logic"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

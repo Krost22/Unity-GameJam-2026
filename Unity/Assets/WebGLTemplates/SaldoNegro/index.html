@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<!--
+  Plantilla WebGL del port: la página es como el index.html de la web (español, título "Saldo Negro", fondo
+  --coalDD, sin márgenes ni barras de desplazamiento) y el lienzo de Unity ocupa toda la ventana, como el juego web.
+  devicePixelRatio 1: Screen.width/height de Unity valen lo mismo que innerWidth/innerHeight en la web, que es con
+  lo que el juego calcula su escala (game.js). Basada en la plantilla Minimal de Unity 6000.3.
+-->
+<html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#30332B">
+    <title>Saldo Negro</title>
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #0E0A1C; overscroll-behavior: none; touch-action: none; }
+      #unity-canvas { position: fixed; left: 0; top: 0; width: 100%; height: 100%; display: block; background: #0E0A1C; outline: none; }
+    </style>
+  </head>
+  <body>
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
+    <script src="Build/{{{ LOADER_FILENAME }}}"></script>
+    <script>
+      createUnityInstance(document.querySelector("#unity-canvas"), {
+        arguments: [],
+        dataUrl: "Build/{{{ DATA_FILENAME }}}",
+        frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}",
+#if USE_THREADS
+        workerUrl: "Build/{{{ WORKER_FILENAME }}}",
+#endif
+#if USE_WASM
+        codeUrl: "Build/{{{ CODE_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+        symbolsUrl: "Build/{{{ SYMBOLS_FILENAME }}}",
+#endif
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+        productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+        productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+        devicePixelRatio: 1,
+      }).then(function () {
+        document.querySelector("#unity-canvas").focus();
+      }).catch(function (message) {
+        alert(message);
+      });
+    </script>
+  </body>
+</html>

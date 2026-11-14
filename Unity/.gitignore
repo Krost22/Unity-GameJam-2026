@@ -1,0 +1,55 @@
+# Proyecto de Unity (port de SALDO NEGRO). Carpetas que genera el editor: no se versionan.
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+# Los .meta de Assets siempre se versionan
+!/[Aa]ssets/**/*.meta
+
+# Editores de código y proyectos generados
+.vs/
+.gradle/
+.idea/
+.vscode/
+ExportedObj/
+.consulo/
+*.csproj
+*.unityproj
+*.sln
+*.slnx
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+/[Aa]ssets/Plugins/Editor/JetBrains*
+
+# Informes de fallos y paquetes
+sysinfo.txt
+*.apk
+*.aab
+*.unitypackage
+*.unitypackage.meta
+*.app
+crashlytics-build.properties
+
+# Salidas temporales de las herramientas del port (capturas y diferencias)
+/Tools~/out/
+
+# Builds del port (Windows y WebGL)
+/Builds/

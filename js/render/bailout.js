@@ -760,7 +760,7 @@
     speed: 1, // (las pruebas la reproducen más deprisa)
     draw,     // (pruebas y capturas)
 
-    // from: 'phone' (toda la escena) o 'call' (directamente la videollamada; lo usa el panel de depuración)
+    // from: 'phone' (toda la escena) o 'call' (directamente la videollamada)
     play({ coins = 0, from = 'phone' } = {}) {
       this.active = true;
       this.coins = coins;

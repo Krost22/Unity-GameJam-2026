@@ -1,0 +1,110 @@
+<div id="viewport">
+    <div id="stage">
+      <canvas id="desk" width="320" height="180"></canvas>
+      <div id="monitor">
+        <div id="screen" class="off">
+          <section id="os" class="layer hidden">
+            <div id="boot" class="hidden"></div>
+            <div id="menu" class="hidden">
+              <div class="logo"><span class="l1">SALDO</span><span class="l2">NEGRO</span></div>
+              <p class="tagline">Un juego sobre dinero fácil</p>
+              <div class="menu-buttons">
+                <button id="btn-continue" class="btn btn-green hidden">Continuar</button>
+                <button id="btn-new" class="btn btn-yellow">Nueva partida</button>
+                <button id="btn-intro" class="btn btn-violet hidden">Ver intro</button>
+                <button id="btn-menu-settings" class="btn btn-cream">Ajustes</button>
+              </div>
+              <p class="menu-foot">v2.0 · KrostGames · Adrede</p>
+            </div>
+          </section>
+          <section id="webshop" class="layer hidden"></section>
+          <section id="desktop" class="layer hidden"></section>
+          <section id="app" class="layer hidden">
+            <header id="titlebar">
+              <span class="app-icon" title="Acerca de"></span><span class="app-name">FUTURO.EXE</span>
+              <span id="clock"></span>
+              <button id="btn-min" class="tb-btn" aria-label="Minimizar" title="Minimizar: ver el escritorio"><i class="ico-min"></i><b id="min-badge" class="badge hidden"></b><kbd>D</kbd></button>
+              <button id="btn-sound" class="tb-btn" aria-label="Sonido">♪</button>
+              <button id="btn-settings" class="tb-btn" aria-label="Ajustes">Menú<kbd>ESC</kbd></button>
+              <button id="btn-x" class="tb-btn hidden" aria-label="Cerrar">X</button>
+            </header>
+            <div id="hud">
+              <div id="hud-capital" class="hud-box" title="Tu dinero">
+                <span class="coin"></span><span id="capital" class="big">$100</span>
+              </div>
+              <div id="hud-goal" class="hud-box">
+                <div class="goal-top"><span id="goal-title" class="lbl">Deuda</span><span id="goal-text"></span></div>
+                <div class="bar"><i id="goal-fill"></i></div>
+                <button id="btn-pay" class="btn btn-yellow hidden">¡Pagar deuda!</button>
+                <button id="btn-item" class="btn btn-cyan hidden">Ver oferta</button>
+              </div>
+              <div id="hud-days" class="hud-box" title="Días para pagar la deuda"></div>
+            </div>
+            <div id="body">
+              <div id="finale" class="hidden"></div>
+              <aside id="sidebar">
+                <div id="markets"></div>
+                <div id="nav">
+                  <button id="nav-news" class="nav-btn"><i class="ico ico-news"></i>Noticias<b id="news-badge" class="badge hidden"></b><kbd>N</kbd></button>
+                  <button id="nav-shop" class="nav-btn"><i class="ico ico-shop"></i>Tienda<b id="shop-badge" class="badge hidden"></b><kbd>T</kbd></button>
+                </div>
+              </aside>
+              <main id="center">
+                <div id="mkt-head"></div>
+                <div id="chart-wrap">
+                  <canvas id="chart" width="222" height="134"></canvas>
+                  <button id="btn-fast" class="hidden">▶▶<kbd>F</kbd></button>
+                </div>
+                <div id="events"></div>
+              </main>
+              <section id="trade">
+                <div id="trade-form">
+                  <div id="bet-box">
+                    <div class="row-lbl"><span>Apuesta</span><kbd>← →</kbd></div>
+                    <div id="amount">$50</div>
+                    <div id="slider"><i id="slider-fill"></i><b id="slider-knob"></b></div>
+                    <div class="quick">
+                      <button data-frac="0.25">25%</button><button data-frac="0.5">50%</button><button data-frac="1">Todo</button>
+                    </div>
+                  </div>
+                  <div id="lev-box">
+                    <div class="row-lbl"><span>Multiplica</span><kbd>1-4</kbd></div>
+                    <div class="seg" id="leverages"></div>
+                    <div id="risk" title="Riesgo de esta apuesta"></div>
+                  </div>
+                  <div id="trade-buttons">
+                    <button id="btn-buy" class="btn btn-green big-btn"><span>Subirá</span><small>▲ ganas si sube</small><kbd>↑</kbd></button>
+                    <button id="btn-sell" class="btn btn-coral big-btn"><span>Bajará</span><small>▼ ganas si baja</small><kbd>↓</kbd></button>
+                  </div>
+                  <div id="finale-trade" class="hidden"></div>
+                  <button id="btn-skip-turn" class="nav-btn ghost">Esperar ▶<kbd>P</kbd></button>
+                </div>
+                <div id="trade-live" class="hidden">
+                  <div class="live-top"><span id="live-dir" class="dir"></span><span id="live-bet"></span></div>
+                  <button id="btn-close" class="btn btn-yellow"><span id="close-lbl">Cobrar</span><kbd>ESPACIO</kbd></button>
+                  <div id="live-pnl" class="pnl up">+$0</div>
+                  <div id="live-steps"></div>
+                  <div id="live-note"></div>
+                </div>
+              </section>
+            </div>
+          </section>
+          <canvas id="screen-canvas" width="420" height="236" class="hidden"></canvas>
+          <div id="layer-windows" class="layer"></div>
+          <div id="layer-dialog" class="layer"></div>
+          <canvas id="fx" width="420" height="236"></canvas>
+          <div id="layer-float"></div>
+          <div id="layer-top" class="layer"></div>
+          <div id="fake-cursor" class="hidden"></div>
+          <div id="crt"></div>
+        </div>
+      </div>
+      <canvas id="cine" width="640" height="360" class="hidden"></canvas>
+      <div id="fade"></div>
+      <div id="stage-top"></div>
+    </div>
+    <div id="subs" class="px-font hidden"></div>
+    <button id="btn-skip" class="px-font hidden">Saltar ▶▶</button>
+    <div id="rotate" class="px-font"><span>Gira el móvil<br>para jugar</span></div>
+    <div id="loading">CARGANDO...</div>
+  </div>

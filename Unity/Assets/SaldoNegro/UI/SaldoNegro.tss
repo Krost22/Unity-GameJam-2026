@@ -1,0 +1,6 @@
+/* Tema de los paneles de SALDO NEGRO.
+   No importa el tema por defecto de Unity a propósito: la interfaz del juego trae sus propios estilos
+   (los de css/style.css de la web, portados a USS) y nada de fuera debe cambiar un píxel. */
+:root {
+    color: rgb(248, 244, 255);
+}
