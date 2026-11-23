@@ -7,3 +7,4 @@ node_modules/
 *.log
 # Capturas que generan las pruebas
 tools/test/shots-desktop/
+tools/test/shots-i18n/

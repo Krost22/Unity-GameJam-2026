@@ -59,7 +59,7 @@
           S.adopt(snapshot);
           SN.Chart.setMarket(S.run.selected);
           SN.Desk.dirty();
-          await SN.Dialog.show(['Fin del repaso. Tu partida sigue exactamente como estaba.'], { pos: { v: 'bottom', h: 'center' } });
+          await SN.Dialog.show([SN.T('Fin del repaso. Tu partida sigue exactamente como estaba.')], { pos: { v: 'bottom', h: 'center' } });
         }
         SN.Save.saveRun();
         SN.Game.setState('GAMEPLAY');
@@ -120,7 +120,7 @@
       }
       if (st.news) {
         // El periódico, con una noticia normal y otra que nadie sabe leer: la "errata" (el idioma secreto)
-        SN.Narrative.addNews({ title: 'Vacuna en fase final', text: 'Las autoridades deciden si aprueban la nueva vacuna.', tone: 'pos', market: 'salud', art: 'vacuna' });
+        SN.Narrative.addNews({ title: SN.T('Vacuna en fase final'), text: SN.T('Las autoridades deciden si aprueban la nueva vacuna.'), tone: 'pos', market: 'salud', art: 'vacuna' });
         SN.Narrative.cipherNews('tuto');
         SN.Windows.open('news');
         await SN.wait(0.35);

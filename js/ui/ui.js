@@ -3,7 +3,7 @@
 // Escucha eventos del juego (capital, turnos, mercados...) y nunca calcula economía por su cuenta.
 (function (SN) {
   'use strict';
-  const U = SN.Util, S = SN.State, D = SN.Data, P = SN.PAL;
+  const U = SN.Util, S = SN.State, D = SN.Data, P = SN.PAL, T = SN.T;
   const $ = (id) => document.getElementById(id);
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -60,7 +60,7 @@
       D.sim.leverages.forEach((l, i) => {
         const b = U.el('button', l.value >= 10 ? 'max' : l.value >= 5 ? 'hot' : '', '×' + l.value);
         b.dataset.l = l.value;
-        b.title = `Multiplica el resultado ×${l.value} · tecla ${i + 1}`;
+        b.title = T('Multiplica el resultado ×{v} · tecla {k}', { v: l.value, k: i + 1 });
         // Uno que todavía no tienes te lleva a la Tienda, al MULTIPLICADOR
         b.addEventListener('click', () => {
           if (SN.Trading.leverageAvailable(l.value)) { this.setLeverage(l.value); return; }
@@ -178,7 +178,8 @@
       E.on('trade:closed', (r) => this.onTradeClosed(r));
       E.on('trade:rejected', (r) => this.note(r.reason));
       E.on('window:closed', () => this.renderAll());
-      E.on('window:opened', () => { this.renderHUD(); const t = document.querySelector('.msg-toast.shop'); if (t) t.remove(); });
+      E.on('window:opened', () => { if (S.run) this.renderHUD(); // (desde el menú no hay partida)
+        const t = document.querySelector('.msg-toast.shop'); if (t) t.remove(); });
       // Cosas que ya se pueden comprar: número rojo y aviso; la oferta de un objeto clave salta sola
       E.on('shop:seen', () => this.renderNav());
       E.on('shop:new', (d) => this.onShopNew(d));
@@ -186,7 +187,7 @@
       // Academia: tus negocios pagan cada mañana; lo comprado cambia los números rojos
       E.on('academy:income', ({ amount }) => {
         const p = this.posIn($('hud-capital'));
-        SN.FX.float(`+${U.money(amount)} negocios`, p.x + p.w / 2, p.y + p.h + 6, 'gain small');
+        SN.FX.float(T('+{v} negocios', { v: U.money(amount) }), p.x + p.w / 2, p.y + p.h + 6, 'gain small');
         SN.Audio.sfx('coin');
       });
       E.on('academy:bought', () => { this.renderNav(); this.renderHUD(); });
@@ -219,7 +220,7 @@
       const luck = SN.Luck.today();
       $('clock').innerHTML = `${luck ? `<b class="lk">${'★'.repeat(luck.k)}</b>` : ''}${SN.Time.turnName()} ${pips}`;
       $('app').classList.toggle('lucky', !!luck);
-      $('clock').title = 'Cada apuesta gasta un turno · 3 turnos = 1 día';
+      $('clock').title = T('Cada apuesta gasta un turno · 3 turnos = 1 día');
     },
 
     // La meta de arriba: la deuda activa (amarilla), el objeto clave que toca comprar (cian) o la meta (verde)
@@ -229,22 +230,22 @@
       const goal = SN.Unlocks.currentGoal();
       const fill = $('goal-fill');
       if (goal) {
-        $('goal-title').textContent = goal.type === 'debt' ? `Deuda: ${goal.label}` : goal.type === 'item' ? `Oferta: ${goal.label}` : 'Meta';
+        $('goal-title').textContent = goal.type === 'debt' ? T('Deuda: {x}', { x: goal.label }) : goal.type === 'item' ? T('Oferta: {x}', { x: goal.label }) : T('Meta');
         fill.style.width = (U.clamp(run.capital / goal.amount, 0, 1) * 100).toFixed(1) + '%';
         fill.classList.toggle('debt', goal.type === 'debt');
         fill.classList.toggle('item', goal.type === 'item');
         // A la derecha, solo lo que debes (o la meta): tu dinero ya sale a la izquierda, en grande.
         // La oferta no pide dinero: se enseña lo que dejará a deber.
         const amt = goal.amount >= 100000 ? U.short(goal.amount) : U.money(goal.amount);
-        $('goal-text').textContent = goal.type === 'item' ? `Hoy $0 · debes ${U.short(goal.amount)}` : amt;
+        $('goal-text').textContent = goal.type === 'item' ? T('Hoy $0 · debes {v}', { v: U.short(goal.amount) }) : amt;
         if (goal.type === 'item') fill.style.width = '100%';
       } else {
-        $('goal-title').textContent = 'Sin límites';
+        $('goal-title').textContent = T('Sin límites');
         fill.style.width = '100%';
         fill.classList.remove('debt', 'item');
         $('goal-text').textContent = '';
       }
-      $('hud-goal').title = goal && goal.type === 'item' ? `Siguiente paso: la oferta de ${goal.item.name} (hoy $0; después debes ${U.money(goal.amount)})` : goal && goal.type === 'debt' ? `Debes ${U.money(goal.amount)} por ${goal.label}` : '';
+      $('hud-goal').title = goal && goal.type === 'item' ? T('Siguiente paso: la oferta de {x} (hoy $0; después debes {v})', { x: goal.item.name, v: U.money(goal.amount) }) : goal && goal.type === 'debt' ? T('Debes {v} por {x}', { v: U.money(goal.amount), x: goal.label }) : '';
       // (con una ventana abierta no se enseñan: quedarían por encima de ella)
       const canPay = SN.Debt.canPay() && !this.busy && !SN.Windows.current;
       $('btn-pay').classList.toggle('hidden', !canPay);
@@ -266,7 +267,7 @@
       if (key === this.daysKey) return;
       this.daysKey = key;
       if (!owing) {
-        box.innerHTML = SN.Luck.isLucky(run.day) ? `<span class="free lucky" title="Día de la suerte">★ Suerte<b>${run.day}</b></span>` : `<span class="free">Libre · día<b>${run.day}</b></span>`;
+        box.innerHTML = SN.Luck.isLucky(run.day) ? `<span class="free lucky" title="${T('Día de la suerte')}">${T('★ Suerte')}<b>${run.day}</b></span>` : `<span class="free">${T('Libre · día')}<b>${run.day}</b></span>`;
         return;
       }
       let html = '';
@@ -328,9 +329,9 @@
       $('sidebar').classList.toggle('tabbed', hasBlack);
       if (hasBlack) {
         const tabs = U.el('div', 'mtabs');
-        for (const [t, name] of [['legal', 'Legal'], ['negro', 'Negro']]) {
+        for (const [t, name] of [['legal', T('Legal')], ['negro', T('Negro')]]) {
           const b = U.el('button', 'mtab mtab-' + t + (t === tab ? ' on' : ''), name);
-          b.title = t === 'negro' ? 'Mercado negro (X)' : 'Mercados legales (X)';
+          b.title = t === 'negro' ? T('Mercado negro (X)') : T('Mercados legales (X)');
           const alert = D.markets.some((d) => !!d.black === (t === 'negro') && d.id !== S.run.selected && S.run.markets[d.id].unlocked && S.run.markets[d.id].newEvents);
           if (alert && t !== tab) b.insertAdjacentHTML('beforeend', '<b class="alert">!</b>');
           b.addEventListener('click', () => this.toggleTab(t));
@@ -344,20 +345,20 @@
         const m = S.run.markets[def.id];
         const card = U.el('div', 'mcard' + (def.black ? ' black' : ''));
         card.dataset.id = def.id;
-        card.title = `${def.name}: ${def.desc} · Tope por apuesta: ±${U.money(def.cap)}`;
+        card.title = T('{name}: {desc} · Tope por apuesta: ±{v}', { name: def.name, desc: def.desc, v: U.money(def.cap) });
         const ico = SN.Sprites.node(def.icon, 1);
         ico.className = 'ico';
         card.appendChild(ico);
         if (!m.unlocked) {
           card.classList.add('locked');
-          card.title = def.black ? `${def.unlock.label} en la TIENDA para abrirlo` : `Se abre al llegar a ${def.unlock.label}`;
-          card.insertAdjacentHTML('beforeend', `<span class="nm">${def.short}</span><span class="hint">${def.black ? 'Tienda' : def.unlock.label || ''}</span>`);
+          card.title = def.black ? T('{x} en la TIENDA para abrirlo', { x: def.unlock.label }) : T('Se abre al llegar a {x}', { x: def.unlock.label });
+          card.insertAdjacentHTML('beforeend', `<span class="nm">${def.short}</span><span class="hint">${def.black ? T('Tienda') : def.unlock.label || ''}</span>`);
           const lock = SN.Sprites.node('lock', 1);
           lock.className = 'lock';
           card.appendChild(lock);
         } else {
           const live = S.run.position && S.run.position.market === def.id;
-          let hint = '<span class="hint live">En juego</span>';
+          let hint = `<span class="hint live">${T('En juego')}</span>`;
           if (!live) {
             const h = SN.Market.hint(def.id);
             hint = `<span class="hint ${h.dir > 0 ? 'up' : h.dir < 0 ? 'down' : 'flat'}">${h.dir ? (h.dir > 0 ? '▲' : '▼').repeat(h.power) : '?'}</span>`;
@@ -369,7 +370,7 @@
           const luck = SN.Luck.today();
           if (luck && luck.star === def.id) {
             const star = U.el('b', 'star', '★');
-            star.title = `Estrella de la Suerte: hoy sus ganancias valen ×${D.luck.starMul}`;
+            star.title = T('Estrella de la Suerte: hoy sus ganancias valen ×{v}', { v: D.luck.starMul });
             star.addEventListener('click', (e) => { e.stopPropagation(); SN.Cipher.discover('estrella'); });
             card.appendChild(star);
           }
@@ -391,8 +392,8 @@
       app.classList.toggle('black', !!def.black);
       const price = SN.Chart.anim && SN.Chart.market === def.id ? SN.Chart.livePrice : SN.Market.state(def.id).price;
       const head = $('mkt-head');
-      head.title = `${def.name} · ${def.tag} · Tope por apuesta: ±${U.money(def.cap)}`;
-      head.innerHTML = `<div class="ico-box"></div><span class="nm">${def.short}${def.black ? '<em class="blk">· NEGRO</em>' : ''}<em class="cap">±${U.short(def.cap)}</em></span><span class="px-price">${fmt(price)}</span>`;
+      head.title = T('{name} · {tag} · Tope por apuesta: ±{v}', { name: def.name, tag: def.tag, v: U.money(def.cap) });
+      head.innerHTML = `<div class="ico-box"></div><span class="nm">${def.short}${def.black ? `<em class="blk">${T('· NEGRO')}</em>` : ''}<em class="cap">±${U.short(def.cap)}</em></span><span class="px-price">${fmt(price)}</span>`;
       const box = head.querySelector('.ico-box');
       box.appendChild(SN.Sprites.node(def.icon, 1));
       // La calavera del mercado negro: tres golpes y habla
@@ -419,7 +420,7 @@
       if (SN.Windows.current) SN.Windows.refresh();
       this.renderTitle();
       SN.Desktop.onCipher(d);
-      const html = `<small>Símbolo descifrado · ${d.count}/${d.total}</small><span class="cx-pair"><b class="cx">${d.glyph}</b> = <b class="cx-k">${d.letter}</b></span><small>${d.clue.where}</small>`;
+      const html = `<small>${T('Símbolo descifrado · {a}/{b}', { a: d.count, b: d.total })}</small><span class="cx-pair"><b class="cx">${d.glyph}</b> = <b class="cx-k">${d.letter}</b></span><small>${d.clue.where}</small>`;
       return this.card(html, 'stamp cx-stamp', 2.6);
     },
 
@@ -432,19 +433,19 @@
       let item = null, kicker = '', arrows = '';
       if (ev) {
         item = { title: ev.title, tone: ev.tone, art: ev.art };
-        kicker = '¡Última hora!';
+        kicker = T('¡Última hora!');
         arrows = eventArrows(ev);
       } else {
         for (let i = run.news.length - 1; i >= 0; i--) if (run.news[i].market === id) { item = run.news[i]; break; }
-        if (item) kicker = `Día ${item.day} · ${D.sim.turnNames[item.turn] || ''}`;
+        if (item) kicker = T('Día {d} · {t}', { d: item.day, t: D.sim.turnNames[item.turn] || '' });
       }
       // La noticia que se abrirá en primera plana al hacer clic (la última de este mercado)
       this.eventsNews = null;
       for (let i = run.news.length - 1; i >= 0; i--) if (run.news[i].market === id && !run.news[i].dark) { this.eventsNews = run.news[i]; break; }
       box.className = item ? `${item.dark ? 'neg' : item.tone}${ev ? '' : ' old'}${animateNew ? ' new' : ''}` : 'empty';
-      box.title = item ? 'Ver todas las noticias (N)' : '';
+      box.title = item ? T('Ver todas las noticias (N)') : '';
       box.innerHTML = '';
-      if (!item) { box.innerHTML = '<div class="tk" style="left:6px"><span class="tk-k">Sin noticias</span><span class="tk-t">La calma antes de la tormenta.</span></div>'; return; }
+      if (!item) { box.innerHTML = `<div class="tk" style="left:6px"><span class="tk-k">${T('Sin noticias')}</span><span class="tk-t">${T('La calma antes de la tormenta.')}</span></div>`; return; }
       box.appendChild(SN.NewsArt.node(item.art || 'ciudad', item.tone || 'neu', item.dark ? darkLevel() : 0, [52, 32]));
       box.insertAdjacentHTML('beforeend', `<div class="tk"><span class="tk-k">${kicker}</span><span class="tk-a">${arrows}</span><span class="tk-t">${item.title}</span></div>`);
       SN.KW.apply(box.querySelector('.tk-t'));
@@ -461,7 +462,7 @@
       amt.textContent = U.money(f.amount);
       amt.classList.toggle('small', U.money(f.amount).length > 9);
       const lim = SN.Trading.limit();
-      $('bet-box').title = `Máximo por apuesta: ${U.money(lim)} · mínimo: ${U.money(D.sim.minInvestment)} · este mercado gana o pierde como mucho ${U.money(SN.Trading.cap(run.selected))}`;
+      $('bet-box').title = T('Máximo por apuesta: {a} · mínimo: {b} · este mercado gana o pierde como mucho {c}', { a: U.money(lim), b: U.money(D.sim.minInvestment), c: U.money(SN.Trading.cap(run.selected)) });
       const k = max > 0 ? U.clamp(f.amount / max, 0, 1) : 0;
       $('slider-fill').style.width = (k * 100) + '%';
       $('slider-knob').style.left = (k * 100) + '%';
@@ -470,7 +471,7 @@
         const v = +b.dataset.l;
         const ok = SN.Trading.leverageAvailable(v);
         b.classList.toggle('locked', !ok);
-        b.title = ok ? `Multiplica el resultado ×${v} · tecla ${D.sim.leverages.findIndex((l) => l.value === v) + 1}` : `×${v}: cómpralo en la Tienda (Multiplicador)`;
+        b.title = ok ? T('Multiplica el resultado ×{v} · tecla {k}', { v, k: D.sim.leverages.findIndex((l) => l.value === v) + 1 }) : T('×{v}: cómpralo en la Tienda (Multiplicador)', { v });
         b.classList.toggle('on', v === f.leverage);
       });
       // Riesgo de un vistazo: cuánto de tu dinero apuestas, multiplicado
@@ -498,9 +499,9 @@
       // La tienda se puede mirar siempre (los objetos clave solo se compran cuando toca)
       const shop = $('nav-shop');
       shop.disabled = false;
-      shop.title = 'Tienda: mejoras, objetos clave, estilo de vida y la Academia';
+      shop.title = T('Tienda: mejoras, objetos clave, estilo de vida y la Academia');
       $('btn-skip-turn').disabled = this.busy || !!run.position || !this.allowed('skip');
-      $('btn-skip-turn').title = 'No apostar: pasa el turno y el mercado sigue';
+      $('btn-skip-turn').title = T('No apostar: pasa el turno y el mercado sigue');
     },
 
     renderSound() {
@@ -515,8 +516,8 @@
       // Todo está en la Tienda: primero se avisa de las mejoras y la Academia, luego del resto
       const up = items.filter((x) => x.kind === 'upgrade' || x.kind === 'academy');
       const first = (up.length ? up : items)[0];
-      const what = first.kind === 'upgrade' ? 'Mejora disponible' : first.kind === 'academy' ? 'Academia de Bravo Fines' : first.kind === 'gold' ? 'Mercado Dorado' : 'Ya puedes comprar';
-      const more = items.length > 1 ? ` (y ${items.length - 1} más)` : '';
+      const what = first.kind === 'upgrade' ? T('Mejora disponible') : first.kind === 'academy' ? T('Academia de Bravo Fines') : first.kind === 'gold' ? T('Mercado Dorado') : T('Ya puedes comprar');
+      const more = items.length > 1 ? T(' (y {n} más)', { n: items.length - 1 }) : '';
       SN.Desktop.toast('', `<b>${what}:</b> ${esc(first.label)}${more}`, { icon: up.length ? 'wrench' : 'cart', kbd: 'T', onClick: () => this.openWindow(first.kind === 'academy' ? 'upgrades' : 'shop') });
       SN.Audio.sfx('select');
     },
@@ -562,7 +563,7 @@
 
     setLeverage(v) {
       if (!this.canEditForm('leverage')) { SN.Audio.sfx('error'); return; }
-      if (!SN.Trading.leverageAvailable(v)) { this.note(`×${v}: CÓMPRALO EN LA TIENDA`); return; }
+      if (!SN.Trading.leverageAvailable(v)) { this.note(T('×{v}: CÓMPRALO EN LA TIENDA', { v })); return; }
       S.run.form.leverage = v;
       SN.Audio.sfx('select');
       this.renderForm();
@@ -650,19 +651,19 @@
       $('trade-form').classList.add('hidden');
       $('trade-live').classList.remove('hidden');
       const dir = $('live-dir');
-      dir.textContent = position.direction > 0 ? '▲ Subirá' : '▼ Bajará';
+      dir.textContent = position.direction > 0 ? T('▲ Subirá') : T('▼ Bajará');
       dir.className = 'dir ' + (position.direction > 0 ? 'long' : 'short');
       $('live-bet').textContent = `${U.short(position.amount)} ×${position.leverage}`;
       const steps = $('live-steps');
       steps.innerHTML = '';
       for (let i = 0; i < position.total; i++) steps.appendChild(U.el('i', i >= position.total - D.sim.dangerCandles ? 'danger' : ''));
-      steps.title = 'Las rayadas son las últimas velas: ahí puede haber giros';
+      steps.title = T('Las rayadas son las últimas velas: ahí puede haber giros');
       const close = $('btn-close');
       close.className = 'btn btn-yellow arming';
       close.disabled = true;
       // Medio segundo de margen: un doble clic en SUBE/BAJA no cobra sin querer al precio de entrada
       SN.after(0.5, () => { if (S.run && S.run.position === position && !position.settled) { close.disabled = false; close.classList.remove('arming'); } });
-      $('close-lbl').textContent = 'Cobrar';
+      $('close-lbl').textContent = T('Cobrar');
       this.setLiveNote('');
       $('btn-fast').classList.remove('hidden');
       this.live = { shown: null, lastPnl: 0, warned: false };
@@ -689,12 +690,12 @@
       if (capped && !lv.capWarned) {
         lv.capWarned = true;
         const cp = this.posIn($('live-pnl'));
-        SN.FX.float(pnl > 0 ? '¡TOPE DEL MERCADO!' : 'TOPE: NO PIERDES MÁS', cp.x + cp.w / 2, cp.y - 6, 'gold small');
+        SN.FX.float(pnl > 0 ? T('¡TOPE DEL MERCADO!') : T('TOPE: NO PIERDES MÁS'), cp.x + cp.w / 2, cp.y - 6, 'gold small');
         SN.Audio.sfx('tick');
       }
       const close = $('btn-close');
       if (close.classList.contains('done')) return;
-      $('close-lbl').textContent = pnl >= 0 ? 'Cobrar' : 'Salir';
+      $('close-lbl').textContent = pnl >= 0 ? T('Cobrar') : T('Salir');
       close.classList.toggle('losing', pnl < 0);
       close.classList.toggle('capped', capped && pnl > 0);
     },
@@ -725,9 +726,9 @@
       $('btn-close').classList.toggle('hot', danger && pnl > 0);
       if (danger && !this.live.warned) {
         this.live.warned = true;
-        this.setLiveNote('¡Últimas velas!', 'warn');
+        this.setLiveNote(T('¡Últimas velas!'), 'warn');
         SN.Audio.sfx('tick');
-        this.tip('danger', 'Últimas velas: aquí puede pasar de todo. ¿Cobras o aguantas?');
+        this.tip('danger', T('Últimas velas: aquí puede pasar de todo. ¿Cobras o aguantas?'));
       }
       // Lo que acaba de ganar o perder esta vela, saltando junto a ella
       const d = pnl - this.live.lastPnl;
@@ -746,12 +747,12 @@
       close.classList.remove('hot', 'losing');
       close.classList.add('done');
       close.disabled = true;
-      $('close-lbl').textContent = r.pnl >= 0 ? '¡Cobrado!' : 'Fuera';
+      $('close-lbl').textContent = r.pnl >= 0 ? T('¡Cobrado!') : T('Fuera');
       const pe = $('live-pnl');
       pe.textContent = U.money(r.pnl, { sign: true });
       pe.className = 'pnl ' + (r.pnl >= 0 ? 'up' : 'down');
       $('chart-wrap').classList.remove('danger');
-      this.setLiveNote('...y el mercado sigue sin ti');
+      this.setLiveNote(T('...y el mercado sigue sin ti'));
       if (SN.Music) SN.Music.trade({ pnl: r.pnl, amount: r.amount, settled: true });
       SN.Audio.sfx('cash');
       SN.Hands.drumming = false;
@@ -776,7 +777,7 @@
         SN.FX.float(U.money(r.pnl), cx + 10, cy + 6, 'loss');
         SN.Audio.sfx(r.liquidated ? 'liquidation' : 'loss', { big });
         SN.Hands.flinch(big || r.liquidated);
-        if (r.liquidated) this.stamp('¡LIQUIDADO!', 'coral', `El mercado fue ${Math.round(100 / r.leverage)}% en tu contra`, 1.3);
+        if (r.liquidated) this.stamp(T('¡LIQUIDADO!'), 'coral', T('El mercado fue {n}% en tu contra', { n: Math.round(100 / r.leverage) }), 1.3);
       }
       SN.Hands.drumming = false;
       SN.Desk.led = 'idle';
@@ -789,12 +790,12 @@
       const close = $('btn-close');
       close.className = 'btn btn-green next';
       close.disabled = false;
-      $('close-lbl').textContent = 'Seguir ▶';
+      $('close-lbl').textContent = T('Seguir ▶');
       if (!r || !r.cashed) return;
       const diff = r.stayPnl - r.pnl;
-      if (diff < -0.5) this.setLiveNote(`¡Te ahorraste ${U.money(-diff)}!`, 'good');
-      else if (diff > 0.5) this.setLiveNote(`Te perdiste ${U.money(diff)} más`, 'bad');
-      else this.setLiveNote('Justo a tiempo');
+      if (diff < -0.5) this.setLiveNote(T('¡Te ahorraste {v}!', { v: U.money(-diff) }), 'good');
+      else if (diff > 0.5) this.setLiveNote(T('Te perdiste {v} más', { v: U.money(diff) }), 'bad');
+      else this.setLiveNote(T('Justo a tiempo'));
     },
 
     endTrade() {
@@ -828,8 +829,8 @@
       const run = S.run;
       if (!run || run.position) return;
       const h = SN.Market.hint(run.selected);
-      if (h.power === 0) this.tip('flat', 'Sin pista clara (?). Puedes esperar: el mercado sigue solo.');
-      else if (run.markets[run.selected].events.length) this.tip('news', 'Las noticias mueven el precio: ▲ sube, ▼ baja, ? rumor.');
+      if (h.power === 0) this.tip('flat', T('Sin pista clara (?). Puedes esperar: el mercado sigue solo.'));
+      else if (run.markets[run.selected].events.length) this.tip('news', T('Las noticias mueven el precio: ▲ sube, ▼ baja, ? rumor.'));
     },
 
     // ---------- Tutorial: resaltado ----------
@@ -876,13 +877,12 @@
     // Resultado de la apuesta, sin prisa: se queda sobre la gráfica hasta 2.6 s (clic o tecla para seguir antes)
     resultCard(r, skipP) {
       const win = r.pnl > 0, even = r.pnl === 0;
-      const label = r.liquidated ? 'Liquidado' : even ? 'Te quedas igual' : win ? 'Ganaste' : 'Perdiste';
-      const extra = (r.capped ? '<span class="rc-cap">Tope del mercado</span>' : '') +
-        (r.luckBonus ? `<span class="rc-luck">★ Suerte: +${U.money(r.luckBonus)}</span>` : '') +
-        (r.shielded ? '<span class="rc-luck">Seguro de la ruleta: no pierdes nada</span>' : '') +
-        (r.academyBonus ? `<span class="rc-luck">Tiburón: +${U.money(r.academyBonus)}</span>` : '') +
-        (r.halved ? `<span class="rc-luck">Plan B: te ahorras ${U.money(r.halved)}</span>` : '');
-      const html = `<span class="rc-l">${label}</span><b class="rc-v">${U.money(r.pnl, { sign: win })}</b>${extra}<span class="rc-t">Ahora tienes ${U.money(S.run.capital)}</span><kbd>clic</kbd>`;
+      const label = r.liquidated ? T('Liquidado') : even ? T('Te quedas igual') : win ? T('Ganaste') : T('Perdiste');
+      const extra = (r.capped ? `<span class="rc-cap">${T('Tope del mercado')}</span>` : '') +
+        (r.luckBonus ? `<span class="rc-luck">${T('★ Suerte: +{v}', { v: U.money(r.luckBonus) })}</span>` : '') +
+        (r.academyBonus ? `<span class="rc-luck">${T('Tiburón: +{v}', { v: U.money(r.academyBonus) })}</span>` : '') +
+        (r.halved ? `<span class="rc-luck">${T('Plan B: te ahorras {v}', { v: U.money(r.halved) })}</span>` : '');
+      const html = `<span class="rc-l">${label}</span><b class="rc-v">${U.money(r.pnl, { sign: win })}</b>${extra}<span class="rc-t">${T('Ahora tienes {v}', { v: U.money(S.run.capital) })}</span><kbd>${T('clic')}</kbd>`;
       const p = this.posIn($('chart-wrap'));
       return new Promise((resolve) => {
         const el = U.el('button', 'result-card ' + (win ? 'rc-win' : even ? 'rc-even' : 'rc-lose'), html);
@@ -912,9 +912,9 @@
       // Las estrellas van en su propia fila, encima: a los lados del título no caben (32 px ocupa casi todo el ancho)
       const stars = Array.from({ length: l.k * 2 + 1 }, (_, i) => `<i style="animation-delay:${(i % 2) * 0.4}s">★</i>`).join('');
       const evs = l.events.map((e) => D.luck.specials[e].name).join(' · ');
-      return this.card(`<div class="lk-stars">${stars}</div><div class="d1">¡DÍA DE LA SUERTE!</div><div class="d2">${evs}</div><div class="d3">Los mercados crecen · +${7 * l.k}% en cada ganancia</div>`, 'daycard lucky', 3.2);
+      return this.card(`<div class="lk-stars">${stars}</div><div class="d1">${T('¡DÍA DE LA SUERTE!')}</div><div class="d2">${evs}</div><div class="d3">${T('Los mercados crecen · +{n}% en cada ganancia', { n: 7 * l.k })}</div>`, 'daycard lucky', 3.2);
     },
-    dayCard(day, sub, warn) { return this.card(`<div class="d1">DÍA ${day}</div><div class="d2${warn ? ' warn' : ''}">${sub}</div>`, 'daycard', 1.3); },
+    dayCard(day, sub, warn) { return this.card(`<div class="d1">${T('DÍA {n}', { n: day })}</div><div class="d2${warn ? ' warn' : ''}">${sub}</div>`, 'daycard', 1.3); },
     stamp(text, cls = '', sub = '', time = 1.6) { return this.card(`${text}${sub ? `<small>${sub}</small>` : ''}`, 'stamp ' + cls, time); },
 
     update(dt) {

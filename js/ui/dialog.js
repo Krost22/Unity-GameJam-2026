@@ -33,7 +33,7 @@
       const layer = document.getElementById('layer-dialog');
       const pos = opts.pos || { v: 'bottom', h: 'center' };
       const el = U.el('div', `dlg ${pos.v} ${pos.h}${opts.demo ? ' has-demo' : ''}${opts.glitchy ? ' glitchy' : ''}${opts.sticky ? ' sticky' : ''}`);
-      el.innerHTML = `<div class="portrait"></div><div class="name"></div><div class="txt"></div><div class="next">CLIC<kbd>ESPACIO</kbd>▶</div>`;
+      el.innerHTML = `<div class="portrait"></div><div class="name"></div><div class="txt"></div><div class="next">${SN.T('CLIC')}<kbd>${SN.T('ESPACIO')}</kbd>▶</div>`;
       el.querySelector('.name').textContent = opts.name || SN.Data.story.hoodedName;
       this.portrait = Px.canvas(40, 40);
       el.querySelector('.portrait').appendChild(this.portrait);

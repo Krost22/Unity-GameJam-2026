@@ -7,7 +7,7 @@
 // en cualquier momento: cobra al precio que ve, y el mercado sigue su curso sin él.
 (function (SN) {
   'use strict';
-  const S = SN.State, D = SN.Data;
+  const S = SN.State, D = SN.Data, T = SN.T;
 
   const round2 = (v) => Math.round(v); // dólares enteros
 
@@ -51,12 +51,12 @@
 
     validate() {
       const f = S.run.form;
-      if (S.run.position) return { ok: false, reason: 'YA TIENES UNA OPERACIÓN ABIERTA' };
-      if (!SN.Unlocks.isUnlocked(S.run.selected)) return { ok: false, reason: 'MERCADO BLOQUEADO' };
-      if (f.amount < D.sim.minInvestment) return { ok: false, reason: `MÍNIMO ${SN.Util.money(D.sim.minInvestment)}` };
-      if (f.amount > S.run.capital + 1e-9) return { ok: false, reason: 'NO TIENES TANTO DINERO' };
-      if (f.amount > this.limit() + 1e-9) return { ok: false, reason: `LÍMITE: ${SN.Util.money(this.limit())}` };
-      if (!this.leverageAvailable(f.leverage)) return { ok: false, reason: `COMPRA EL MULTIPLICADOR ×${f.leverage}` };
+      if (S.run.position) return { ok: false, reason: T('YA TIENES UNA OPERACIÓN ABIERTA') };
+      if (!SN.Unlocks.isUnlocked(S.run.selected)) return { ok: false, reason: T('MERCADO BLOQUEADO') };
+      if (f.amount < D.sim.minInvestment) return { ok: false, reason: T('MÍNIMO {v}', { v: SN.Util.money(D.sim.minInvestment) }) };
+      if (f.amount > S.run.capital + 1e-9) return { ok: false, reason: T('NO TIENES TANTO DINERO') };
+      if (f.amount > this.limit() + 1e-9) return { ok: false, reason: T('LÍMITE: {v}', { v: SN.Util.money(this.limit()) }) };
+      if (!this.leverageAvailable(f.leverage)) return { ok: false, reason: T('COMPRA EL MULTIPLICADOR ×{v}', { v: f.leverage }) };
       return { ok: true };
     },
 
@@ -173,9 +173,7 @@
       const run = S.run, p = run.position;
       if (!p || p.settled) return null;
       const marketChange = (p.exit - p.entry) / p.entry;
-      let pnl = this.finalPnl(p), shielded = false;
-      // SEGURO de la ruleta: la próxima pérdida no cuenta
-      if (pnl < 0 && run.shield && !p.tutorial) { pnl = 0; shielded = true; run.shield = false; }
+      let pnl = this.finalPnl(p);
       // PLAN B de la Academia: la primera pérdida del día, a la mitad
       let halved = 0;
       if (pnl < 0 && SN.Academy && !p.tutorial) { const h = SN.Academy.halve(pnl); halved = h - pnl; pnl = h; }
@@ -194,7 +192,7 @@
       if (pnl > 0) st.earned += pnl;
       p.settled = true;
       const capped = !!p.cap && p.cap !== Infinity && Math.abs(pnl) >= p.cap;
-      p.result = Object.assign({}, p, { pnl, ret: pnl / p.amount, marketChange, capped, luckBonus, shielded, academyBonus, halved });
+      p.result = Object.assign({}, p, { pnl, ret: pnl / p.amount, marketChange, capped, luckBonus, academyBonus, halved });
       delete p.result.result;
       SN.Events.emit('trade:closed', p.result);
       return p.result;

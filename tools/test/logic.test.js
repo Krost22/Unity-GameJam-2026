@@ -8,7 +8,7 @@ const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..', '..');
 const FILES = [
-  'js/core/sn.js', 'js/core/events.js',
+  'js/core/sn.js', 'js/core/events.js', 'js/core/i18n.js',
   'js/data/markets.js', 'js/data/events.js', 'js/data/simulation.js', 'js/data/progression.js', 'js/data/luck.js',
   'js/data/cipher.js', 'js/data/academy.js', 'js/data/story.js', 'js/data/chat.js', 'js/data/finale.js',
   'js/core/state.js',
@@ -718,7 +718,7 @@ function SN0() { return load(); }
   ok(C.complete() && C.text('El de la capa miente') === 'EL DE LA CAPA MIENTE' && C.wildcard(SN.State.rng) === null, 'con las 15 pistas se lee todo');
 }
 
-// 18) Días de la suerte: los que llevan un 7; crecen los mercados, bonificación, estrella y ruleta
+// 18) Días de la suerte: los que llevan un 7; crecen los mercados, bonificación y estrella
 {
   const SN = load();
   const L = SN.Luck;
@@ -739,7 +739,7 @@ function SN0() { return load(); }
   const l2 = L.roll(77);
   ok(l2.k === 2 && l2.events.length >= 2 && l2.events.some((e) => SN.Data.luck.big.includes(e)), 'el 77 vale doble: más eventos y uno grande');
   run.day = 777;
-  ok(L.roll(777).events.length === 5, 'el 777: todos los eventos');
+  ok(L.roll(777).events.length === SN.Data.luck.big.length + SN.Data.luck.light.length, 'el 777: todos los eventos');
   // Crecimiento: 12 velas desde el precio de referencia, con y sin suerte
   const growth = (lucky) => {
     let sum = 0;
@@ -761,9 +761,7 @@ function SN0() { return load(); }
   run.luck.star = 'salud';
   ok(L.starMul('salud') === 1.77 && L.starMul('tecno') === 1, 'la Estrella de la Suerte multiplica un solo mercado');
   ok(L.bonus(100) === 7 && L.bonus(-50) === 0, 'bonificación del 7% por siete en cada operación ganadora');
-  run.luck.events = ['ruleta']; run.luck.spun = false;
-  const spin = L.spin();
-  ok(spin && spin.text && L.spin() === null, 'la ruleta da un premio y solo gira una vez por día');
+  ok(!SN.Data.luck.specials.ruleta && !SN.Data.luck.light.includes('ruleta') && !L.spin, 'ya no hay Ruleta de la Fortuna');
 }
 
 // 2.0) La historia del final: LOS DESFASADOS, NULL.EXE por partes, la despedida y la última oferta

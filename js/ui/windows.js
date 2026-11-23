@@ -1,11 +1,11 @@
 // Ventanas modales dentro del monitor: TIENDA (con las mejoras y la Academia), NOTICIAS (un periódico con fotos), AJUSTES,
-// la RULETA de los días de la suerte y la OFERTA de FUTURO.exe (que salta sola, sin pasar por la tienda).
+// y la OFERTA de FUTURO.exe (que salta sola, sin pasar por la tienda).
 (function (SN) {
   'use strict';
-  const U = SN.Util, S = SN.State, D = SN.Data;
+  const U = SN.Util, S = SN.State, D = SN.Data, T = SN.T;
 
   // 'upgrades' es ahora la Academia de Bravo Fines (se entra desde la Tienda: todo se compra allí)
-  const TITLES = { upgrades: 'Tienda · Academia de Bravo Fines', news: 'Noticias', shop: 'Tienda · MEGATIENDA.COM', settings: 'Ajustes', ruleta: 'Ruleta de la Fortuna', offer: '', pact: '', about: 'Acerca de FUTURO.exe' };
+  const TITLES = { upgrades: T('Tienda · Academia de Bravo Fines'), news: T('Noticias'), shop: T('Tienda · MEGATIENDA.COM'), settings: T('Ajustes'), offer: '', pact: '', about: T('Acerca de FUTURO.exe') };
 
   const W = SN.Windows = {
     current: null, back: null, win: null,
@@ -60,7 +60,7 @@
       if (!this.win) return;
       const body = this.win.querySelector('.win-body');
       body.innerHTML = '';
-      ({ upgrades: buildUpgrades, news: buildNews, shop: buildShop, settings: buildSettings, ruleta: buildWheel, offer: buildOffer, pact: buildPact, about: buildAbout })[this.current](body);
+      ({ upgrades: buildUpgrades, news: buildNews, shop: buildShop, settings: buildSettings, offer: buildOffer, pact: buildPact, about: buildAbout })[this.current](body);
       // Palabras clave con color y FUTURO.exe en el idioma secreto. En la tienda y las mejoras, solo dinero, 7 y
       // suerte: ahí cada nombre es una mejora o un regalo y, si todo se mueve, nada destaca
       SN.KW.apply(body, { terms: this.current !== 'shop' && this.current !== 'upgrades' });
@@ -73,10 +73,10 @@
     if (!(SN.Academy && SN.Academy.open())) { SN.after(0, () => W.open('shop')); return; }
     W.win.classList.add('big', 'ac-win');
     const tabs = U.el('div', 'up-tabs');
-    const back = U.el('button', 'up-tab', '◀ Tienda');
+    const back = U.el('button', 'up-tab', T('◀ Tienda'));
     back.addEventListener('click', (e) => { e.stopPropagation(); SN.Audio.sfx('select'); W.open('shop'); });
     tabs.appendChild(back);
-    tabs.appendChild(U.el('button', 'up-tab on ac', 'Academia de Bravo Fines'));
+    tabs.appendChild(U.el('button', 'up-tab on ac', T('Academia de Bravo Fines')));
     body.appendChild(tabs);
     buildAcademy(body);
   }
@@ -84,16 +84,16 @@
   // ---------- La Academia de Bravo Fines: árbol de habilidades (js/data/academy.js) ----------
   // Encabezado con Bravo, navegación por ramas, las tres ramas con sus nodos unidos por líneas, el detalle
   // del nodo elegido y, abajo, el progreso. Todo sale de SN.Academy: aquí solo se pinta.
-  const AC_NAV = [['arbol', 'Árbol', 'estrella'], ['negocios', 'Negocios', 'tienda'], ['trading', 'Trading', 'grafica'], ['contactos', 'Contactos', 'contacto']];
-  const AC_BRANCH = { negocios: ['tienda', 'Dinero cada día'], trading: ['grafica', 'Mejora tus apuestas'], contactos: ['contacto', 'Ayudas y amigos'] };
+  const AC_NAV = [['arbol', T('Árbol'), 'estrella'], ['negocios', T('Negocios'), 'tienda'], ['trading', T('Trading'), 'grafica'], ['contactos', T('Contactos'), 'contacto']];
+  const AC_BRANCH = { negocios: ['tienda', T('Dinero cada día')], trading: ['grafica', T('Mejora tus apuestas')], contactos: ['contacto', T('Ayudas y amigos')] };
   const cap1 = (t) => t.charAt(0) + t.slice(1).toLowerCase();
   // El efecto de un nodo, en palabras (sale de sus datos: income, bonus, halve, offer)
   function acEffect(n) {
-    if (n.soon) return 'Próximamente';
-    if (n.income) return `+${U.money(n.income)} al día`;
-    if (n.bonus) return `+${Math.round(n.bonus * 100)}% en cada ganancia`;
-    if (n.halve) return '1ª pérdida del día, a la mitad';
-    if (n.offer) return `Ofertas: −${Math.round((1 - n.offer) * 100)}% de deuda`;
+    if (n.soon) return T('Próximamente');
+    if (n.income) return T('+{v} al día', { v: U.money(n.income) });
+    if (n.bonus) return T('+{n}% en cada ganancia', { n: Math.round(n.bonus * 100) });
+    if (n.halve) return T('1ª pérdida del día, a la mitad');
+    if (n.offer) return T('Ofertas: −{n}% de deuda', { n: Math.round((1 - n.offer) * 100) });
     return '';
   }
   // Icono de pixel art grande (los sprites de 12x12, al doble o al triple)
@@ -111,9 +111,9 @@
     const ava = U.el('i', 'ac-ava');
     ava.appendChild(SN.Chars.bravoFace());
     head.appendChild(ava);
-    head.insertAdjacentHTML('beforeend', `<div class="ac-ttl"><b>Academia de Bravo Fines</b><span>"El dinero no se gana. Se manifiesta."</span></div>
-      <div class="ac-inc"><span>Negocios</span><b>+${U.money(A.income())}/día</b></div>
-      <div class="ac-cash"><i></i><div><span>Tu dinero</span><b>${U.money(run.capital)}</b></div></div>`);
+    head.insertAdjacentHTML('beforeend', `<div class="ac-ttl"><b>${T('Academia de Bravo Fines')}</b><span>${T('"El dinero no se gana. Se manifiesta."')}</span></div>
+      <div class="ac-inc"><span>${T('Negocios')}</span><b>${T('+{v}/día', { v: U.money(A.income()) })}</b></div>
+      <div class="ac-cash"><i></i><div><span>${T('Tu dinero')}</span><b>${U.money(run.capital)}</b></div></div>`);
     head.querySelector('.ac-cash i').appendChild(big('estrella', 1));
     box.appendChild(head);
 
@@ -160,7 +160,7 @@
       const br = data.branches.find((b) => b.id === view);
       const list = U.el('div', 'ac-list');
       for (const n of br.nodes) {
-        const p = U.el('p', A.has(n.id) ? 'own' : n.soon ? 'soon' : '', `<b>${n.name}</b> · ${acEffect(n)}${n.soon ? '' : ` · ${A.has(n.id) ? 'Tuyo' : U.money(n.cost)}`}`);
+        const p = U.el('p', A.has(n.id) ? 'own' : n.soon ? 'soon' : '', `<b>${n.name}</b> · ${acEffect(n)}${n.soon ? '' : ` · ${A.has(n.id) ? T('Tuyo') : U.money(n.cost)}`}`);
         p.addEventListener('click', (e) => { e.stopPropagation(); W.acSel = n.id; W.acBump = n.id; SN.Audio.sfx('select'); W.refresh(); });
         list.appendChild(p);
       }
@@ -171,12 +171,12 @@
     // Detalle del nodo elegido
     const n = A.node(W.acSel), can = A.canBuy(n.id), own = A.has(n.id);
     const det = U.el('div', 'ac-dt' + (W.acBump === n.id ? ' bump' : ''));
-    det.innerHTML = `<div class="ac-dh">Detalle</div><div class="ac-dico"></div><b class="ac-dn">${n.name}</b>
-      <span class="ac-dl">${n.soon ? 'Próximamente' : `Nv. ${own ? 1 : 0} / 1`}</span><p class="ac-dd">${n.desc}</p>
-      ${own ? `<div class="ac-de"><span>Efecto actual:</span><b>${acEffect(n)}</b></div>` : n.soon ? '' : `<div class="ac-de nx"><span>Efecto actual: <i>ninguno</i></span><span>Al comprarlo:</span><b>${acEffect(n)}</b></div>`}`;
+    det.innerHTML = `<div class="ac-dh">${T('Detalle')}</div><div class="ac-dico"></div><b class="ac-dn">${n.name}</b>
+      <span class="ac-dl">${n.soon ? T('Próximamente') : T('Nv. {a} / {b}', { a: own ? 1 : 0, b: 1 })}</span><p class="ac-dd">${n.desc}</p>
+      ${own ? `<div class="ac-de"><span>${T('Efecto actual:')}</span><b>${acEffect(n)}</b></div>` : n.soon ? '' : `<div class="ac-de nx"><span>${T('Efecto actual: <i>ninguno</i>')}</span><span>${T('Al comprarlo:')}</span><b>${acEffect(n)}</b></div>`}`;
     det.querySelector('.ac-dico').appendChild(big(n.soon ? 'lock' : n.icon, 2));
     if (!own && !n.soon) {
-      const b = U.el('button', 'btn btn-yellow ac-buy', `Comprar ${U.money(n.cost)}`);
+      const b = U.el('button', 'btn btn-yellow ac-buy', T('Comprar {v}', { v: U.money(n.cost) }));
       b.disabled = !can.ok;
       if (!can.ok && can.reason) { b.title = can.reason; det.insertAdjacentHTML('beforeend', `<div class="ac-why">${cap1(can.reason)}</div>`); }
       b.addEventListener('click', (e) => {
@@ -192,7 +192,7 @@
         W.refresh();
       });
       det.appendChild(b);
-    } else det.insertAdjacentHTML('beforeend', `<div class="ac-why${own ? ' ok' : ''}">${own ? 'Ya es tuyo.' : 'Llegará en una versión futura.'}</div>`);
+    } else det.insertAdjacentHTML('beforeend', `<div class="ac-why${own ? ' ok' : ''}">${own ? T('Ya es tuyo.') : T('Llegará en una versión futura.')}</div>`);
     box.appendChild(det);
 
     // Abajo: el progreso de la Academia y lo siguiente que llegará a esa rama
@@ -201,8 +201,8 @@
     const br = data.branches.find((b) => b.id === (view !== 'arbol' ? view : n.branch)) || data.branches[0];
     const next = br.nodes.find((x) => x.soon);
     const bar = U.el('div', 'ac-bot');
-    bar.innerHTML = `<div class="ac-prog"><i class="ac-pi"></i><div class="ac-pt"><b>Progreso</b><div class="ac-bar"><i style="width:${pct}%"></i></div></div><em>${done} / ${real.length}</em></div>
-      <div class="ac-rew"><div class="ac-rt"><b>Siguiente en ${br.name}</b><span>${next ? `${next.name} (pronto)` : 'Rama completa'}</span></div><i class="ac-ri"></i></div>`;
+    bar.innerHTML = `<div class="ac-prog"><i class="ac-pi"></i><div class="ac-pt"><b>${T('Progreso')}</b><div class="ac-bar"><i style="width:${pct}%"></i></div></div><em>${done} / ${real.length}</em></div>
+      <div class="ac-rew"><div class="ac-rt"><b>${T('Siguiente en {name}', { name: br.name })}</b><span>${next ? T('{name} (pronto)', { name: next.name }) : T('Rama completa')}</span></div><i class="ac-ri"></i></div>`;
     bar.querySelector('.ac-pi').appendChild(big('estrella', 1));
     bar.querySelector('.ac-ri').appendChild(big('cofre', 1));
     if (W.acPct != null && W.acPct !== pct) bar.querySelector('.ac-bar i').classList.add('grow');
@@ -222,7 +222,7 @@
     if (/EMBARGO/.test(n.title)) return 'documento';
     return MARKET_ART[n.market] || 'ciudad';
   }
-  function when(n) { return n.filler ? 'En la ciudad' : `Día ${n.day} · ${D.sim.turnNames[n.turn] || ''}`; }
+  function when(n) { return n.filler ? T('En la ciudad') : T('Día {d} · {t}', { d: n.day, t: D.sim.turnNames[n.turn] || '' }); }
   // El evento de mercado de una noticia (si lo es)
   function eventOf(n) {
     if (!n || !n.ev || !n.market) return null;
@@ -240,30 +240,31 @@
   // PRIMERA PLANA: qué pasa, a quién afecta y qué puede pasar (en palabras de la calle)
   function newsInfo(n) {
     const ev = eventOf(n), mk = n.market ? D.marketLabel(n.market) : '';
-    const up = (v) => (v >= 0 ? 'sube' : 'baja');
-    if (n.cipher) return { more: 'Está escrita con unas letras que nadie sabe leer. El periódico dice que es una errata.', who: 'Nadie lo sabe.', what: 'No se puede leer. Todavía.' };
-    if (n.dark) return { more: 'Pasó justo después de tu operación. Seguro que es casualidad.', who: mk ? `La ciudad. Justo donde ganaste: ${mk}.` : 'La ciudad.', what: 'Nadie sabe qué significa. Mejor no pensarlo.' };
-    if (!ev) return { more: n.more || '', who: mk || 'A nadie: es una noticia de la ciudad.', what: mk ? (n.tone === 'neg' ? 'Ya ha pasado: el precio ha bajado.' : n.tone === 'pos' ? 'Ya ha pasado: el precio ha subido.' : 'Ya ha pasado.') : 'Nada. No mueve ningún mercado.' };
-    if (n.kind === 'result') return { more: ev.more || '', who: mk, what: n.tone === 'neg' ? 'Ya se sabe: el precio ha bajado.' : 'Ya se sabe: el precio ha subido.' };
-    const what = ev.kind === 'shock' ? (ev.tone === 'pos' ? 'Un salto hacia arriba en las próximas velas.' : 'Un golpe hacia abajo en las próximas velas.')
-      : ev.kind === 'trend' ? (ev.trend > 0 ? 'Empuja el precio hacia arriba durante un buen rato.' : 'Empuja el precio hacia abajo durante un buen rato.')
-        : ev.kind === 'vol' ? 'El precio se va a mover mucho, arriba y abajo. Cuidado con apostar fuerte.'
-          : `Se sabrá en unas velas. Si pasa ("${ev.yesText}"), ${mk} ${up(ev.yes)}. Si no ("${ev.noText}"), ${up(ev.no)}.`;
+    if (n.cipher) return { more: T('Está escrita con unas letras que nadie sabe leer. El periódico dice que es una errata.'), who: T('Nadie lo sabe.'), what: T('No se puede leer. Todavía.') };
+    if (n.dark) return { more: T('Pasó justo después de tu operación. Seguro que es casualidad.'), who: mk ? T('La ciudad. Justo donde ganaste: {mk}.', { mk }) : T('La ciudad.'), what: T('Nadie sabe qué significa. Mejor no pensarlo.') };
+    if (!ev) return { more: n.more || '', who: mk || T('A nadie: es una noticia de la ciudad.'), what: mk ? (n.tone === 'neg' ? T('Ya ha pasado: el precio ha bajado.') : n.tone === 'pos' ? T('Ya ha pasado: el precio ha subido.') : T('Ya ha pasado.')) : T('Nada. No mueve ningún mercado.') };
+    if (n.kind === 'result') return { more: ev.more || '', who: mk, what: n.tone === 'neg' ? T('Ya se sabe: el precio ha bajado.') : T('Ya se sabe: el precio ha subido.') };
+    const what = ev.kind === 'shock' ? (ev.tone === 'pos' ? T('Un salto hacia arriba en las próximas velas.') : T('Un golpe hacia abajo en las próximas velas.'))
+      : ev.kind === 'trend' ? (ev.trend > 0 ? T('Empuja el precio hacia arriba durante un buen rato.') : T('Empuja el precio hacia abajo durante un buen rato.'))
+        : ev.kind === 'vol' ? T('El precio se va a mover mucho, arriba y abajo. Cuidado con apostar fuerte.')
+          : T('Se sabrá en unas velas.') + ' ' +
+            (ev.yes >= 0 ? T('Si pasa ("{t}"), {mk} sube.', { t: ev.yesText, mk }) : T('Si pasa ("{t}"), {mk} baja.', { t: ev.yesText, mk })) + ' ' +
+            (ev.no >= 0 ? T('Si no ("{t}"), sube.', { t: ev.noText }) : T('Si no ("{t}"), baja.', { t: ev.noText }));
     return { more: ev.more || '', who: mk, what };
   }
   function tag(n) {
-    if (n.cipher) return { cls: 'dark', text: '¿ERRATA?' };
-    if (n.dark) return { cls: 'dark', text: 'SUCESOS' };
-    const where = n.market ? D.marketLabel(n.market) : 'CIUDAD';
+    if (n.cipher) return { cls: 'dark', text: T('¿ERRATA?') };
+    if (n.dark) return { cls: 'dark', text: T('SUCESOS') };
+    const where = n.market ? D.marketLabel(n.market) : T('CIUDAD');
     return { cls: n.tone, text: `${n.tone === 'pos' ? '▲ ' : n.tone === 'neg' ? '▼ ' : ''}${where}` };
   }
 
   function buildNews(body) {
     const run = S.run;
     const news = run ? run.news.slice().reverse() : [];
-    const today = run ? `Día ${run.day} · ${D.sim.turnNames[run.turn]}` : '';
-    body.insertAdjacentHTML('beforeend', `<div class="np-mast">EL DIARIO DEL FUTURO</div>
-      <div class="np-sub"><span>${today}</span><span>Edición de la ciudad</span><span>$1</span></div>`);
+    const today = run ? T('Día {d} · {t}', { d: run.day, t: D.sim.turnNames[run.turn] }) : '';
+    body.insertAdjacentHTML('beforeend', `<div class="np-mast">${T('EL DIARIO DEL FUTURO')}</div>
+      <div class="np-sub"><span>${today}</span><span>${T('Edición de la ciudad')}</span><span>$1</span></div>`);
     // Si hay pocas noticias del mercado, la ciudad rellena el periódico (nunca sale vacío)
     const filler = D.story.fillerNews.filter((n) => !n.minDark).map((n) => Object.assign({ day: 1, turn: 0, filler: true }, n));
     const items = news.slice(0, 31);
@@ -284,7 +285,7 @@
     const [top, ...rest] = items;
     // Portada: la noticia más reciente, con foto grande
     const hero = U.el('div', 'np-hero' + (top.dark ? ' dark' : '') + (top.cipher ? ' cipher' : ''));
-    hero.title = 'Clic: leer la noticia entera';
+    hero.title = T('Clic: leer la noticia entera');
     hero.addEventListener('click', pick(top));
     const heroPhoto = SN.NewsArt.node(artFor(top), top.tone || 'neu', top.dark || top.cipher ? dark : 0, null, { sticker: stickerOf(top) });
     hero.appendChild(heroPhoto);
@@ -297,7 +298,7 @@
     const grid = U.el('div', 'np-grid');
     for (const n of rest) {
       const it = U.el('div', 'np-item' + (n.dark ? ' dark' : '') + (n.cipher ? ' cipher' : ''));
-      it.title = 'Clic: leer la noticia entera';
+      it.title = T('Clic: leer la noticia entera');
       it.addEventListener('click', pick(n));
       const photo = SN.NewsArt.node(artFor(n), n.tone || 'neu', n.dark || n.cipher ? dark : 0, [48, 30], { sticker: stickerOf(n) });
       it.appendChild(photo);
@@ -306,7 +307,7 @@
       grid.appendChild(it);
     }
     body.appendChild(grid);
-    body.insertAdjacentHTML('beforeend', '<div class="np-ad">Publicidad · <b>Pleyzeta 6 Ultra</b> · ahora también a plazos. Muchos plazos.</div>');
+    body.insertAdjacentHTML('beforeend', `<div class="np-ad">${T('Publicidad · <b>Pleyzeta 6 Ultra</b> · ahora también a plazos. Muchos plazos.')}</div>`);
   }
 
   // PRIMERA PLANA de una noticia: la foto grande y a color, y lo que significa
@@ -317,15 +318,15 @@
     fr.appendChild(ph);
     if (n.cipher === 'tuto') { ph.classList.add('clue'); ph.addEventListener('click', (e) => { e.stopPropagation(); if (!SN.Tutorial.active) SN.Cipher.discover('errata'); }); }
     const st = stickerOf(n);
-    const arrow = st ? { up: '<b class="up">▲ sube</b>', down: '<b class="down">▼ baja</b>', rumor: '<b class="mid">? puede subir o bajar</b>', vol: '<b class="mid">≈ se mueve mucho</b>' }[st.sym] : '';
+    const arrow = st ? { up: `<b class="up">${T('▲ sube')}</b>`, down: `<b class="down">${T('▼ baja')}</b>`, rumor: `<b class="mid">${T('? puede subir o bajar')}</b>`, vol: `<b class="mid">${T('≈ se mueve mucho')}</b>` }[st.sym] : '';
     const who = def ? `<i class="np-ico"></i>${info.who} ${arrow}` : info.who;
     fr.insertAdjacentHTML('beforeend', `<div class="np-fcol"><span class="np-tag ${tg.cls}">${tg.text}</span> <span class="w">${when(n)}</span>
       <div class="h">${title(n)}</div><div class="t">${n.text || ''}</div>${info.more ? `<div class="more">${info.more}</div>` : ''}
-      <div class="np-box"><b>¿A quién afecta?</b>${who}</div><div class="np-box"><b>¿Qué puede pasar?</b>${info.what}</div></div>`);
+      <div class="np-box"><b>${T('¿A quién afecta?')}</b>${who}</div><div class="np-box"><b>${T('¿Qué puede pasar?')}</b>${info.what}</div></div>`);
     const ico = fr.querySelector('.np-ico');
     if (ico && def) ico.appendChild(SN.Sprites.node(def.icon, 1));
     body.appendChild(fr);
-    const back = U.el('button', 'btn btn-cream np-back', '◀ Volver');
+    const back = U.el('button', 'btn btn-cream np-back', T('◀ Volver'));
     back.addEventListener('click', (e) => { e.stopPropagation(); W.newsFocus = null; SN.Audio.sfx('select'); W.refresh(); });
     body.appendChild(back);
   }
@@ -335,9 +336,9 @@
   // detalle del producto elegido a la derecha. Todo sale de los sistemas de siempre (SN.Unlocks para los
   // objetos clave y su oferta, SN.Upgrades, SN.Luck, SN.ShopWatch): aquí solo cambia cómo se ve.
   // (los objetos clave, la historia, van antes que las mejoras)
-  const SHOP_CATS = [['destacados', 'Destacados', 'estrella'], ['clave', 'Objetos clave', 'llave'], ['mejoras', 'Mejoras', 'flecha'],
-    ['estilo', 'Estilo de vida', 'taza'], ['coleccion', 'Colección', 'gema'], ['mercados', 'Mercados', 'grafica'],
-    ['academia', 'Academia', 'tiburon']]; // la Academia de Bravo Fines (solo cuando se ha presentado)
+  const SHOP_CATS = [['destacados', T('Destacados'), 'estrella'], ['clave', T('Objetos clave'), 'llave'], ['mejoras', T('Mejoras'), 'flecha'],
+    ['estilo', T('Estilo de vida'), 'taza'], ['coleccion', T('Colección'), 'gema'], ['mercados', T('Mercados'), 'grafica'],
+    ['academia', T('Academia'), 'tiburon']]; // la Academia de Bravo Fines (solo cuando se ha presentado)
   // Icono de cada producto (los de la tienda, los objetos clave y los dorados de Don Siete)
   const ITEM_ICON = { taza: 'taza', planta: 'planta', lampara: 'lampara', poster: 'poster', alfombrilla: 'alfombra', teclado: 'teclado',
     cascos: 'cascos', trofeo: 'toro', tele: 'tele', movil: 'movil', moto: 'moto', reloj: 'reloj', maneki: 'maneki', herradura: 'herradura',
@@ -356,7 +357,7 @@
       const today = sel.kind !== 'gold' || SN.Luck.goldenToday().includes(it.id);
       const poor = run.capital - price < keep;
       return { sel, icon: ITEM_ICON[it.id] || 'caja', name: it.name, desc: it.desc, price, old: off ? it.price : null,
-        state: owned ? 'own' : !today ? 'locked' : poor ? 'poor' : 'can', note: owned ? 'En tu habitación' : !today ? 'Solo en días con 7' : poor ? 'No te alcanza' : '',
+        state: owned ? 'own' : !today ? 'locked' : poor ? 'poor' : 'can', note: owned ? T('En tu habitación') : !today ? T('Solo en días con 7') : poor ? T('No te alcanza') : '',
         action: owned || !today ? null : 'buy', gold: sel.kind === 'gold' };
     }
     if (sel.kind === 'up') {
@@ -365,10 +366,10 @@
       const unlocked = SN.Upgrades.isUnlocked(d.id), lv = SN.Upgrades.level(d.id), next = SN.Upgrades.next(d.id), can = SN.Upgrades.canBuy(d.id);
       // A crédito: el precio que se ve es lo que se suma a tu deuda (con intereses); hoy no pagas nada
       const credit = next ? SN.Upgrades.creditCost(d.id) : null;
-      return { sel, icon: d.icon, name: d.name, desc: unlocked ? d.desc : d.unlock.label || 'Bloqueado', price: credit,
-        level: `Nv. ${lv} / ${d.levels.length}`, effect: next ? d.effect(next.value) : unlocked ? `${d.effect(SN.Upgrades.value(d.id))} · máximo` : '',
-        sub: unlocked && next ? `A crédito: hoy $0 · ${SN.Debt.active() ? 'se suma a tu deuda' : `deuda nueva, ${D.credit.days} días`}` : '',
-        state: !unlocked ? 'locked' : !next ? 'own' : can.ok ? 'can' : 'poor', note: !unlocked ? 'Llega como "regalo"' : !next ? 'Al máximo' : can.ok ? '' : cap1(can.reason || 'TODAVÍA NO'),
+      return { sel, icon: d.icon, name: d.name, desc: unlocked ? d.desc : d.unlock.label || T('Bloqueado'), price: credit,
+        level: T('Nv. {a} / {b}', { a: lv, b: d.levels.length }), effect: next ? d.effect(next.value) : unlocked ? T('{e} · máximo', { e: d.effect(SN.Upgrades.value(d.id)) }) : '',
+        sub: unlocked && next ? T('A crédito: hoy $0 · {x}', { x: SN.Debt.active() ? T('se suma a tu deuda') : T('deuda nueva, {n} días', { n: D.credit.days }) }) : '',
+        state: !unlocked ? 'locked' : !next ? 'own' : can.ok ? 'can' : 'poor', note: !unlocked ? T('Llega como "regalo"') : !next ? T('Al máximo') : can.ok ? '' : cap1(can.reason || T('TODAVÍA NO')),
         action: unlocked && next ? 'up' : null };
     }
     if (sel.kind === 'key') {
@@ -378,21 +379,15 @@
       const o = SN.Unlocks.offer(it), mine = pend && pend.id === it.id;
       // Hoy no se paga nada: el precio que se ve es la deuda que deja
       return { sel, icon: ITEM_ICON[it.id], name: it.name, desc: it.desc, price: o.debt,
-        state: owned ? 'own' : mine ? (can.ok ? 'can' : 'poor') : 'locked', note: owned ? 'En tu habitación' : can.reason ? cap1(can.reason) : '',
-        action: mine ? 'offer' : null, sub: `Hoy $0 · luego debes ${U.money(o.debt)} en ${o.days} días` };
-    }
-    if (sel.kind === 'ruleta') {
-      const l = SN.Luck.today();
-      if (!l || !l.events.includes('ruleta')) return null;
-      return { sel, icon: 'coin0', name: 'Ruleta de la Fortuna', desc: 'Un giro gratis. Solo hoy, día de la suerte.', price: 0, free: true,
-        state: l.spun ? 'own' : 'can', note: l.spun ? 'Ya has girado hoy' : '', action: l.spun ? null : 'ruleta' };
+        state: owned ? 'own' : mine ? (can.ok ? 'can' : 'poor') : 'locked', note: owned ? T('En tu habitación') : can.reason ? cap1(can.reason) : '',
+        action: mine ? 'offer' : null, sub: T('Hoy $0 · luego debes {v} en {n} días', { v: U.money(o.debt), n: o.days }) };
     }
     if (sel.kind === 'mkt') {
       const def = D.marketById(sel.id);
       if (!def) return null;
       const open = SN.Unlocks.isUnlocked(def.id);
-      return { sel, icon: def.icon, name: def.name, desc: def.desc, info: `Tope: ±${U.money(def.cap)} por apuesta`,
-        state: open ? 'own' : 'locked', note: open ? 'Abierto' : `Se abre: ${def.unlock.label || 'más adelante'}`, action: null, short: D.marketLabel(def.id) };
+      return { sel, icon: def.icon, name: def.name, desc: def.desc, info: T('Tope: ±{v} por apuesta', { v: U.money(def.cap) }),
+        state: open ? 'own' : 'locked', note: open ? T('Abierto') : T('Se abre: {x}', { x: def.unlock.label || T('más adelante') }), action: null, short: D.marketLabel(def.id) };
     }
     return null;
   }
@@ -407,8 +402,6 @@
     if (cat === 'mercados') return D.markets.map((m) => ({ kind: 'mkt', id: m.id }));
     // Destacados: las ofertas del día (lo que ya se puede comprar; si no hay nada, lo más barato que falta)
     const out = [];
-    const l = SN.Luck.today();
-    if (l && l.events.includes('ruleta') && !l.spun) out.push({ kind: 'ruleta', id: 'ruleta' });
     for (const x of SN.ShopWatch.list()) {
       if (out.length >= 4) break;
       const [k, id] = x.key.split(':');
@@ -438,7 +431,7 @@
     // Cabecera: carrito, título y tu dinero
     const head = U.el('div', 'sh-top');
     head.appendChild(big('cart', 2));
-    head.insertAdjacentHTML('beforeend', `<div class="sh-ttl"><b>Tienda</b><span>Mejoras, objetos y caprichos que te acercan a la fortuna.</span></div>
+    head.insertAdjacentHTML('beforeend', `<div class="sh-ttl"><b>${T('Tienda')}</b><span>${T('Mejoras, objetos y caprichos que te acercan a la fortuna.')}</span></div>
       <div class="sh-cash${W.shopFlash ? ' flash' : ''}">${U.money(run.capital)}</div>`);
     W.shopFlash = false;
     box.appendChild(head);
@@ -475,7 +468,7 @@
       c.title = p.name;
       c.appendChild(big(p.icon, 2));
       if (p.state === 'locked') { const l = SN.Sprites.node('lock', 1); l.className = 'sh-lock'; c.appendChild(l); }
-      const tagTxt = sel.kind === 'mkt' ? (p.state === 'own' ? 'Abierto' : 'Cerrado') : p.state === 'own' ? 'Tuyo' : p.free ? 'Gratis' : p.price != null ? U.short(p.price) : '—';
+      const tagTxt = sel.kind === 'mkt' ? (p.state === 'own' ? T('Abierto') : T('Cerrado')) : p.state === 'own' ? T('Tuyo') : p.price != null ? U.short(p.price) : '—';
       c.insertAdjacentHTML('beforeend', `<span class="nm">${p.short || p.name}</span><b class="pr">${tagTxt}</b>`);
       c.addEventListener('click', (e) => { e.stopPropagation(); W.shopSel = sel; W.shopBump = true; SN.Audio.sfx('select'); W.refresh(); });
       return c;
@@ -490,21 +483,21 @@
         art.appendChild(big(p.icon, 3));
         ban.appendChild(art);
         ban.insertAdjacentHTML('beforeend', `<div class="sh-btxt"><b>${p.name}</b><span>${p.desc}</span>
-          <div class="sh-bpr"><b>Hoy $0</b><em>Debes ${U.money(p.price)}</em></div>
+          <div class="sh-bpr"><b>${T('Hoy $0')}</b><em>${T('Debes {v}', { v: U.money(p.price) })}</em></div>
           ${pend ? '' : `<small>${p.note}</small>`}</div>`);
         if (pend) {
-          const b = U.el('button', 'btn btn-green sh-bbtn', 'Ver oferta');
+          const b = U.el('button', 'btn btn-green sh-bbtn', T('Ver oferta'));
           b.disabled = !!run.position;
           b.addEventListener('click', (e) => { e.stopPropagation(); W.offer(pend.id, 'shop'); });
           ban.appendChild(b);
         }
         ban.addEventListener('click', (e) => { e.stopPropagation(); W.shopSel = { kind: 'key', id: next.id }; W.shopBump = true; SN.Audio.sfx('select'); W.refresh(); });
         main.appendChild(ban);
-      } else main.appendChild(U.el('div', 'sh-ban done', '<div class="sh-btxt"><b>Lo tienes todo</b><span>Ya no quedan objetos clave. Por ahora.</span></div>'));
+      } else main.appendChild(U.el('div', 'sh-ban done', `<div class="sh-btxt"><b>${T('Lo tienes todo')}</b><span>${T('Ya no quedan objetos clave. Por ahora.')}</span></div>`));
       const off = SN.Luck.discount();
-      main.appendChild(U.el('div', 'sh-sec', off ? `Ofertas del día <em>· Don Siete rebaja un ${Math.round(off * 100)}%</em>` : 'Ofertas del día'));
+      main.appendChild(U.el('div', 'sh-sec', off ? T('Ofertas del día <em>· Don Siete rebaja un {n}%</em>', { n: Math.round(off * 100) }) : T('Ofertas del día')));
     } else if (cat === 'estilo' && SN.Luck.discount()) {
-      main.appendChild(U.el('div', 'sh-sec', `Estilo de vida <em>· Don Siete rebaja un ${Math.round(SN.Luck.discount() * 100)}%</em>`));
+      main.appendChild(U.el('div', 'sh-sec', T('Estilo de vida <em>· Don Siete rebaja un {n}%</em>', { n: Math.round(SN.Luck.discount() * 100) })));
     }
     if (cat === 'mejoras') {
       // Las mejoras van en filas: nivel y efecto a la vista
@@ -516,7 +509,7 @@
         r.dataset.kind = 'up'; r.dataset.id = sel.id;
         r.appendChild(big(p.icon, 2));
         r.insertAdjacentHTML('beforeend', `<div class="sh-rt"><b>${p.name} <em>${p.state === 'locked' ? '' : p.level}</em></b><span>${p.state === 'locked' ? p.desc : p.effect}</span></div>
-          <b class="pr">${p.state === 'locked' ? '' : p.price != null ? U.short(p.price) : 'Máx.'}</b>`);
+          <b class="pr">${p.state === 'locked' ? '' : p.price != null ? U.short(p.price) : T('Máx.')}</b>`);
         if (p.state === 'locked') { const l = SN.Sprites.node('lock', 1); l.className = 'sh-lock'; r.appendChild(l); }
         r.addEventListener('click', (e) => { e.stopPropagation(); W.shopSel = sel; W.shopBump = true; SN.Audio.sfx('select'); W.refresh(); });
         rows.appendChild(r);
@@ -525,7 +518,7 @@
     } else {
       const grid = U.el('div', 'sh-grid');
       for (const sel of list) { const c = card(sel); if (c) grid.appendChild(c); }
-      if (!grid.children.length) grid.appendChild(U.el('div', 'sh-empty', 'Nada por aquí. De momento.'));
+      if (!grid.children.length) grid.appendChild(U.el('div', 'sh-empty', T('Nada por aquí. De momento.')));
       main.appendChild(grid);
     }
     box.appendChild(main);
@@ -534,18 +527,18 @@
     const det = U.el('div', 'sh-dt' + (W.shopBump ? ' bump' : ''));
     W.shopBump = false;
     const p = shopProduct(W.shopSel);
-    det.appendChild(U.el('div', 'sh-dh', 'Detalle'));
+    det.appendChild(U.el('div', 'sh-dh', T('Detalle')));
     if (p) {
       const ico = U.el('div', 'sh-dico');
       ico.appendChild(big(p.icon, 2));
       det.appendChild(ico);
       det.insertAdjacentHTML('beforeend', `<b class="sh-dn">${p.name}</b>${p.level ? `<span class="sh-dl">${p.level}</span>` : ''}
-        <p class="sh-dd">${p.desc}</p>${p.effect ? `<div class="sh-de">${p.state === 'own' ? '' : 'Siguiente: '}${p.effect}</div>` : ''}
+        <p class="sh-dd">${p.desc}</p>${p.effect ? `<div class="sh-de">${p.state === 'own' ? p.effect : T('Siguiente: {e}', { e: p.effect })}</div>` : ''}
         ${p.info ? `<div class="sh-de">${p.info}</div>` : ''}${p.sub ? `<div class="sh-de">${p.sub}</div>` : ''}
-        ${p.price != null && p.state !== 'own' && !p.free ? `<div class="sh-dp">${p.old ? `<s>${U.money(p.old)}</s>` : ''}<b class="${p.state === 'poor' ? 'poor' : ''}">${U.money(p.price)}</b></div>` : ''}
+        ${p.price != null && p.state !== 'own' ? `<div class="sh-dp">${p.old ? `<s>${U.money(p.old)}</s>` : ''}<b class="${p.state === 'poor' ? 'poor' : ''}">${U.money(p.price)}</b></div>` : ''}
         ${p.note ? `<div class="sh-dnote ${p.state}">${p.note}</div>` : ''}`);
       if (p.action) {
-        const label = { buy: 'Comprar', up: 'Mejorar a crédito', offer: 'Ver oferta', ruleta: '¡Girar!' }[p.action];
+        const label = { buy: T('Comprar'), up: T('Mejorar a crédito'), offer: T('Ver oferta') }[p.action];
         const b = U.el('button', `btn ${p.action === 'offer' ? 'btn-cyan' : 'btn-green'} sh-buy`, label);
         b.disabled = !!run.position || (p.action === 'buy' && p.state !== 'can') || (p.action === 'up' && p.state !== 'can');
         b.addEventListener('click', (e) => { e.stopPropagation(); shopAct(p, b); });
@@ -556,7 +549,7 @@
     body.appendChild(box);
   }
 
-  // Comprar (o abrir la oferta, o girar la ruleta) con la misma lógica de siempre
+  // Comprar (o abrir la oferta) con la misma lógica de siempre
   function shopAct(p, btn) {
     const run = S.run, sel = p.sel;
     const cheer = (color) => {
@@ -567,7 +560,6 @@
       W.refresh();
     };
     if (p.action === 'offer') { W.offer(sel.id, 'shop'); return; }
-    if (p.action === 'ruleta') { W.open('ruleta'); return; }
     if (p.action === 'up') {
       if (!SN.Upgrades.buy(sel.id)) { SN.Audio.sfx('error'); return; }
       SN.Audio.sfx('unlock');
@@ -588,77 +580,6 @@
     cheer(SN.PAL.yellow);
   }
 
-  // ---------- La Ruleta de la Fortuna (días de la suerte) ----------
-  // Primero gira (la casilla ya está elegida) y al pararse entrega el premio.
-  const WHEEL_COLORS = ['#FFD34E', '#3F2F60', '#45E3DA', '#3DDC84', '#FF4F6D', '#FF8F3F', '#A880FF', '#FFF0A3'];
-  function drawWheel(c, angle) {
-    const g = c.getContext('2d'), n = D.luck.wheel.length, r = 44, cx = 48, cy = 48;
-    g.clearRect(0, 0, 96, 96);
-    for (let i = 0; i < n; i++) {
-      g.beginPath(); g.moveTo(cx, cy);
-      g.arc(cx, cy, r, angle + i * Math.PI * 2 / n, angle + (i + 1) * Math.PI * 2 / n);
-      g.closePath(); g.fillStyle = WHEEL_COLORS[i % WHEEL_COLORS.length]; g.fill();
-      g.strokeStyle = '#0E0A1C'; g.lineWidth = 2; g.stroke();
-      const mid = angle + (i + 0.5) * Math.PI * 2 / n;
-      SN.Px.text(g, String(i + 1), cx + Math.cos(mid) * 30, cy + Math.sin(mid) * 30 + 3, '#0E0A1C', { align: 'center' });
-    }
-    g.beginPath(); g.arc(cx, cy, 8, 0, Math.PI * 2); g.fillStyle = '#0E0A1C'; g.fill();
-    g.beginPath(); g.arc(cx, cy, 5, 0, Math.PI * 2); g.fillStyle = '#FFD34E'; g.fill();
-  }
-  // La casilla que queda bajo la flecha (arriba) con la ruleta girada `angle`
-  function wedgeAt(angle) {
-    const n = D.luck.wheel.length, step = Math.PI * 2 / n;
-    const a = ((-Math.PI / 2 - angle) % (Math.PI * 2) + Math.PI * 4) % (Math.PI * 2);
-    return Math.floor(a / step) % n;
-  }
-  function buildWheel(body) {
-    const luck = SN.Luck.today();
-    body.innerHTML = `<div class="rl"><div class="rl-wheel"><b class="rl-arrow">▼</b><canvas width="96" height="96"></canvas></div>
-      <div class="rl-side"><div class="rl-now">Hoy es día de la suerte</div><ol class="rl-list">${D.luck.wheel.map((w) => `<li>${w.label}</li>`).join('')}</ol>
-      <button class="btn btn-yellow rl-go">¡Girar!</button><div class="rl-res"></div></div></div>`;
-    const c = body.querySelector('canvas'), now = body.querySelector('.rl-now'), list = body.querySelectorAll('.rl-list li');
-    let angle = 0;
-    const show = () => { drawWheel(c, angle); const i = wedgeAt(angle); now.textContent = `▲ ${D.luck.wheel[i].label}`; list.forEach((li, k) => li.classList.toggle('on', k === i)); };
-    show();
-    const go = body.querySelector('.rl-go');
-    if (!luck || luck.spun) { go.disabled = true; body.querySelector('.rl-res').textContent = 'Ya has girado hoy.'; return; }
-    go.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const p = SN.Luck.pick();
-      if (!p) { SN.Audio.sfx('error'); return; }
-      go.disabled = true;
-      SN.Save.saveRun();
-      // Vueltas y frenada hasta dejar la casilla elegida bajo la flecha
-      const n = D.luck.wheel.length, step = Math.PI * 2 / n;
-      const target = -Math.PI / 2 - (p.index + 0.2 + Math.random() * 0.6) * step - Math.PI * 2 * 5;
-      const from = angle, dur = 3.2;
-      let t = 0, last = wedgeAt(angle);
-      const finish = () => {
-        const res = Object.assign(p, SN.Luck.apply(p.id, SN.Luck.k()));
-        SN.Events.emit('luck:spin', res);
-        SN.Save.saveRun();
-        const bad = p.id === 'maldita' || p.id === 'nada';
-        SN.Audio.sfx(bad ? 'error' : 'lucky');
-        if (!bad) SN.FX.confetti(40);
-        const out = body.querySelector('.rl-res');
-        if (out) out.innerHTML = `<b>${p.label}</b> ${res.text || ''}`;
-        SN.UI.renderAll();
-      };
-      const tick = () => {
-        // Si se cierra la ventana a mitad de giro, el premio se entrega igual
-        if (!W.win || W.current !== 'ruleta') { finish(); return; }
-        t = Math.min(1, t + 1 / 60 / dur);
-        angle = U.lerp(from, target, U.ease.outCubic(t));
-        const i = wedgeAt(angle);
-        if (i !== last) { last = i; SN.Audio.sfx('wheel'); }
-        show();
-        if (t < 1) { requestAnimationFrame(tick); return; }
-        finish();
-      };
-      requestAnimationFrame(tick);
-    });
-  }
-
   // ---------- La oferta de FUTURO.exe ----------
   // El mismo objeto por un 10% hoy... y la letra pequeña. Salta sola al pagar la deuda anterior (y cuando te
   // llega para la entrada, y cada mañana que siga pendiente); también se abre desde la tienda o el HUD.
@@ -671,7 +592,7 @@
     const can = SN.Unlocks.canBuyItem(it.id);
     // Es el siguiente paso de la historia: un solo botón, nada que pagar hoy y la deuda en la letra pequeña
     const pop = U.el('div', 'offer');
-    pop.innerHTML = `<div class="of-head"><i class="of-ico"></i>${SN.Cipher.brand(true)}<span>${W.opts.why === 'insist' ? st.insist : 'Oferta encontrada'}</span></div>
+    pop.innerHTML = `<div class="of-head"><i class="of-ico"></i>${SN.Cipher.brand(true)}<span>${W.opts.why === 'insist' ? st.insist : T('Oferta encontrada')}</span></div>
       <div class="of-title">${st.title}</div>
       <div class="of-line">${fill(st.line)}</div>
       <div class="of-price"><s>${U.money(it.price)}</s><b>${st.free}</b><em>${st.save}</em></div>
@@ -722,17 +643,18 @@
   function buildAbout(body) {
     const found = SN.Cipher.found('acerca');
     body.innerHTML = `<div class="ab"><div class="ab-logo"></div><div class="ab-txt">
-      <b>${SN.Cipher.brand(true)}</b> versión 6.6.6<br>
-      Licencia: perpetua. No se puede cerrar.<br>
-      © Futuro S.L. Todos los derechos reservados. También los tuyos.<br>
-      Programa recomendado por: un amigo con capucha.</div>
+      <b>${SN.Cipher.brand(true)}</b> ${T('versión 6.6.6')}<br>
+      ${T('Licencia: perpetua. No se puede cerrar.')}<br>
+      ${T('© Futuro S.L. Todos los derechos reservados. También los tuyos.')}<br>
+      ${T('Programa recomendado por: un amigo con capucha.')}</div>
       <button class="ab-seal${found ? ' read' : ''}" title="">${found ? '<b class="cx-k">F</b>' : `<b class="cx">${D.cipher.alphabet.F}</b>`}</button></div>`;
     body.querySelector('.ab-logo').appendChild(SN.Sprites.node('appBig', 2));
     body.querySelector('.ab-seal').addEventListener('click', (e) => { e.stopPropagation(); SN.Cipher.discover('acerca'); W.refresh(); });
   }
 
   function buildSettings(body) {
-    const st = S.profile.settings;
+    const st = S.profile.settings, T = SN.T;
+    W.win.classList.add('set-win');
     const row = (label, btnText, cls, fn) => {
       const r = U.el('div', 'set-row', `<span>${label}</span>`);
       const b = U.el('button', 'btn ' + cls, btnText);
@@ -741,19 +663,81 @@
       body.appendChild(r);
       return b;
     };
-    row('Música', st.music ? 'Sí' : 'No', st.music ? 'btn-green' : 'btn-cream', () => { st.music = !st.music; SN.Audio.setMusic(st.music); SN.Save.saveProfile(); W.refresh(); });
-    row('Efectos de sonido', st.sfx ? 'Sí' : 'No', st.sfx ? 'btn-green' : 'btn-cream', () => { st.sfx = !st.sfx; SN.Audio.setSfx(st.sfx); SN.Save.saveProfile(); SN.UI.renderSound(); W.refresh(); });
-    row('Pantalla completa', 'Cambiar', 'btn-cyan', () => {
+    // Idioma: el botón enseña la bandera y el nombre del actual y abre la lista de todos, cada uno con su bandera
+    // (cambiarlo recarga el juego; la partida se guarda antes)
+    const lr = U.el('div', 'set-row set-lang', `<span>${T('Idioma')}</span>`);
+    const lock = !!(S.run && (S.run.position || (SN.Game.state === 'GAMEPLAY' && SN.UI.busy) || (S.run.finale && S.run.finale.lock)));
+    const flagBtn = (l, cls) => {
+      const b = U.el('button', 'btn ' + cls);
+      b.append(SN.Sprites.flag(l.flag), U.el('span', 'set-lang-nm', l.name));
+      return b;
+    };
+    const cur = SN.I18n.LANGS.find((l) => l.id === SN.I18n.lang) || SN.I18n.LANGS[0];
+    const open = flagBtn(cur, 'btn-cream set-lang-cur');
+    open.appendChild(U.el('i', 'set-lang-arrow', '▼'));
+    const langs = U.el('div', 'set-langs hidden');
+    const toggle = (show) => { langs.classList.toggle('hidden', !show); open.classList.toggle('on', show); };
+    open.addEventListener('click', (e) => { e.stopPropagation(); SN.Audio.sfx('select'); toggle(langs.classList.contains('hidden')); });
+    for (const l of SN.I18n.LANGS) {
+      const on = l.id === SN.I18n.lang;
+      const b = flagBtn(l, on ? 'btn-green' : 'btn-cream');
+      b.dataset.lang = l.id;
+      b.disabled = !on && lock;
+      if (b.disabled) b.title = T('Termina lo que estás haciendo para cambiar de idioma');
+      b.addEventListener('click', (e) => { e.stopPropagation(); SN.Audio.sfx('click'); if (on) toggle(false); else SN.I18n.set(l.id); });
+      langs.appendChild(b);
+    }
+    langs.addEventListener('click', (e) => e.stopPropagation());
+    body.addEventListener('click', () => toggle(false));
+    lr.append(open, langs);
+    body.appendChild(lr);
+    // Volumen general: la barra (clic o arrastrar) y los botones - y +, de 10 en 10
+    const vr = U.el('div', 'set-row set-vol', `<span>${T('Volumen')}</span>`);
+    const ctl = U.el('div', 'vol');
+    const minus = U.el('button', 'btn btn-cream vol-b', '-'), plus = U.el('button', 'btn btn-cream vol-b', '+');
+    const bar = U.el('div', 'vol-bar', '<i></i>'), pct = U.el('b', 'vol-pct');
+    minus.title = T('Bajar el volumen'); plus.title = T('Subir el volumen');
+    ctl.append(minus, bar, plus, pct);
+    vr.appendChild(ctl);
+    body.appendChild(vr);
+    let lastTick = 0;
+    const show = () => {
+      const v = SN.Audio.volume;
+      bar.firstChild.style.width = Math.round(v * 100) + '%';
+      pct.textContent = Math.round(v * 100) + '%';
+      minus.disabled = v <= 0; plus.disabled = v >= 1;
+    };
+    const setVol = (v) => {
+      v = U.clamp(Math.round(v * 10) / 10, 0, 1);
+      if (v === SN.Audio.volume) return;
+      st.volume = v;
+      SN.Audio.setVolume(v);
+      SN.Save.saveProfile();
+      show();
+      if (performance.now() - lastTick > 90) { lastTick = performance.now(); SN.Audio.sfx('tick'); }
+    };
+    minus.addEventListener('click', (e) => { e.stopPropagation(); setVol(SN.Audio.volume - 0.1); });
+    plus.addEventListener('click', (e) => { e.stopPropagation(); setVol(SN.Audio.volume + 0.1); });
+    const fromBar = (e) => { const r = bar.getBoundingClientRect(); setVol((e.clientX - r.left) / r.width); };
+    let drag = false;
+    bar.addEventListener('pointerdown', (e) => { e.stopPropagation(); drag = true; bar.setPointerCapture(e.pointerId); fromBar(e); });
+    bar.addEventListener('pointermove', (e) => { if (drag) fromBar(e); });
+    bar.addEventListener('pointerup', () => { drag = false; });
+    bar.addEventListener('click', (e) => e.stopPropagation());
+    show();
+    row(T('Música'), st.music ? T('Sí') : T('No'), st.music ? 'btn-green' : 'btn-cream', () => { st.music = !st.music; SN.Audio.setMusic(st.music); SN.Save.saveProfile(); W.refresh(); });
+    row(T('Efectos de sonido'), st.sfx ? T('Sí') : T('No'), st.sfx ? 'btn-green' : 'btn-cream', () => { st.sfx = !st.sfx; SN.Audio.setSfx(st.sfx); SN.Save.saveProfile(); SN.UI.renderSound(); W.refresh(); });
+    row(T('Pantalla completa'), T('Cambiar'), 'btn-cyan', () => {
       try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); } catch (_) { /* no disponible */ }
     });
     const inGame = SN.Game.state === 'GAMEPLAY' && S.run;
     if (inGame) {
-      row('Repetir tutorial', 'Repasar', 'btn-yellow', () => { W.close(true); SN.Tutorial.replay(); });
-      row('Guardar y salir al menú', 'Salir', 'btn-coral', () => { W.close(true); SN.Game.toMenu(); });
+      row(T('Repetir tutorial'), T('Repasar'), 'btn-yellow', () => { W.close(true); SN.Tutorial.replay(); });
+      row(T('Guardar y salir al menú'), T('Salir'), 'btn-coral', () => { W.close(true); SN.Game.toMenu(); });
     }
-    body.appendChild(U.el('div', 'set-keys', 'Todo se puede hacer con el ratón. Atajos de teclado:<br>' +
-      '<kbd>↑</kbd><kbd>B</kbd> sube · <kbd>↓</kbd><kbd>V</kbd> baja · <kbd>ESPACIO</kbd> cobrar · <kbd>F</kbd> acelerar<br>' +
-      '<kbd>← →</kbd> apuesta · <kbd>1-4</kbd> multiplicador · <kbd>P</kbd> esperar · <kbd>TAB</kbd> mercado<br>' +
-      '<kbd>M</kbd> mejoras · <kbd>N</kbd> noticias · <kbd>T</kbd> tienda · <kbd>ESC</kbd> menú / cerrar'));
+    body.appendChild(U.el('div', 'set-keys', T('Todo se puede hacer con el ratón. Atajos de teclado:') + '<br>' +
+      `<kbd>↑</kbd><kbd>B</kbd> ${T('sube')} · <kbd>↓</kbd><kbd>V</kbd> ${T('baja')} · <kbd>${T('ESPACIO')}</kbd> ${T('cobrar')} · <kbd>F</kbd> ${T('acelerar')}<br>` +
+      `<kbd>← →</kbd> ${T('apuesta')} · <kbd>1-4</kbd> ${T('multiplicador')} · <kbd>P</kbd> ${T('esperar')} · <kbd>TAB</kbd> ${T('mercado')}<br>` +
+      `<kbd>M</kbd> ${T('mejoras')} · <kbd>N</kbd> ${T('noticias')} · <kbd>T</kbd> ${T('tienda')} · <kbd>ESC</kbd> ${T('menú / cerrar')}`));
   }
 })(window.SN);

@@ -1,9 +1,9 @@
 // LuckManager: los DÍAS DE LA SUERTE (configuración en js/data/luck.js). Un día es de la suerte si su
 // número lleva un 7; su intensidad es cuántos sietes tiene (1-3). Ese día los mercados abiertos crecen,
 // las operaciones ganadoras dan un extra y pueden salir eventos especiales: Lluvia de Oro, Mercado Dorado,
-// Ruleta de la Fortuna, Estrella de la Suerte y Bendición de la Fortuna.
+// Estrella de la Suerte y Bendición de la Fortuna.
 // El día se sortea al empezar con el generador de la partida (recargar no cambia nada) y se guarda en run.luck.
-// No toca la interfaz: avisa con 'luck:day' y 'luck:spin'.
+// No toca la interfaz: avisa con 'luck:day'.
 (function (SN) {
   'use strict';
   const S = SN.State, D = SN.Data;
@@ -38,7 +38,6 @@
       run.luck = {
         day, k, events, golden,
         star: events.includes('estrella') && open.length ? open[rng.int(0, open.length - 1)] : null,
-        spun: false,
       };
       // Cada día de la suerte, la app Símbolos enseña una pista más del idioma secreto
       if (SN.Cipher) { const cs = SN.Cipher.state(); cs.hints = (cs.hints || 0) + 1; }
@@ -64,54 +63,7 @@
     // Rebaja de Don Siete en el estilo de vida (día del MERCADO DORADO)
     discount() { return this.has('dorado') ? cfg().discount : 0; },
     goldenToday() { const l = this.today(); return l ? l.golden || [] : []; },
-
-    // ---------- Ruleta de la Fortuna ----------
-    canSpin() { const l = this.today(); return !!l && l.events.includes('ruleta') && !l.spun && !S.run.position; },
-    // Elige casilla (las raras salen el doble con la Bendición) y gasta el giro del día. El premio, con apply()
-    // (la interfaz primero hace girar la ruleta y luego lo entrega).
-    pick() {
-      if (!this.canSpin()) return null;
-      const l = this.today(), rng = S.rng;
-      const wheel = cfg().wheel, rare = this.has('bendicion') ? 2 : 1;
-      const weights = wheel.map((w) => w.weight * (w.rare ? rare : 1));
-      let r = rng.next() * weights.reduce((a, b) => a + b, 0), i = 0;
-      while (r >= weights[i] && i < wheel.length - 1) { r -= weights[i]; i++; }
-      l.spun = true;
-      return { index: i, id: wheel[i].id, label: wheel[i].label };
-    },
-    spin() {
-      const p = this.pick();
-      if (!p) return null;
-      const out = Object.assign(p, this.apply(p.id, this.k()));
-      SN.Events.emit('luck:spin', out);
-      return out;
-    },
-    apply(id, k) {
-      const run = S.run, debt = SN.Debt.active() ? run.debt : null;
-      const money = (v) => { v = Math.round(v); SN.Economy.add(v, 'luck'); return { money: v, text: `+${SN.Util.money(v)}` }; };
-      if (id === 'poco') return money(Math.max(20, run.capital * 0.05 * k));
-      if (id === 'mucho') return money(Math.max(100, run.capital * 0.2 * k));
-      if (id === 'siete') return money(777 * k);
-      if (id === 'plazo') {
-        if (!debt) return money(Math.max(20, run.capital * 0.05 * k));
-        debt.deadlineDay++;
-        return { text: `+1 día para pagar ${debt.label}` };
-      }
-      if (id === 'seguro') { run.shield = true; return { text: 'Tu próxima pérdida será $0' }; }
-      if (id === 'maldita') {
-        if (!debt) return { text: 'Nada... esta vez' };
-        debt.amount = Math.round(debt.amount * 1.07);
-        return { text: `Tu deuda sube a ${SN.Util.money(debt.amount)}` };
-      }
-      if (id === 'simbolo') {
-        const clue = SN.Cipher && SN.Cipher.wildcard(rng());
-        if (clue) return { text: `Un símbolo: ${D.cipher.alphabet[clue.letter]} = ${clue.letter}`, clue };
-        return money(777 * k);
-      }
-      return { text: 'La casa siempre gana.' };
-    },
   };
-  const rng = () => S.rng;
 
   function shuffle(a, r) {
     const b = a.slice();

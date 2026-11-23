@@ -338,10 +338,45 @@
     ],
   };
 
+  // Banderas de los idiomas (Ajustes, js/core/i18n.js): 17x11, borde con las esquinas recortadas y 15x9 por dentro.
+  // Llevan su propia paleta (rojo, azul y negro de bandera), un poco más viva que la del juego para que se reconozcan.
+  const FLAG_PAL = { k: '#0E0A1C', K: '#2F2249', r: '#E8384F', R: '#A8213F', w: '#F8F4FF', b: '#2F4FC2', B: '#2A7DD1',
+    y: '#FFD34E', Y: '#E39A2D', g: '#1E9A5C' };
+  const FLAG_INNER = {
+    es: ['rrrrrrrrrrrrrrr', 'rrrrrrrrrrrrrrr', 'yyyyyyyyyyyyyyy', 'yyyRYRyyyyyyyyy', 'yyyRYRyyyyyyyyy', 'yyyyRyyyyyyyyyy', 'yyyyyyyyyyyyyyy', 'rrrrrrrrrrrrrrr', 'rrrrrrrrrrrrrrr'],
+    us: ['bwbwbwbrrrrrrrr', 'bbwbwbbwwwwwwww', 'bwbwbwbrrrrrrrr', 'bbwbwbbwwwwwwww', 'bwbwbwbrrrrrrrr', 'wwwwwwwwwwwwwww', 'rrrrrrrrrrrrrrr', 'wwwwwwwwwwwwwww', 'rrrrrrrrrrrrrrr'],
+    br: ['gggggggyggggggg', 'gggggyyyyyggggg', 'gggyyybbbyyyggg', 'gyyyybbbwwyyyyg', 'yyyyywwwbbyyyyy', 'gyyyybbbbbyyyyg', 'gggyyybbbyyyggg', 'gggggyyyyyggggg', 'gggggggyggggggg'],
+    fr: Array(9).fill('bbbbbwwwwwrrrrr'),
+    de: [...Array(3).fill('KKKKKKKKKKKKKKK'), ...Array(3).fill('rrrrrrrrrrrrrrr'), ...Array(3).fill('yyyyyyyyyyyyyyy')],
+    it: Array(9).fill('gggggwwwwwrrrrr'),
+    ro: Array(9).fill('bbbbbyyyyyrrrrr'),
+    pl: [...Array(4).fill('wwwwwwwwwwwwwww'), ...Array(5).fill('rrrrrrrrrrrrrrr')],
+    tr: ['rrrrrrrrrrrrrrr', 'rrrrwwwrrrrrrrr', 'rrrwwrrrrrrrrrr', 'rrwwrrrrrwrrrrr', 'rrwwrrrrwwwrrrr', 'rrwwrrrrrwrrrrr', 'rrrwwrrrrrrrrrr', 'rrrrwwwrrrrrrrr', 'rrrrrrrrrrrrrrr'],
+    nl: [...Array(3).fill('rrrrrrrrrrrrrrr'), ...Array(3).fill('wwwwwwwwwwwwwww'), ...Array(3).fill('bbbbbbbbbbbbbbb')],
+    se: ['BBBBByBBBBBBBBB', 'BBBBByBBBBBBBBB', 'BBBBByBBBBBBBBB', 'BBBBByBBBBBBBBB', 'yyyyyyyyyyyyyyy', 'BBBBByBBBBBBBBB', 'BBBBByBBBBBBBBB', 'BBBBByBBBBBBBBB', 'BBBBByBBBBBBBBB'],
+    cz: ['bwwwwwwwwwwwwww', 'bbbwwwwwwwwwwww', 'bbbbwwwwwwwwwww', 'bbbbbbwwwwwwwww', 'bbbbbbbwwwwwwww', 'bbbbbbrrrrrrrrr', 'bbbbrrrrrrrrrrr', 'bbbrrrrrrrrrrrr', 'brrrrrrrrrrrrrr'],
+    id: [...Array(4).fill('rrrrrrrrrrrrrrr'), ...Array(5).fill('wwwwwwwwwwwwwww')],
+    // la senyera: cuatro barras rojas sobre amarillo
+    ca: Array.from({ length: 9 }, (_, i) => (i % 2 ? 'rrrrrrrrrrrrrrr' : 'yyyyyyyyyyyyyyy')),
+  };
+  const FLAGS = {};
+  for (const [id, rows] of Object.entries(FLAG_INNER)) FLAGS[id] = ['.' + 'k'.repeat(15) + '.', ...rows.map((r) => 'k' + r + 'k'), '.' + 'k'.repeat(15) + '.'];
+
   const cache = {};
   const urls = {};
   SN.Sprites = {
     DEFS,
+    FLAGS,
+    // La bandera de un idioma (su campo flag), lista para el DOM
+    flag(id, scale = 1) {
+      const k = 'flag:' + id;
+      if (!cache[k]) cache[k] = Px.fromRows(FLAGS[id] || FLAGS.es, FLAG_PAL);
+      const c = Px.scaled(cache[k], scale);
+      c.className = 'flag';
+      c.style.width = c.width + 'px';
+      c.style.height = c.height + 'px';
+      return c;
+    },
     get(name) {
       if (!cache[name]) cache[name] = Px.fromRows(DEFS[name]);
       return cache[name];

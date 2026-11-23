@@ -17,7 +17,7 @@
       for (const d of D.upgrades) {
         if (!SN.Upgrades.isUnlocked(d.id) || !SN.Upgrades.next(d.id) || !SN.Upgrades.canBuy(d.id).ok) continue;
         const lv = SN.Upgrades.level(d.id);
-        out.push({ key: `up:${d.id}:${lv}`, win: 'shop', kind: 'upgrade', label: `${d.name} NV.${lv + 1}` });
+        out.push({ key: `up:${d.id}:${lv}`, win: 'shop', kind: 'upgrade', label: SN.T('{name} NV.{n}', { name: d.name, n: lv + 1 }) });
       }
       if (SN.Academy) for (const n of SN.Academy.buyable()) out.push({ key: `ac:${n.id}`, win: 'shop', kind: 'academy', label: n.name });
       const it = SN.Unlocks.pendingItem();

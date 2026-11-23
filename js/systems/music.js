@@ -197,10 +197,10 @@
       for (const x of v.els) { try { x.playbackRate = v.rate; } catch (_) { /* */ } }
     }
     // Volumen
-    const vol = clamp(C().volume * v.t.gain * v.env * (v.t.once ? (st.enabled ? 1 : 0) : st.mix), 0, 1);
+    const vol = clamp(C().volume * v.t.gain * v.env * (v.t.once ? (st.enabled ? 1 : 0) : st.mix) * (SN.Audio ? SN.Audio.volume : 1), 0, 1);
     if (!volOK) {
       // Sin volumen: suena o calla
-      const on = v.target > 0 && (v.t.once || st.mix > 0.05);
+      const on = v.target > 0 && (v.t.once || st.mix > 0.05) && (!SN.Audio || SN.Audio.volume > 0);
       if (!on && !a.paused) a.pause(); else if (on && a.paused && !a.ended) play(a);
       return;
     }

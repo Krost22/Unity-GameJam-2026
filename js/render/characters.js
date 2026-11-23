@@ -284,7 +284,7 @@
     sp.rect(bx + 2, by + 2, bw - 4, 11, P.coalD);
     Px.text(g, 'VICE', bx + bw / 2, by + 10, P.cyan, { align: 'center' });
     sp.rect(bx + 2, by + 49, bw - 4, 13, P.coalD);
-    Px.text(g, 'BAHÍA', bx + bw / 2, by + 59, P.magentaL, { align: 'center' });
+    Px.text(g, SN.T('BAHÍA'), bx + bw / 2, by + 59, P.magentaL, { align: 'center' });
     sp.rect(bx + bw - 13, by + 14, 11, 9, P.coalD);
     Px.text(g, 'VI', bx + bw - 7, by + 22, P.yellow, { align: 'center' });
     // Mando blanco delante de la torre

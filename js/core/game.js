@@ -3,7 +3,7 @@
 // La lógica de cada sistema vive en su propio archivo; aquí solo se orquesta.
 (function (SN) {
   'use strict';
-  const S = SN.State, D = SN.Data, U = SN.Util;
+  const S = SN.State, D = SN.Data, U = SN.Util, T = SN.T;
   const $ = (id) => document.getElementById(id);
 
   const G = SN.Game = {
@@ -26,6 +26,8 @@
       const st = S.profile.settings;
       SN.Audio.sfxOn = st.sfx;
       SN.Audio.musicOn = st.music;
+      SN.Audio.setVolume(st.volume != null ? st.volume : 1);
+      SN.I18n.applyDOM(document.body); // los textos fijos de index.html, en el idioma elegido
       this.deskCtx = SN.Px.ctx($('desk'));
       SN.ScreenCanvas.init();
       SN.UI.init();
@@ -194,16 +196,16 @@
       boot.classList.remove('hidden');
       // Ventana de bienvenida: agradecimiento por jugar (juego de game jam). Se cierra con el botón o Enter.
       boot.innerHTML = `<div class="thanks">
-        <div class="win-head"><span>¡GRACIAS POR JUGAR!</span></div>
+        <div class="win-head"><span>${T('¡GRACIAS POR JUGAR!')}</span></div>
         <div class="jam-logo" title="Official 2026 Unity Game Jam">${this.unityLogo()}</div>
         <div class="thanks-body">
-          <p class="hi">¡Hola! Qué bueno tenerte aquí.</p>
-          <p>Saldo Negro nació en la <b class="y">Official 2026 Unity Game Jam</b>, con el tema <b class="y">Lucky Number</b>: aquí la suerte también cotiza en bolsa.</p>
-          <p>Puede que encuentres algún bug suelto. Si pasa, cuéntanoslo: tus comentarios nos ayudan muchísimo.</p>
-          <p class="warn">Recuerda: aquí nada es consejo financiero. El dinero fácil casi nunca lo es.</p>
+          <p class="hi">${T('¡Hola! Qué bueno tenerte aquí.')}</p>
+          <p>${T('Saldo Negro nació en la <b class="y">Official 2026 Unity Game Jam</b>, con el tema <b class="y">Lucky Number</b>: aquí la suerte también cotiza en bolsa.')}</p>
+          <p>${T('Puede que encuentres algún bug suelto. Si pasa, cuéntanoslo: tus comentarios nos ayudan muchísimo.')}</p>
+          <p class="warn">${T('Recuerda: aquí nada es consejo financiero. El dinero fácil casi nunca lo es.')}</p>
           <div class="thanks-foot">
-            <span class="sign">— Por KrostGames y Adrede</span>
-            <button class="btn btn-yellow">¡A jugar!<kbd>Enter</kbd></button>
+            <span class="sign">${T('— Por KrostGames y Adrede')}</span>
+            <button class="btn btn-yellow">${T('¡A jugar!')}<kbd>Enter</kbd></button>
           </div>
         </div>
       </div>`;
@@ -274,13 +276,13 @@
       btnNew.addEventListener('click', () => {
         if (SN.Save.hasRun() && !btnNew.dataset.confirm) {
           btnNew.dataset.confirm = '1';
-          btnNew.textContent = '¿Seguro? Se borra';
+          btnNew.textContent = T('¿Seguro? Se borra');
           SN.Audio.sfx('error');
-          SN.after(2.5, () => { delete btnNew.dataset.confirm; btnNew.textContent = 'Nueva partida'; });
+          SN.after(2.5, () => { delete btnNew.dataset.confirm; btnNew.textContent = T('Nueva partida'); });
           return;
         }
         delete btnNew.dataset.confirm;
-        btnNew.textContent = 'Nueva partida';
+        btnNew.textContent = T('Nueva partida');
         this.newGame();
       });
       $('btn-continue').addEventListener('click', () => this.continueGame());
@@ -354,7 +356,7 @@
     },
 
     async startRun({ tutorial = false, greeting = false, loaded = false } = {}) {
-      if (!loaded) { S.newRun(); S.checkpoint('la deuda de la Pleyzeta'); }
+      if (!loaded) { S.newRun(); S.checkpoint(T('la deuda de la Pleyzeta')); }
       const run = S.run;
       // Partida sin punto de control (por si acaso): se guarda uno ahora
       if (!run.checkpoint) S.checkpoint(SN.Narrative.stepLabel(SN.Unlocks.step()));
@@ -500,8 +502,8 @@
         this.dayChanged = false;
         SN.Audio.sfx('day');
         const left = SN.Debt.daysLeft(), owing = SN.Debt.active();
-        const sub = !owing ? (run.darkness >= 4 ? 'La ciudad está más silenciosa' : 'Otro día, otra oportunidad')
-          : left <= 1 ? '¡Último día para pagar!' : `Faltan ${left} días para pagar`;
+        const sub = !owing ? (run.darkness >= 4 ? T('La ciudad está más silenciosa') : T('Otro día, otra oportunidad'))
+          : left <= 1 ? T('¡Último día para pagar!') : T('Faltan {n} días para pagar', { n: left });
         await UI.dayCard(run.day, sub, owing && left <= 2);
         // ¿El día lleva un 7? Día de la suerte
         const luck = SN.Luck.today();

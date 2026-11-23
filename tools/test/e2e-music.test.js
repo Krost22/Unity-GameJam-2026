@@ -101,7 +101,7 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
     ok(await wait('SN.Music.current === "base"', 3500), 'la siguiente operación devuelve la música de la partida');
 
     // --- Efectos: todos suenan (también las capas a tempo) ---
-    const names = ['click', 'key', 'select', 'error', 'buy', 'sell', 'candle', 'heart', 'riser', 'boom', 'crash', 'cash', 'tick', 'coin', 'coinBounce', 'win', 'loss', 'liquidation', 'unlock', 'cipher', 'lucky', 'wheel', 'pay', 'debtPaid', 'broke', 'notify', 'notifyBad', 'static', 'whisper', 'type', 'crack', 'shatter', 'pop', 'siren', 'day', 'open', 'close', 'boot', 'whoosh', 'thud', 'cheer'];
+    const names = ['click', 'key', 'select', 'error', 'buy', 'sell', 'candle', 'heart', 'riser', 'boom', 'crash', 'cash', 'tick', 'coin', 'coinBounce', 'win', 'loss', 'liquidation', 'unlock', 'cipher', 'lucky', 'pay', 'debtPaid', 'broke', 'notify', 'notifyBad', 'static', 'whisper', 'type', 'crack', 'shatter', 'pop', 'siren', 'day', 'open', 'close', 'boot', 'whoosh', 'thud', 'cheer'];
     const bad = await ev(`(() => { const bad = []; for (const n of ${JSON.stringify(names)}) { try { SN.Audio.sfx(n, {}); } catch (e) { bad.push(n + ': ' + e.message); } } for (const n of ['pulseDanger', 'pulseClock']) { try { SN.Audio.layer(n, { at: 0.05, i: 0 }); } catch (e) { bad.push(n + ': ' + e.message); } } return bad; })()`);
     ok(!bad.length, 'todos los efectos suenan sin errores', bad.join(', '));
 

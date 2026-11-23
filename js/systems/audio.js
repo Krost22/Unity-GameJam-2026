@@ -17,7 +17,7 @@
       if (!AC) return null;
       ac = new AC();
       const comp = ac.createDynamicsCompressor();
-      master = ac.createGain(); master.gain.value = 0.7;
+      master = ac.createGain(); master.gain.value = 0.7 * SN.Audio.volume;
       sfxGain = ac.createGain(); sfxGain.gain.value = 1;
       musicGain = ac.createGain(); musicGain.gain.value = 0; // capas de la música: siguen su volumen
       sfxGain.connect(master); musicGain.connect(master);
@@ -176,8 +176,6 @@
       [0, 1, 2, 3, 4, 5, 6].forEach((g, i) => { pluck(deg(K, g, 1), { vol: 0.05, dur: 0.12, at: i * 0.07 }); bell(deg(K, g, 2), { vol: 0.025, dur: 0.1, at: i * 0.07 }); });
       for (let i = 0; i < 7; i++) SFX.coinAt(0.5 + i * 0.05);
     },
-    // Ruleta: un clic por casilla
-    wheel: () => { tone({ type: 'square', f0: 2100, f1: 1500, dur: 0.025, vol: 0.04 }); },
     // Compra (tienda, oferta aceptada): tres campanitas del acorde de la tónica
     pay: () => {
       const K = keyNow();
@@ -349,6 +347,12 @@
     duck(on) { if (SN.Music) SN.Music.duck(on); },
     setDarkness(d) { if (SN.Music) SN.Music.darkness(d); },
     setSfx(on) { this.sfxOn = on; },
+    // Volumen general (0-1, Ajustes): los efectos aquí; la música lo lee en js/systems/music.js
+    volume: 1,
+    setVolume(v) {
+      this.volume = Math.max(0, Math.min(1, +v || 0));
+      if (ac && master) master.gain.setTargetAtTime(0.7 * this.volume, ac.currentTime, 0.03);
+    },
     setMusic(on) { this.musicOn = on; if (on) this.startMusic(); else this.stopMusic(); },
   };
 })(window.SN);

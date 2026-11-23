@@ -9,6 +9,11 @@ una app de trading que promete dinero fácil... y que se cobra algo más valioso
 Abre `index.html` con doble clic. Funciona sin internet, sin servidor y sin instalar nada (HTML, CSS y JS puros).
 La partida se guarda sola en el navegador.
 
+**Idiomas (14):** español, inglés, portugués (de Brasil), francés, alemán, italiano, rumano, polaco, turco, neerlandés,
+sueco, checo, indonesio y catalán. La primera vez sale en el idioma del navegador (si no es ninguno de ellos, en inglés); se
+cambia en **Ajustes**, junto al volumen: el botón enseña la bandera del idioma actual y abre la lista con la bandera de
+cada uno. Cambiarlo recarga el juego y la partida sigue donde estaba, ya en el idioma nuevo.
+
 **Cómo se juega (en una frase):** mira la PISTA de la gráfica, pulsa **SUBIRÁ** o **BAJARÁ**, y **COBRA** antes de que
 las últimas velas te den un susto. Junta $250 antes del día 7.
 
@@ -71,7 +76,7 @@ El teclado es un atajo y cada botón muestra su tecla:
   Ganar ahí casi siempre trae una noticia extraña.
 - **Días de la suerte:** los días cuyo número lleva un 7 (7, 17, 27... del 70 al 79; el 77 vale doble). Los mercados
   crecen, cada ganancia trae un 7% extra por siete y sale algo especial: Lluvia de Oro, Mercado Dorado de Don Siete,
-  Ruleta de la Fortuna (en la tienda), Estrella de la Suerte (un mercado vale ×1.77) o Bendición de la Fortuna.
+  Estrella de la Suerte (un mercado vale ×1.77) o Bendición de la Fortuna.
 - **Perder:** si no te alcanza para la apuesta mínima ($10), si vence el plazo, o si ya es matemáticamente imposible
   pagar a tiempo, se pierde en ese momento (nada de pasar turnos esperando lo inevitable). Pero no se pierde todo:
   - **Vida extra: el rescate bancario.** Llamas a la Línea de Rescate Financiero del Gobierno. Las personas no se
@@ -202,7 +207,7 @@ equilibrio con un simulador (jugadores de tres niveles sobre los sistemas reales
 | Timmy | El hermano pequeño ahora se llama Timmy |
 | Noticias y memes | Unas 30 noticias nuevas (STONKS, "todo está bien", ¡a la luna!, simios juntos fuertes, dos botones...), 7 fotos nuevas y una noticia de la ciudad cada día |
 | Idioma secreto | 15 símbolos escondidos, erratas en el periódico, LOS PAGADOS en Mensajín y la app Símbolos. La fuente pixel tiene ahora letras cirílicas |
-| Días de la suerte | Los días con un 7: mercados al alza, bonificación, ruleta, Mercado Dorado con objetos que se ven en tu cuarto, lluvia de oro por la ventana |
+| Días de la suerte | Los días con un 7: mercados al alza, bonificación, Mercado Dorado con objetos que se ven en tu cuarto, lluvia de oro por la ventana |
 | En tu cuarto | La caja de la tele bajo la ventana, el móvil en la mesa, el casco de la moto, el reloj en la muñeca y los objetos dorados |
 
 Las partidas guardadas de la 1.4 no se cargan (cambió el formato); el perfil se conserva y el tutorial se ve una vez más
@@ -272,7 +277,8 @@ Cada sistema del documento es un archivo independiente; se comunican con un bus 
 index.html            escenario 640x360 y la interfaz del monitor
 css/style.css         estilos (paleta oficial en variables CSS)
 css/font.css          fuente pixel propia, generada (no editar a mano)
-js/core/              sn.js (utilidades, RNG con semilla), events.js, state.js, game.js (GameManager, bucle, tiempo y cámara)
+js/core/              sn.js (utilidades, RNG con semilla), events.js, i18n.js (idiomas), state.js, game.js (GameManager, bucle, tiempo y cámara)
+js/i18n/              en.js y pt.js: los diccionarios 'texto en español': 'traducción'; apply.js traduce los datos al cargar
 js/data/              los "ScriptableObjects": mercados (también los negros), eventos, simulación/mejoras/tienda,
                       progression.js (la cadena de deudas y los objetos clave), luck.js (días de la suerte),
                       cipher.js (el idioma secreto), academy.js (el árbol de Bravo Fines), historia (también lo
@@ -288,9 +294,9 @@ js/render/            pixel.js, pixkit.js (kit de pixel art procedural), sprites
                       bailout.js (el rescate bancario: la llamada y la videollamada con Trompa),
                       officer.js (el agente de la Policía Fiscal del embargo del final B)
 js/ui/                ui.js (UIManager), dialog.js, windows.js (mejoras y Academia, periódico con primera plana,
-                      tienda, oferta, ruleta, ajustes, "Acerca de"), desktop.js (escritorio del PC, Mensajín y
+                      tienda, oferta, ajustes, "Acerca de"), desktop.js (escritorio del PC, Mensajín y
                       Símbolos), keywords.js (palabras clave con color), hero-say.js (los globos del protagonista)
-tools/                build-font.js y pruebas
+tools/                build-font.js, i18n.js (textos sin traducir) y pruebas
 ```
 
 | Documento (Unity) | Aquí |
@@ -329,6 +335,16 @@ Los iconos son dibujos en texto en `js/render/sprites.js`; el encapuchado, Bravo
 **Cambiar la música:** las pistas (archivo, volumen, tonalidad) y cuánto pesa cada situación en
 `js/data/music.js`. Si cambias una pista por otra, pon su tonalidad: los efectos se afinan con ella.
 
+**Idiomas:** el juego se escribe en español. Los textos de la interfaz pasan por `SN.T('Texto', { variable })` y los de
+`js/data` se traducen solos al cargar. `node tools/i18n.js` dice cuántos faltan en cada idioma (y `node tools/i18n.js
+missing en` los lista para rellenar); también avisa si una traducción pierde una `{variable}`, si un texto del idioma
+secreto usa una letra sin pista o si usa una letra que la fuente pixel no tiene dibujada. Para añadir un idioma: una
+entrada en `LANGS` de `js/core/i18n.js` (con su bandera), su diccionario en `js/i18n/`, su `<script>` en `index.html`, sus
+palabras de color en `js/ui/keywords.js`, su bandera (17x11, en `FLAG_INNER` de `js/render/sprites.js`) y, si tiene letras
+nuevas, sus glifos en `tools/build-font.js` (`node -e "require('./tools/build-font').show('ăș')"` las dibuja en la
+consola). Los idiomas con alfabeto cirílico chocan con el idioma secreto (sus símbolos son letras cirílicas), y los de
+China, Japón o Corea necesitarían otra fuente.
+
 **Añadir una conversación de Mensajín:** una entrada en `js/data/chat.js` con el día y turno en que llega, lo que escribe
 Kevo, la respuesta del protagonista y lo que Kevo contesta.
 
@@ -337,10 +353,11 @@ Kevo, la respuesta del protagonista y lo que Kevo contesta.
 ```
 node tools/test/logic.test.js       # fórmulas, COBRAR, giros, pista, topes, cadena de deudas, Academia, números rojos, palabras clave, noticias, idioma secreto, suerte y equilibrio (con un bot que juega la partida entera)
 node tools/test/e2e.test.js         # partida completa en Chrome/Edge sin ventana: tutorial (errata, mejoras y tienda), regalo, oferta que salta sola, mercado negro, el rescate bancario con Trompa (jugado con teclas y clics)
-node tools/test/e2e-paths.test.js   # continuar (también tras cobrar), repetir tutorial, tienda, Bravo Fines y su Academia, primera plana, día de la suerte y ruleta, los 3 finales y pantallas pequeñas
+node tools/test/e2e-paths.test.js   # continuar (también tras cobrar), repetir tutorial, tienda, Bravo Fines y su Academia, primera plana, día de la suerte, los 3 finales y pantallas pequeñas
 node tools/test/e2e-desktop.test.js # minimizar, Mensajín, la historia de Kevo, LOS DESFASADOS, una pista que traduce sus mensajes, Símbolos
 node tools/test/e2e-music.test.js   # la pista de cada momento, cambios a compás, bucle sin cortes, la cinta (perdiendo, sin dinero, el final) y todos los efectos
 node tools/test/e2e-finales.test.js # la elección, 3 turnos sin elegir, retomar la partida, el final A y el final B enteros, y la pala
+node tools/test/e2e-i18n.test.js    # el juego en cada idioma sin textos en español, el selector de idioma con sus banderas (la partida guardada se traduce) y el volumen
 ```
 
 Abre `index.html?debug` para atajos de prueba: `F6` descubre un símbolo, `F7` salta al siguiente día de la suerte,

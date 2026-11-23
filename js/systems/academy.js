@@ -7,7 +7,7 @@
 // No toca la interfaz.
 (function (SN) {
   'use strict';
-  const S = SN.State, D = SN.Data;
+  const S = SN.State, D = SN.Data, T = SN.T;
   const A = () => D.academy;
 
   const Ac = SN.Academy = {
@@ -22,13 +22,13 @@
     canBuy(id) {
       const run = S.run, n = this.node(id);
       if (!run || !n) return { ok: false };
-      if (!this.open()) return { ok: false, reason: 'BRAVO TODAVÍA NO TE CONOCE', locked: true };
-      if (this.has(id)) return { ok: false, reason: 'YA ES TUYO', owned: true };
-      if (n.soon) return { ok: false, reason: 'PRÓXIMAMENTE', locked: true, soon: true };
+      if (!this.open()) return { ok: false, reason: T('BRAVO TODAVÍA NO TE CONOCE'), locked: true };
+      if (this.has(id)) return { ok: false, reason: T('YA ES TUYO'), owned: true };
+      if (n.soon) return { ok: false, reason: T('PRÓXIMAMENTE'), locked: true, soon: true };
       const br = A().branches.find((b) => b.id === n.branch), i = br.nodes.findIndex((x) => x.id === id);
-      if (i > 0 && !this.has(br.nodes[i - 1].id)) return { ok: false, reason: `PRIMERO: ${br.nodes[i - 1].name.toUpperCase()}`, locked: true };
-      if (run.position) return { ok: false, reason: 'HAY UNA OPERACIÓN EN CURSO' };
-      if (run.capital - n.cost < D.sim.bankruptcyThreshold) return { ok: false, reason: run.capital < n.cost ? 'NO TE ALCANZA' : 'TE QUEDARÍAS SIN NADA' };
+      if (i > 0 && !this.has(br.nodes[i - 1].id)) return { ok: false, reason: T('PRIMERO: {x}', { x: br.nodes[i - 1].name.toLocaleUpperCase(SN.I18n.lang) }), locked: true };
+      if (run.position) return { ok: false, reason: T('HAY UNA OPERACIÓN EN CURSO') };
+      if (run.capital - n.cost < D.sim.bankruptcyThreshold) return { ok: false, reason: run.capital < n.cost ? T('NO TE ALCANZA') : T('TE QUEDARÍAS SIN NADA') };
       return { ok: true, cost: n.cost };
     },
     // Lo que se puede comprar ahora mismo (para los números rojos)

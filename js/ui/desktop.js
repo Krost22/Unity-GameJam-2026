@@ -7,21 +7,21 @@
 // El clic no escribe (a propósito): la gracia es teclear.
 (function (SN) {
   'use strict';
-  const S = SN.State, U = SN.Util;
+  const S = SN.State, U = SN.Util, T = SN.T;
   const $ = (id) => document.getElementById(id);
   const C = () => SN.Data.chat;
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   const ICONS = [
     { id: 'futuro', name: 'FUTURO.exe', sprite: 'appBig' },
-    { id: 'chat', name: 'Mensajín', sprite: 'icoChat' },
-    { id: 'notes', name: 'Notas', sprite: 'icoNotes' },
-    { id: 'trash', name: 'Papelera', sprite: 'icoTrash' },
-    { id: 'symbols', name: 'Símbolos', sprite: 'icoSymbols' },
+    { id: 'chat', name: T('Mensajín'), sprite: 'icoChat' },
+    { id: 'notes', name: T('Notas'), sprite: 'icoNotes' },
+    { id: 'trash', name: T('Papelera'), sprite: 'icoTrash' },
+    { id: 'symbols', name: T('Símbolos'), sprite: 'icoSymbols' },
     { id: 'null', name: 'NULL.EXE', sprite: 'icoNull' },
   ];
-  const TITLES = { notes: 'Notas.txt', trash: 'Papelera', symbols: 'Símbolos.txt', null: 'NULL.EXE · LÉEME.txt', term: 'C:\\> NULL.EXE' };
-  const TASKS = { notes: 'Notas', trash: 'Papelera', symbols: 'Símbolos', null: 'NULL.EXE', term: 'Terminal' };
+  const TITLES = { notes: T('Notas.txt'), trash: T('Papelera'), symbols: T('Símbolos.txt'), null: T('NULL.EXE · LÉEME.txt'), term: 'C:\\> NULL.EXE' };
+  const TASKS = { notes: T('Notas'), trash: T('Papelera'), symbols: T('Símbolos'), null: 'NULL.EXE', term: T('Terminal') };
   const X = () => SN.Data.cipher;
   const B = () => SN.Data.academy;
   const cx = (t) => SN.Cipher.html(t, SN.UI.freshLetter);
@@ -38,7 +38,7 @@
         <div class="dt-icons"></div>
         <div class="dt-wins"></div>
         <div class="dt-bar">
-          <button class="dt-start"><i></i>Inicio</button>
+          <button class="dt-start"><i></i>${T('Inicio')}</button>
           <div class="dt-tasks"></div>
           <span class="dt-clock"></span>
         </div>`;
@@ -132,9 +132,10 @@
       if (this.wins[id]) return this.focus(id);
       const w = U.el('div', 'dt-win dt-' + id);
       const title = id === 'chat' ? C().app : TITLES[id];
-      w.innerHTML = `<div class="dt-head"><span>${title}</span><button class="dt-x" title="Cerrar (Esc)">×</button></div><div class="dt-body"></div>`;
+      w.innerHTML = `<div class="dt-head"><span>${title}</span><button class="dt-x" title="${T('Cerrar (Esc)')}">×</button></div><div class="dt-body"></div>`;
       w.querySelector('.dt-x').addEventListener('click', (e) => { e.stopPropagation(); this.userClose(id); });
       w.addEventListener('mousedown', () => this.focus(id));
+      this.draggable(w);
       $('desktop').querySelector('.dt-wins').appendChild(w);
       this.wins[id] = w;
       SN.Audio.sfx('open');
@@ -183,6 +184,38 @@
       this.topId = id;
     },
     topWin() { return this.wins[this.topId] ? this.topId : Object.keys(this.wins).pop(); },
+    // Arrastrar una ventana por su barra de título, como en un PC de verdad. Vale para todas las ventanas del
+    // escritorio (todas nacen en launch). No se salen del escritorio ni se meten bajo la barra de tareas; al
+    // cerrarla y abrirla otra vez, vuelve a su sitio de siempre (css/style.css).
+    draggable(w) {
+      const head = w.querySelector('.dt-head');
+      head.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0 || e.target.closest('button')) return; // (la X y los botones de la barra, no)
+        const root = $('desktop');
+        // El escenario va escalado y la cámara se mueve: el puntero se pasa a píxeles del escritorio en cada paso
+        const at = (ev) => {
+          const r = root.getBoundingClientRect(), k = r.width / root.offsetWidth || 1;
+          return { x: (ev.clientX - r.left) / k, y: (ev.clientY - r.top) / k };
+        };
+        const p0 = at(e), x0 = w.offsetLeft, y0 = w.offsetTop;
+        const move = (ev) => {
+          if (!w.isConnected) { end(); return; }
+          const p = at(ev), bar = root.querySelector('.dt-bar').offsetHeight;
+          const maxX = Math.max(0, root.offsetWidth - w.offsetWidth), maxY = Math.max(0, root.offsetHeight - bar - w.offsetHeight);
+          w.style.left = Math.round(U.clamp(x0 + p.x - p0.x, 0, maxX)) + 'px';
+          w.style.top = Math.round(U.clamp(y0 + p.y - p0.y, 0, maxY)) + 'px';
+        };
+        // El ratón se sigue en toda la página (aunque salga de la barra o del monitor): así no depende de que el
+        // navegador conceda la captura del puntero, que a veces no llega
+        const end = () => {
+          window.removeEventListener('pointermove', move);
+          for (const t of ['pointerup', 'pointercancel']) window.removeEventListener(t, end);
+        };
+        try { head.setPointerCapture(e.pointerId); } catch (_) { /* sin captura: sirve igual */ }
+        window.addEventListener('pointermove', move);
+        for (const t of ['pointerup', 'pointercancel']) window.addEventListener(t, end);
+      });
+    },
 
     // Barra de tareas, reloj e insignias de mensajes sin leer
     refresh() {
@@ -200,7 +233,7 @@
       const fi = root.querySelector('.dt-icon[data-app="futuro"]');
       if (fi) fi.classList.toggle('hidden', !!this.noApp);
       const names = SN.Data.sim.turnNames || ['Mañana', 'Tarde', 'Noche'];
-      root.querySelector('.dt-clock').textContent = `Día ${S.run.day} · ${names[S.run.turn] || ''}`;
+      root.querySelector('.dt-clock').textContent = T('Día {d} · {t}', { d: S.run.day, t: names[S.run.turn] || '' });
       const unread = (this.chat().unread || 0) + (this.ser().unread || 0) + (this.bravo().unread || 0);
       const badge = root.querySelector('.dt-icon[data-app="chat"] .badge');
       badge.textContent = unread; badge.classList.toggle('hidden', !unread);
@@ -332,7 +365,7 @@
     deliver(line) {
       const ch = this.chat();
       if (line === '!zumbido') {
-        ch.log.push({ who: 's', t: `¡${C().friend.name} te ha enviado un zumbido!` });
+        ch.log.push({ who: 's', t: T('¡{name} te ha enviado un zumbido!', { name: C().friend.name }) });
         this.nudge();
       } else if (line.startsWith('*')) {
         ch.log.push({ who: 's', t: line.slice(1) });
@@ -377,7 +410,7 @@
       };
       for (const l of c.msgs) await line(l);
       ch.log.push({ who: 'm', t: c.reply });
-      if (!this.open) this.toast('', `<b>Tú</b> ${esc(c.reply)}`);
+      if (!this.open) this.toast('', `<b>${T('Tú')}</b> ${esc(c.reply)}`);
       SN.Audio.sfx('select');
       await SN.wait(1.4);
       ch.phase = 'out';
@@ -415,7 +448,7 @@
         <div class="ch-who"><i class="ch-ava"></i><div><b class="ch-nick"></b><span class="ch-status"></span></div></div>
         <div class="ch-log"></div>
         <div class="ch-typing"></div>
-        <div class="ch-input"><div class="ch-box"></div><button class="ch-send btn btn-green">Enviar<kbd>⏎</kbd></button></div>`;
+        <div class="ch-input"><div class="ch-box"></div><button class="ch-send btn btn-green">${T('Enviar')}<kbd>⏎</kbd></button></div>`;
       w.querySelector('.ch-send').addEventListener('click', () => this.send());
       w.querySelectorAll('.ch-tab').forEach((b) => b.addEventListener('click', () => {
         if (this.contact === b.dataset.c) return;
@@ -466,12 +499,12 @@
       const box = w.querySelector('.ch-box'), btn = w.querySelector('.ch-send');
       if (ch.phase === 'reply' && c) {
         const txt = c.reply.slice(0, ch.typed);
-        box.innerHTML = txt ? `${esc(txt)}<i class="caret"></i>` : '<span class="ph">Pulsa cualquier tecla para escribir<kbd>⌨</kbd></span><i class="caret"></i>';
+        box.innerHTML = txt ? `${esc(txt)}<i class="caret"></i>` : `<span class="ph">${T('Pulsa cualquier tecla para escribir')}<kbd>⌨</kbd></span><i class="caret"></i>`;
         box.classList.add('live');
         btn.disabled = !this.replyDone();
         btn.classList.toggle('ready', this.replyDone());
       } else {
-        box.innerHTML = this.kevoGone() && ch.offline ? '<span class="ph">Kevo no está. Tus mensajes no se entregan.</span>' : '<span class="ph">…</span>';
+        box.innerHTML = this.kevoGone() && ch.offline ? `<span class="ph">${T('Kevo no está. Tus mensajes no se entregan.')}</span>` : '<span class="ph">…</span>';
         box.classList.remove('live');
         btn.disabled = true;
         btn.classList.remove('ready');
@@ -505,21 +538,21 @@
       const st = w.querySelector('.ch-status');
       // Desde que desapareció: "desconectado desde hace N días"
       const gone = ch.goneDay != null && ch.offline && ch.phase === 'wait' ? S.run.day - ch.goneDay : null;
-      st.textContent = ch.offline ? (gone ? `Desconectado desde hace ${gone} día${gone === 1 ? '' : 's'}` : 'Desconectado') : 'Conectado';
+      st.textContent = ch.offline ? (gone ? (gone === 1 ? T('Desconectado desde hace {n} día', { n: gone }) : T('Desconectado desde hace {n} días', { n: gone })) : T('Desconectado')) : T('Conectado');
       st.className = 'ch-status' + (ch.offline ? ' off' : '');
       const log = w.querySelector('.ch-log');
-      log.innerHTML = ch.log.length ? '' : `<p class="ch-sys">${esc(f.name)} todavía no ha escrito.</p>`;
+      log.innerHTML = ch.log.length ? '' : `<p class="ch-sys">${T('{name} todavía no ha escrito.', { name: esc(f.name) })}</p>`;
       // Varios mensajes seguidos de la misma persona van en un bloque con su nombre una sola vez
       let prev = null;
       for (const m of ch.log) {
         if (m.who === 's') { log.insertAdjacentHTML('beforeend', `<p class="ch-sys">${esc(m.t)}</p>`); prev = null; continue; }
-        const head = m.who !== prev ? `<b>${esc(m.who === 'f' ? f.name : 'Tú')}</b>` : '';
+        const head = m.who !== prev ? `<b>${esc(m.who === 'f' ? f.name : T('Tú'))}</b>` : '';
         log.insertAdjacentHTML('beforeend', `<p class="ch-msg ${m.who}${head ? ' first' : ''}">${head}${esc(m.t)}</p>`);
         prev = m.who;
       }
       SN.KW.apply(log);
       log.scrollTop = log.scrollHeight;
-      w.querySelector('.ch-typing').textContent = this.typing ? `${f.name} está escribiendo…` : '';
+      w.querySelector('.ch-typing').textContent = this.typing ? T('{name} está escribiendo…', { name: f.name }) : '';
       this.renderInput();
     },
 
@@ -549,14 +582,14 @@
         SN.FX.glitch(0.5, 1.2);
         SN.Audio.sfx('static', { dur: 0.5 });
       } else {
-        if (cs.offline || m.back) { if (cs.offline) cs.log.push({ who: 's', t: `${name} se ha conectado.` }); cs.offline = false; }
+        if (cs.offline || m.back) { if (cs.offline) cs.log.push({ who: 's', t: T('{name} se ha conectado.', { name }) }); cs.offline = false; }
         cs.log.push({ who: 'x', t: m.text });
         SN.Audio.sfx('notify');
         SN.FX.glitch(0.2, 0.6);
         // Con algunos mensajes llega una parte de NULL.EXE
         if (m.null) {
           S.run.nullParts = Math.max(S.run.nullParts || 0, m.null);
-          cs.log.push({ who: 's', t: `Archivo recibido: NULL.EXE (parte ${m.null} de 3)` });
+          cs.log.push({ who: 's', t: T('Archivo recibido: NULL.EXE (parte {n} de 3)', { n: m.null }) });
           this.renderIcons();
         }
       }
@@ -584,7 +617,7 @@
       this.toast('', `<b>${cx(X().contact.name)}</b> ${esc(text)}`);
       this.renderChat();
       await SN.wait(5);
-      cs.log.push({ who: 's', t: `${X().contact.name} ya no existe.` });
+      cs.log.push({ who: 's', t: T('{name} ya no existe.', { name: X().contact.name }) });
       cs.gone = true;
       SN.Save.saveRun();
       this.renderChat();
@@ -597,7 +630,7 @@
       if (ava.dataset.who !== 'ser') { ava.innerHTML = ''; ava.appendChild(SN.Sprites.node('avaSer', 2)); ava.dataset.who = 'ser'; ava.classList.add('ser'); }
       w.querySelector('.ch-nick').innerHTML = cx(name);
       const st = w.querySelector('.ch-status');
-      st.textContent = cs.offline ? 'Desconectado' : 'Conectado';
+      st.textContent = cs.offline ? T('Desconectado') : T('Conectado');
       st.className = 'ch-status' + (cs.offline ? ' off' : '');
       const log = w.querySelector('.ch-log');
       log.innerHTML = '';
@@ -612,7 +645,7 @@
       log.scrollTop = log.scrollHeight;
       w.querySelector('.ch-typing').textContent = '';
       const box = w.querySelector('.ch-box'), btn = w.querySelector('.ch-send');
-      box.innerHTML = '<span class="ph">No puedes responder a este contacto</span>';
+      box.innerHTML = `<span class="ph">${T('No puedes responder a este contacto')}</span>`;
       box.classList.remove('live');
       btn.disabled = true;
       btn.classList.remove('ready');
@@ -654,7 +687,7 @@
       if (ava.dataset.who !== 'bravo') { ava.innerHTML = ''; ava.appendChild(SN.Chars.bravoFace()); ava.dataset.who = 'bravo'; ava.classList.remove('ser'); ava.classList.add('bravo'); }
       w.querySelector('.ch-nick').textContent = g.nick;
       const st = w.querySelector('.ch-status');
-      st.textContent = 'Conectado · cerrando tratos';
+      st.textContent = T('Conectado · cerrando tratos');
       st.className = 'ch-status';
       const log = w.querySelector('.ch-log');
       log.innerHTML = '';
@@ -664,9 +697,9 @@
         first = false;
       }
       log.scrollTop = log.scrollHeight;
-      w.querySelector('.ch-typing').textContent = this.bravoT ? `${g.name} está escribiendo…` : '';
+      w.querySelector('.ch-typing').textContent = this.bravoT ? T('{name} está escribiendo…', { name: g.name }) : '';
       const box = w.querySelector('.ch-box'), btn = w.querySelector('.ch-send');
-      box.innerHTML = '<span class="ph">Bravo Fines no lee mensajes. Solo los manda.</span>';
+      box.innerHTML = `<span class="ph">${T('Bravo Fines no lee mensajes. Solo los manda.')}</span>`;
       box.classList.remove('live');
       btn.disabled = true;
       btn.classList.remove('ready');
@@ -700,8 +733,8 @@
       }).join('');
       const missing = X().clues.filter((c) => !C.knows(c.letter));
       const shown = missing.slice(0, Math.min(missing.length, 1 + (C.state().hints || 0)));
-      w.querySelector('.dt-body').innerHTML = `<div class="sy-head">${C.count()}/${C.total()} símbolos</div><div class="sy-grid">${cells}</div>` +
-        (missing.length ? `<div class="sy-hints"><b>Pistas</b>${shown.map((c) => `<p>· ${esc(c.hint)}</p>`).join('')}</div>` : '<div class="sy-hints"><b>Ya puedes leerlo todo.</b></div>');
+      w.querySelector('.dt-body').innerHTML = `<div class="sy-head">${T('{a}/{b} símbolos', { a: C.count(), b: C.total() })}</div><div class="sy-grid">${cells}</div>` +
+        (missing.length ? `<div class="sy-hints"><b>${T('Pistas')}</b>${shown.map((c) => `<p>· ${esc(c.hint)}</p>`).join('')}</div>` : `<div class="sy-hints"><b>${T('Ya puedes leerlo todo.')}</b></div>`);
     },
     // Un símbolo nuevo: aparece la app, se marca y todo lo que hay abierto se traduce un poco más
     onCipher() {
@@ -724,24 +757,24 @@
       if (parts < 3) {
         // Incompleto: lo poco que se lee está en el idioma secreto
         const junk = X().messages.filter((m) => m.null && m.null <= parts).map((m) => `<p>${cx(m.text)}</p>`).join('');
-        body.innerHTML = `<div class="nu"><div class="nu-err">ARCHIVO INCOMPLETO · parte ${parts} de 3</div>${junk}<p class="nu-junk">${'▓▒░ '.repeat(18)}</p></div>`;
+        body.innerHTML = `<div class="nu"><div class="nu-err">${T('ARCHIVO INCOMPLETO · parte {n} de 3', { n: parts })}</div>${junk}<p class="nu-junk">${'▓▒░ '.repeat(18)}</p></div>`;
         return;
       }
       body.innerHTML = `<div class="nu"><div class="nu-txt">${F.readme.map((p, i) => `<p${i ? '' : ' class="nu-h"'}>${esc(p)}</p>`).join('')}</div></div>`;
-      const run = U.el('button', 'btn btn-coral nu-run', choosing ? 'Ejecutar NULL.EXE' : 'Todavía no');
+      const run = U.el('button', 'btn btn-coral nu-run', choosing ? T('Ejecutar NULL.EXE') : T('Todavía no'));
       run.disabled = !choosing;
       run.addEventListener('click', (e) => { e.stopPropagation(); if (SN.Finale.choosing()) SN.Finale.choose('B'); });
       body.querySelector('.nu').appendChild(run);
     },
     // La terminal: lo que pinta js/systems/finale.js (líneas, el comando que se escribe y su cursor)
     renderTerm() {
-      const w = this.wins.term, T = SN.Finale && SN.Finale.term;
-      if (!w || !T) return;
+      const w = this.wins.term, TM = SN.Finale && SN.Finale.term;
+      if (!w || !TM) return;
       const body = w.querySelector('.dt-body');
-      const lines = T.lines.map((l) => `<p class="tm-${l.k || 'out'}">${esc(l.t)}</p>`).join('');
-      const cur = T.typing ? `<p class="tm-cmd">${esc(T.prompt + T.typing.text.slice(0, T.typing.shown))}<i class="caret"></i></p>` : '';
-      const hint = T.typing && !T.typing.shown ? '<p class="tm-hint">Pulsa cualquier tecla para escribir</p>' : '';
-      const note = T.notice ? `<p class="tm-lock">${esc(T.notice)}</p>` : '';
+      const lines = TM.lines.map((l) => `<p class="tm-${l.k || 'out'}">${esc(l.t)}</p>`).join('');
+      const cur = TM.typing ? `<p class="tm-cmd">${esc(TM.prompt + TM.typing.text.slice(0, TM.typing.shown))}<i class="caret"></i></p>` : '';
+      const hint = TM.typing && !TM.typing.shown ? `<p class="tm-hint">${T('Pulsa cualquier tecla para escribir')}</p>` : '';
+      const note = TM.notice ? `<p class="tm-lock">${esc(TM.notice)}</p>` : '';
       body.innerHTML = `<div class="tm">${lines}${cur}${hint}${note}</div>`;
       const box = body.querySelector('.tm');
       box.scrollTop = box.scrollHeight;
@@ -755,13 +788,13 @@
       const box = (on) => (on ? '[x]' : '[ ]');
       // Las deudas que llegaron después también van a la lista (la última, sin tachar si no está pagada)
       const later = [...(run.debts || []), d].filter((x) => x && x.id !== 'pleyzeta').slice(-3)
-        .map((x) => `${box(x.paid)} Pagar ${esc(x.label)}: ${U.money(x.amount)} · día ${x.deadlineDay}`).join('\n');
-      w.querySelector('.dt-body').innerHTML = `<pre class="nt">COSAS QUE HACER
-${box(paid)} Pagar la Pleyzeta: ${U.money(SN.Data.sim.startDebt)} · día 7${later ? '\n' + later : ''}
-${box(false)} Comprar ramen (otra vez)
-${box(this.chat().i > 0)} Contestar a Kevo
-${box(false)} NO apostarlo todo
-${box(false)} Dormir${this.kevoGone() ? `\n${box(false)} Encontrar a Kevo` : ''}${this.ghostLine()}</pre>`;
+        .map((x) => `${box(x.paid)} ${T('Pagar {x}: {v} · día {d}', { x: esc(x.label), v: U.money(x.amount), d: x.deadlineDay })}`).join('\n');
+      w.querySelector('.dt-body').innerHTML = `<pre class="nt">${T('COSAS QUE HACER')}
+${box(paid)} ${T('Pagar la Pleyzeta: {v} · día 7', { v: U.money(SN.Data.sim.startDebt) })}${later ? '\n' + later : ''}
+${box(false)} ${T('Comprar ramen (otra vez)')}
+${box(this.chat().i > 0)} ${T('Contestar a Kevo')}
+${box(false)} ${T('NO apostarlo todo')}
+${box(false)} ${T('Dormir')}${this.kevoGone() ? `\n${box(false)} ${T('Encontrar a Kevo')}` : ''}${this.ghostLine()}</pre>`;
       SN.KW.apply(w.querySelector('.nt'));
       const gh = w.querySelector('.nt-ghost');
       if (gh) gh.addEventListener('click', () => { SN.Audio.sfx('select'); SN.Cipher.discover('notas'); });
@@ -775,16 +808,16 @@ ${box(false)} Dormir${this.kevoGone() ? `\n${box(false)} Encontrar a Kevo` : ''}
     refreshTrash() { if (this.wins.trash) this.buildTrash(this.wins.trash); },
     buildTrash(w) {
       const files = [
-        ['curriculum_FINAL_v3.doc', '12 KB', 'Lo tiraste por algo.'],
-        ['ahorros.xls', '0 KB', 'Está vacío. Como la cuenta.'],
-        ['dieta_lunes.txt', '1 KB', 'Empezaba el lunes. ¿Qué lunes?'],
+        [T('curriculum_FINAL_v3.doc'), '12 KB', T('Lo tiraste por algo.')],
+        [T('ahorros.xls'), '0 KB', T('Está vacío. Como la cuenta.')],
+        [T('dieta_lunes.txt'), '1 KB', T('Empezaba el lunes. ¿Qué lunes?')],
       ];
       // Desde el día 3 aparece un archivo que tú no tiraste
-      if (S.run && (S.run.day >= 3 || SN.Cipher.found('papelera'))) files.push(['no_abrir.txt', '1 KB', null]);
+      if (S.run && (S.run.day >= 3 || SN.Cipher.found('papelera'))) files.push([T('no_abrir.txt'), '1 KB', null]);
       // Desde que Kevo desapareció: intentaste borrar FUTURO.exe... y volvió solo
-      if (this.kevoGone()) files.push(['FUTURO.exe', '6,66 MB', 'Lo tiraste anoche. Ha vuelto solo al escritorio.']);
+      if (this.kevoGone()) files.push(['FUTURO.exe', T('6,66 MB'), T('Lo tiraste anoche. Ha vuelto solo al escritorio.')]);
       const body = w.querySelector('.dt-body');
-      body.innerHTML = '<div class="tr-list"></div><div class="tr-note">Haz clic en un archivo</div>';
+      body.innerHTML = `<div class="tr-list"></div><div class="tr-note">${T('Haz clic en un archivo')}</div>`;
       for (const [n, size, joke] of files) {
         const b = U.el('button', 'tr-file' + (joke ? '' : ' odd'), `<span>${esc(n)}</span><em>${size}</em>`);
         b.addEventListener('click', () => {

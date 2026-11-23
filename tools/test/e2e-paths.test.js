@@ -213,7 +213,7 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
     ok(await ev('document.getElementById("screen").classList.contains("paper-open")'), 'con el periódico abierto no hay rayas de monitor sobre el papel');
     await ev('SN.Windows.close(); true');
 
-    // --- Día de la suerte (el día 7): tarjeta dorada y Ruleta de la Fortuna ---
+    // --- Día de la suerte (el día 7): tarjeta dorada ---
     await ev('SN.Game.toMenu(); true');
     await b.sleep(400);
     await fresh();
@@ -224,22 +224,6 @@ const PROFILE = JSON.stringify({ introSeen: true, tutorialDone: true, tutorialV:
     await shot('p4b-dia-de-la-suerte');
     await waitFor('!SN.UI.busy', 10000);
     ok(await ev('!!SN.Luck.today() && SN.Luck.k() === 1 && document.getElementById("app").classList.contains("lucky")'), 'el 7 cuenta como un siete y FUTURO.exe se pone dorado');
-    await ev('SN.State.run.luck.events = ["ruleta"]; SN.State.run.luck.spun = false; SN.UI.renderAll(); true');
-    await ev('document.getElementById("nav-shop").click()');
-    await b.sleep(400);
-    await ev('document.querySelector(".sh-nb[data-cat=destacados]").click(); true');
-    await b.sleep(150);
-    ok(await ev('!!document.querySelector(".sh-card[data-kind=ruleta]")'), 'la tienda tiene la Ruleta de la Fortuna');
-    await ev('document.querySelector(".sh-card[data-kind=ruleta]").click(); true');
-    await b.sleep(150);
-    await ev('document.querySelector(".sh-buy").click(); true');
-    await b.sleep(400);
-    ok(await ev('SN.Windows.current') === 'ruleta', 'se abre la ruleta');
-    await ev('document.querySelector(".rl-go").click(); true');
-    ok(await waitFor('document.querySelector(".rl-res").textContent.length > 3', 8000) && await ev('SN.State.run.luck.spun'), 'la ruleta gira y da un premio (una vez al día)');
-    await shot('p4c-ruleta');
-    await ev('SN.Windows.close(); true');
-    await b.sleep(300);
 
     // --- Fin de partida 1: sin dinero ni para la apuesta mínima ---
     await ev('SN.Game.toMenu(); true');

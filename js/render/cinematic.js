@@ -164,7 +164,7 @@
       btn.classList.remove('wiggle');
       btn.classList.add('pressed');
       await this.wait(0.15);
-      const thanks = U.el('div', 'thanks', `${st.thanks}<span style="font-size:8px;line-height:12px;color:${P.coalL}">Pago aplazado: 7 días</span>`);
+      const thanks = U.el('div', 'thanks', `${st.thanks}<span style="font-size:8px;line-height:12px;color:${P.coalL}">${SN.T('Pago aplazado: 7 días')}</span>`);
       $('webshop').appendChild(thanks);
       SN.FX.confetti(50);
       SN.Audio.sfx('cheer');
@@ -173,7 +173,7 @@
       // Cara de felicidad
       this.setShot({ type: 'face', expr: 'star', opts: { fist: true }, confetti: true });
       SN.Audio.sfx('win', { big: true });
-      await this.say('Tú', sub.happy, { auto: 2.2 });
+      await this.say(SN.T('Tú'), sub.happy, { auto: 2.2 });
     },
 
     // ESCENA 2 — La deuda
@@ -204,10 +204,10 @@
           SN.Audio.sfx('notifyBad');
         });
       });
-      await this.say('Tú', sub.confused, { auto: 2.2 });
+      await this.say(SN.T('Tú'), sub.confused, { auto: 2.2 });
       this.shot.expr = 'worried';
       this.shot.opts = {};
-      await this.say('Tú', sub.worried, { auto: 3 });
+      await this.say(SN.T('Tú'), sub.worried, { auto: 3 });
       this.notifs.forEach((n) => n.remove());
       this.notifs = [];
     },
@@ -261,7 +261,7 @@
       this.beat = true;
       this.setShot({ type: 'face', expr, opts: {} });
       $('subs').classList.remove('hidden');
-      $('subs').innerHTML = `<b>Tú:</b> ${text}`;
+      $('subs').innerHTML = `<b>${SN.T('Tú')}:</b> ${text}`;
       await new Promise((r) => { this.beatResolve = r; SN.after(dur, () => { if (this.beatResolve === r) { this.beatResolve = null; r(); } }); });
       $('subs').classList.add('hidden');
       this.setShot(null);
@@ -271,9 +271,9 @@
     buildShop() {
       const st = SN.Data.story.shop;
       const el = $('webshop');
-      el.innerHTML = `<div class="shop-bar"><span class="shop-logo">★</span><span class="url">HTTPS://${st.store.toLowerCase()}/OFERTAS/PLEYZETA-6-ULTRA</span><span>${st.store}</span></div>
+      el.innerHTML = `<div class="shop-bar"><span class="shop-logo">★</span><span class="url">HTTPS://${st.store.toLowerCase()}/${SN.T('OFERTAS')}/PLEYZETA-6-ULTRA</span><span>${st.store}</span></div>
         <div class="shop-main">
-          <div class="prod-img"><span class="tag">¡OFERTA!</span></div>
+          <div class="prod-img"><span class="tag">${SN.T('¡OFERTA!')}</span></div>
           <div class="prod-info">
             <div class="p-title">${st.product}</div>
             <div class="p-ed">${st.edition}</div>

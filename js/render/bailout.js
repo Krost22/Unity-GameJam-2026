@@ -617,7 +617,7 @@
     }
     if (ui === 'name') {
       Px.text(g, X.nameLabel, x0 + 14, y0 + 70, P.creamD);
-      const txt = X.bankName.slice(0, V.typed).toUpperCase(), half = X.bankNameBreak;
+      const txt = X.bankName.slice(0, V.typed).toLocaleUpperCase(SN.I18n.lang), half = X.bankNameBreak;
       const l1 = txt.slice(0, half), l2 = txt.slice(half).trim();
       Px.text(g, l1, x0 + 18, y0 + 98, P.coal);
       Px.text(g, l2, x0 + 18, y0 + 122, P.coal);
@@ -629,7 +629,7 @@
     if (ui === 'verdict' && V.ut > 0.18) X.stamp.forEach((l, i) => Px.text(g, l, cx, y0 + 116 + i * 24, P.coral, { align: 'center', size: i === 1 ? 16 : 8 }));
     if (ui === 'hold') Px.text(g, X.holdShort, cx, y0 + 230, P.creamL, { align: 'center', size: 16 });
     if (ui === 'incoming' || ui === 'accept') {
-      Px.text(g, X.president.toUpperCase(), cx, y0 + 186, P.creamL, { align: 'center' });
+      Px.text(g, X.president.toLocaleUpperCase(SN.I18n.lang), cx, y0 + 186, P.creamL, { align: 'center' });
       Px.text(g, X.videoCall, cx, y0 + 200, P.creamD, { align: 'center' });
     }
   }
@@ -738,7 +738,7 @@
       const x = 472, y = 30;
       R(g, x - 3, y - 3, 166, 96, P.coalDD); R(g, x - 2, y - 2, 164, 94, P.creamL);
       g.drawImage(SN.Cine.buf, 40, 23, 80, 45, x, y, 160, 90);
-      Px.text(g, X.you.toUpperCase(), x + 5, y + 85, P.creamL, { outline: P.coalDD });
+      Px.text(g, X.you.toLocaleUpperCase(SN.I18n.lang), x + 5, y + 85, P.creamL, { outline: P.coalDD });
     }
   }
   // "BRRRRR": la impresora de dinero

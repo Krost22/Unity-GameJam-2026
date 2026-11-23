@@ -95,8 +95,8 @@
       if (this.up) SN.FX.coins(p.x, p.y, big ? 8 : 3, 1.4);
       else SN.FX.cracks(p.x, p.y, big ? 7 : 4);
       SN.Chart.kick = this.up ? -5 : 5;
-      let word = this.up ? '¡BOOM!' : '¡CRASH!';
-      if (this.light) word = this.good ? '¡SE TE ESCAPÓ!' : '¡TE LIBRASTE!';
+      let word = this.up ? SN.T('¡BOOM!') : SN.T('¡CRASH!');
+      if (this.light) word = this.good ? SN.T('¡SE TE ESCAPÓ!') : SN.T('¡TE LIBRASTE!');
       SN.FX.word(word, p.x - (p.x > 300 ? 30 : 0), p.y - 18, this.good ? 'gain' : 'loss');
       if (big) { if (this.good) SN.Hands.celebrate(true); else SN.Hands.flinch(true); }
       SN.Events.emit('drama:impact', { good: this.good, up: this.up, light: this.light });

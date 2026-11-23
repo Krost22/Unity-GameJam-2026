@@ -80,6 +80,9 @@ const G = {
   '^': '..#..|.#.#.|#...#|.....|.....|.....|.....',
   '~': '.....|.....|.#...|#.#.#|...#.|.....|.....',
   '°': '.#.|#.#|.#.|...|...|...|...',
+  // Ordinales (2º, 1ª): la letra pequeña y subrayada, arriba
+  'º': '.#.|#.#|.#.|...|###|...|...',
+  'ª': '.##|#.#|.##|...|###|...|...',
   '·': '.|.|.|#|.|.|.',
   '×': '.....|#...#|.#.#.|..#..|.#.#.|#...#|.....',
   '±': '..#..|..#..|#####|..#..|..#..|.....|#####',
@@ -102,6 +105,11 @@ const G = {
   '♥': '.....|##.##|#####|#####|.###.|..#..|.....',
   '♪': '..##.|..#.#|..#..|..#..|###..|###..|.....',
   '✓': '......|.....#|....#.|#..#..|.##...|......|......',
+  // Comillas latinas (diálogos)
+  '«': '.....|..#.#|.#.#.|#.#..|.#.#.|..#.#|.....',
+  '»': '.....|#.#..|.#.#.|..#.#|.#.#.|#.#..|.....',
+  // Portugués: la cedilla baja de la línea base
+  'Ç': '.###.|#...#|#....|#....|#....|#...#|.###.|..#..|.##..',
 };
 // El alfabeto secreto del juego (js/data/cipher.js): letras cirílicas que no se parecen a ninguna latina.
 // Una octava fila baja de la línea base (los "pies" de Д, Ц y Щ).
@@ -154,24 +162,74 @@ const LOWER = {
   x: '5:#...#|.#.#.|..#..|.#.#.|#...#',
   y: '5:#...#|#...#|#...#|#...#|.####|....#|.###.',
   z: '5:#####|...#.|..#..|.#...|#####',
+  'ç': '5:.###|#...|#...|#...|.###|..#.|.##.',
 };
 Object.assign(G, LOWER);
 // Minúsculas con tilde: la tilde va en las filas 3-4, sobre la altura x
 const LOWER_ACCENTED = {
   'á': ['a', ['..#..', '.#...']], 'é': ['e', ['..#..', '.#...']], 'ó': ['o', ['..#..', '.#...']], 'ú': ['u', ['..#..', '.#...']],
   'ñ': ['n', ['.##.#', '#..#.']], 'ü': ['u', ['.....', '.#.#.']],
+  // Portugués (idiomas: js/core/i18n.js)
+  'ã': ['a', ['.##.#', '#..#.']], 'õ': ['o', ['.##.#', '#..#.']], 'â': ['a', ['..#..', '.#.#.']], 'ê': ['e', ['..#..', '.#.#.']],
+  'ô': ['o', ['..#..', '.#.#.']], 'à': ['a', ['.#...', '..#..']],
 };
+// Más idiomas (francés, alemán, italiano, rumano, polaco, turco, neerlandés, sueco y checo). Las letras de 5 de ancho
+// llevan la marca de 5; c y r (4 de ancho), la suya.
+const AC5 = { acute: ['..#..', '.#...'], grave: ['.#...', '..#..'], circ: ['..#..', '.#.#.'], diaer: ['.....', '.#.#.'],
+  caron: ['.#.#.', '..#..'], breve: ['#...#', '.###.', '.....'], dot: ['..#..', '.....'] }; // (la breve, más alta: tocaba la letra)
+Object.assign(LOWER_ACCENTED, {
+  'è': ['e', AC5.grave], 'ë': ['e', AC5.diaer], 'ě': ['e', AC5.caron], 'ä': ['a', AC5.diaer], 'ă': ['a', AC5.breve],
+  'ö': ['o', AC5.diaer], 'ò': ['o', AC5.grave], 'û': ['u', AC5.circ], 'ù': ['u', AC5.grave], 'ÿ': ['y', AC5.diaer],
+  'ý': ['y', AC5.acute], 'ń': ['n', AC5.acute], 'ň': ['n', AC5.caron], 'ś': ['s', AC5.acute], 'š': ['s', AC5.caron],
+  'ź': ['z', AC5.acute], 'ż': ['z', AC5.dot], 'ž': ['z', AC5.caron], 'ğ': ['g', AC5.breve],
+  'ć': ['c', ['..#.', '.#..']], 'č': ['c', ['.#.#', '..#.']], 'ř': ['r', ['#.#.', '.#..']],
+});
 for (const [ch, [base, acc]] of Object.entries(LOWER_ACCENTED)) {
   const b = /^(\d+):(.*)$/.exec(G[base]);
-  G[ch] = '3:' + acc.join('|') + '|' + b[2];
+  G[ch] = (acc.length === 3 ? '2:' : '3:') + acc.join('|') + '|' + b[2];
 }
 G['í'] = '3:.#|#.|..|#.|#.|#.|#.';
+G['ì'] = '3:#.|.#|..|.#|.#|.#|.#';
+G['î'] = '3:.#.|#.#|...|.#.|.#.|.#.|.#.';
+G['ï'] = '3:#.#|...|.#.|.#.|.#.|.#.|.#.';
+G['ı'] = '5:#|#|#|#|#'; // turco: la i sin punto
+// El aro (sueco å, checo ů) ocupa tres filas: empieza en la 2
+G['å'] = '2:..#..|.#.#.|..#..|' + G.a.slice(2);
+G['ů'] = '2:..#..|.#.#.|..#..|' + G.u.slice(2);
+// Letras propias: la l con barra, la doble s alemana, las ligaduras francesas y d/t checas con su apóstrofo
+Object.assign(G, {
+  'ł': '.#.|.#.|.##|##.|.#.|.#.|..#',
+  'Ł': '.#...|.#...|.#.#.|.##..|##...|.#...|.####',
+  'ß': '.##..|#..#.|#..#.|#.##.|#...#|#...#|#.##.',
+  'œ': '5:.##.##.|#..#..#|#..####|#..#...|.##.###',
+  'æ': '5:.##.##.|...#..#|.######|#..#...|.##.###',
+  'Œ': '.######|#..#...|#..#...|#..####|#..#...|#..#...|.######',
+  'Æ': '.######|#..#...|#..#...|#######|#..#...|#..#...|#..####',
+  'ď': '....#.#|....#.#|.####..|#...#..|#...#..|#...#..|.####..',
+  'ť': '.#.#|.#.#|####|.#..|.#..|.#..|..##',
+});
+// Marcas bajo la línea base (filas 10-11): colita polaca (ogonek), cedilla turca y coma rumana
+const BELOW = { ogonek: ['...#.', '...##'], cedilla: ['..#..', '.##..'], comma: ['..#..', '.#...'] };
+for (const [ch, base, mark] of [['ą', 'a', 'ogonek'], ['ę', 'e', 'ogonek'], ['Ą', 'A', 'ogonek'], ['Ę', 'E', 'ogonek'],
+  ['ş', 's', 'cedilla'], ['Ş', 'S', 'cedilla'], ['ș', 's', 'comma'], ['Ș', 'S', 'comma'], ['Ț', 'T', 'comma']]) {
+  G[ch] = G[base] + '|' + BELOW[mark].join('|');
+}
+G['ț'] = G.t + '|..#.|.#..';
 
-// Tildes para mayúsculas (filas 0-1), centradas sobre el glifo
-const ACCENTS = { acute: ['..#', '.#.'], tilde: ['.##.#', '#..#.'], diaer: ['.....', '.#.#.'] };
+// Tildes para mayúsculas (filas 0-1), centradas sobre el glifo. Las de tres filas (el aro) van de la 0 a la 2.
+const ACCENTS = { acute: ['..#', '.#.'], tilde: ['.##.#', '#..#.'], diaer: ['.....', '.#.#.'], circ: ['.#.', '#.#'], grave: ['#..', '.#.'],
+  diaer3: ['...', '#.#'], caron: ['#.#', '.#.'], breve: ['#...#', '.###.'], dot: ['.', '#'], ring: ['.#.', '#.#', '.#.'] };
 const ACCENTED = {
   'Á': ['A', 'acute', 1], 'É': ['E', 'acute', 1], 'Í': ['I', 'acute', 0], 'Ó': ['O', 'acute', 1],
   'Ú': ['U', 'acute', 1], 'Ñ': ['N', 'tilde', 0], 'Ü': ['U', 'diaer', 0],
+  'Ã': ['A', 'tilde', 0], 'Õ': ['O', 'tilde', 0], 'Â': ['A', 'circ', 0], 'Ê': ['E', 'circ', 0], 'Ô': ['O', 'circ', 0], 'À': ['A', 'grave', -1],
+  // Más idiomas
+  'È': ['E', 'grave', -1], 'Ë': ['E', 'diaer', 0], 'Ě': ['E', 'caron', 0], 'Ì': ['I', 'grave', 0], 'Î': ['I', 'circ', 0],
+  'Ï': ['I', 'diaer3', 0], 'İ': ['I', 'dot', 0], 'Ò': ['O', 'grave', -1], 'Ö': ['O', 'diaer', 0], 'Ù': ['U', 'grave', -1],
+  'Û': ['U', 'circ', 0], 'Ů': ['U', 'ring', 0], 'Ä': ['A', 'diaer', 0], 'Ă': ['A', 'breve', 0], 'Å': ['A', 'ring', 0],
+  'Ÿ': ['Y', 'diaer', 0], 'Ý': ['Y', 'acute', 1], 'Ć': ['C', 'acute', 1], 'Č': ['C', 'caron', 0], 'Ď': ['D', 'caron', 0],
+  'Ğ': ['G', 'breve', 0], 'Ń': ['N', 'acute', 1], 'Ň': ['N', 'caron', 0], 'Ř': ['R', 'caron', 0], 'Ś': ['S', 'acute', 1],
+  'Š': ['S', 'caron', 0], 'Ť': ['T', 'caron', 0], 'Ź': ['Z', 'acute', 1], 'Ż': ['Z', 'dot', 0], 'Ž': ['Z', 'caron', 0],
 };
 const ADVANCE = { ' ': 4 }; // avance especial (en píxeles)
 
@@ -206,19 +264,25 @@ const NUM = {
 };
 const NUM_ADV = { ' ': 4, 1: 7 };
 
-function buildTTF(familyName, G, ACCENTED, ADVANCE) {
-const glyphs = []; // { char, top, rows }
-function addGlyph(char, g) { glyphs.push({ char, top: g.top, rows: g.rows }); }
-for (const [ch, spec] of Object.entries(G)) addGlyph(ch, parse(spec));
-for (const [ch, [base, acc, shift]] of Object.entries(ACCENTED)) {
-  const b = parse(G[base]);
-  const w = b.rows[0].length;
-  const a = ACCENTS[acc].map((r) => {
-    const off = Math.max(0, Math.floor((w - r.length) / 2) + shift);
-    return ('.'.repeat(off) + r + '.'.repeat(w)).slice(0, w);
-  });
-  addGlyph(ch, { top: 0, rows: [...a, '.'.repeat(w), ...b.rows] });
+// Todos los glifos ya montados (las mayúsculas con tilde, con su tilde encima): { char, top, rows }
+function glyphList(G, ACCENTED) {
+  const glyphs = [];
+  const addGlyph = (char, g) => { glyphs.push({ char, top: g.top, rows: g.rows }); };
+  for (const [ch, spec] of Object.entries(G)) addGlyph(ch, parse(spec));
+  for (const [ch, [base, acc, shift]] of Object.entries(ACCENTED)) {
+    const b = parse(G[base]);
+    const w = b.rows[0].length;
+    const a = ACCENTS[acc].map((r) => {
+      const off = Math.max(0, Math.floor((w - r.length) / 2) + shift);
+      return ('.'.repeat(off) + r + '.'.repeat(w)).slice(0, w);
+    });
+    addGlyph(ch, { top: 0, rows: [...a, ...(a.length < 3 ? ['.'.repeat(w)] : []), ...b.rows] });
+  }
+  return glyphs;
 }
+
+function buildTTF(familyName, G, ACCENTED, ADVANCE) {
+const glyphs = glyphList(G, ACCENTED);
 
 // Píxeles -> rectángulos (tramos horizontales fusionados en vertical)
 function rectsOf(g) {
@@ -305,7 +369,8 @@ ordered.forEach((g, gid) => {
   if (!g.char) return;
   cmapPairs.push([g.char.codePointAt(0), gid]);
   const lower = g.char.toLowerCase();
-  if (familyName !== 'SaldoNum' && lower !== g.char && !own.has(lower)) cmapPairs.push([lower.codePointAt(0), gid]);
+  // (solo si la minúscula es un único carácter: la de la İ turca es "i" + un punto, y "i" ya tiene glifo)
+  if (familyName !== 'SaldoNum' && lower !== g.char && [...lower].length === 1 && !own.has(lower)) cmapPairs.push([lower.codePointAt(0), gid]);
 });
 cmapPairs.sort((a, b) => a[0] - b[0]);
 const segs = [];
@@ -395,6 +460,27 @@ font.b[headOff + 2] = (adj >>> 8) & 255; font.b[headOff + 3] = adj & 255;
 return Buffer.from(font.b);
 }
 
+// Los caracteres que tiene SaldoPixel (también las minúsculas que usan el glifo de su mayúscula): tools/i18n.js
+// comprueba con esto que las traducciones no usen letras sin dibujar. require('./build-font') no escribe nada.
+function charset() {
+  const own = new Set([' ', ...Object.keys(G), ...Object.keys(ACCENTED)]);
+  for (const ch of [...own]) if ([...ch.toLowerCase()].length === 1) own.add(ch.toLowerCase());
+  return own;
+}
+// Para revisar un glifo: node -e "require('./tools/build-font').show('ăș')"
+function show(text) {
+  const list = glyphList(G, ACCENTED);
+  const gl = [...text].map((ch) => list.find((g) => g.char === ch) || list.find((g) => g.char === ch.toUpperCase()));
+  for (let r = 0; r < 12; r++) {
+    console.log(gl.map((g) => {
+      const w = g ? Math.max(...g.rows.map((x) => x.length)) : 3;
+      const row = g && r >= g.top ? g.rows[r - g.top] || '' : '';
+      return (row + '.'.repeat(w)).slice(0, w).replace(/\./g, ' ').replace(/#/g, '█');
+    }).join(' │ '));
+  }
+}
+module.exports = { charset, show };
+if (require.main === module) {
 const root = path.join(__dirname, '..');
 const ttf = buildTTF('SaldoPixel', G, ACCENTED, ADVANCE);
 const ttfNum = buildTTF('SaldoNum', NUM, {}, NUM_ADV);
@@ -417,3 +503,4 @@ const css = `/* Generado por tools/build-font.js — fuente pixel art propia de 
 `;
 fs.writeFileSync(path.join(root, 'css', 'font.css'), css);
 console.log(`SaldoPixel: ${ttf.length} bytes · SaldoNum: ${ttfNum.length} bytes`);
+}

@@ -42,6 +42,7 @@
   // Mejoras. Todas se compran A CRÉDITO en la Tienda. El MULTIPLICADOR está desde el principio; las demás
   // llegan como "regalo" del encapuchado (que trae una deuda, ver js/data/progression.js), en ese orden.
   const GIFT = { type: 'gift', label: 'Un "regalo" del encapuchado' };
+  const T = SN.T; // (los efectos se escriben al enseñarlos: en el idioma elegido)
   D.upgrades = [
     {
       // Cada nivel desbloquea un botón de multiplicador: ×2, ×5 y ×10 (D.sim.leverages)
@@ -49,7 +50,7 @@
       desc: 'Más premio... y más riesgo.',
       unlock: { type: 'start' },
       levels: [{ cost: 20, value: 2 }, { cost: 50, value: 5 }, { cost: 2000, value: 10 }],
-      effect: (v) => (v ? `Hasta ×${v}` : 'Solo ×1'),
+      effect: (v) => (v ? T('Hasta ×{v}', { v }) : T('Solo ×1')),
     },
     {
       id: 'limite', name: 'Límite', icon: 'caja', color: 'yellow',
@@ -57,21 +58,21 @@
       unlock: GIFT,
       base: 250,
       levels: [{ cost: 150, value: 1000 }, { cost: 700, value: 5000 }, { cost: 3500, value: 25000 }, { cost: 15000, value: 100000 }, { cost: 60000, value: 1000000 }],
-      effect: (v) => `Máximo: ${SN.Util.short(v)}`,
+      effect: (v) => T('Máximo: {v}', { v: SN.Util.short(v) }),
     },
     {
       id: 'analisis', name: 'Análisis', icon: 'lupa', color: 'cyan',
       desc: 'La pista de la gráfica acierta más.',
       unlock: GIFT,
       levels: [{ cost: 400, value: 1 }, { cost: 2500, value: 2 }, { cost: 12000, value: 3 }],
-      effect: (v) => ['Sin efecto', 'Pista nítida', 'Pista muy nítida', 'Pista casi exacta'][v],
+      effect: (v) => [T('Sin efecto'), T('Pista nítida'), T('Pista muy nítida'), T('Pista casi exacta')][v],
     },
     {
       id: 'suerte', name: 'Suerte', icon: 'trebol', color: 'green',
       desc: 'Inclina un poquito el mercado a tu favor.',
       unlock: GIFT,
       levels: [{ cost: 400, value: 1 }, { cost: 1200, value: 2 }, { cost: 3500, value: 3 }, { cost: 9000, value: 4 }, { cost: 22000, value: 5 }],
-      effect: (v) => (v ? `≈ +${v * 3}% de acierto` : 'Sin efecto'),
+      effect: (v) => (v ? T('≈ +{n}% de acierto', { n: v * 3 }) : T('Sin efecto')),
     },
     {
       // "Cosas que todavía no han pasado": las últimas velas. Cada nivel quita un 20% de probabilidad de giro.
@@ -79,7 +80,7 @@
       desc: 'Reduce ciertos efectos... de cosas que todavía no han pasado.',
       unlock: GIFT,
       levels: [{ cost: 8000, value: 1 }, { cost: 25000, value: 2 }, { cost: 60000, value: 3 }],
-      effect: (v) => (v ? `Giros: −${v * 20}%` : 'Sin efecto'),
+      effect: (v) => (v ? T('Giros: −{n}%', { n: v * 20 }) : T('Sin efecto')),
     },
   ];
   D.sim.resistPerLevel = 0.2;

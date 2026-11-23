@@ -8,7 +8,7 @@
 //    tenías al empezarla (punto de control de SN.State). Nunca se pierde toda la partida.
 (function (SN) {
   'use strict';
-  const S = SN.State, D = SN.Data, U = SN.Util;
+  const S = SN.State, D = SN.Data, U = SN.Util, T = SN.T;
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   const B = SN.Bankruptcy = {
@@ -83,14 +83,14 @@
       const el = U.el('div', 'overlay-panel rescue-ui');
       el.innerHTML = `<div class="rc-receipt">
           <div class="rc-h"><span class="rc-seal"></span>${esc(rc.title)}</div>
-          <div class="rc-row"><span>De</span><b>${esc(rc.from)}</b></div>
-          <div class="rc-row"><span>Para</span><b>${esc(rc.to)}</b></div>
-          <div class="rc-row"><span>Concepto</span><b>${esc(rc.concept)}</b></div>
+          <div class="rc-row"><span>${T('De')}</span><b>${esc(rc.from)}</b></div>
+          <div class="rc-row"><span>${T('Para')}</span><b>${esc(rc.to)}</b></div>
+          <div class="rc-row"><span>${T('Concepto')}</span><b>${esc(rc.concept)}</b></div>
           <div class="rc-amt">+${U.money(this.coins)}</div>
         </div>
         <div class="t1">${esc(st.title)}</div><div class="t2">${esc(st.message)}</div>
         <div class="t3">${esc(late ? st.extension : st.extra)}</div>
-        <div class="row"><button class="btn btn-yellow" id="bk-continue">Seguir jugando</button></div>`;
+        <div class="row"><button class="btn btn-yellow" id="bk-continue">${T('Seguir jugando')}</button></div>`;
       // El escudo del justificante: la moneda con el ojo
       const seal = U.el('canvas');
       seal.width = 9; seal.height = 9;
@@ -117,12 +117,12 @@
       S.restoreCheckpoint();
       SN.Save.saveRun();
       SN.Save.saveProfile();
-      const where = cp ? cp.label : 'la deuda de la Pleyzeta';
+      const where = cp ? cp.label : T('la deuda de la Pleyzeta');
       const money = U.money(cp ? cp.capital : D.sim.startCapital);
       const el = U.el('div', 'overlay-panel final-loss');
       el.innerHTML = `<div class="t1">${st.title}</div><div class="t2">${st.message}</div>
         <div class="t3">${st.back.replace('{where}', where).replace('{money}', money)}</div>
-        <div class="row"><button class="btn btn-yellow" id="bk-retry">Volver a intentarlo</button><button class="btn btn-cream" id="bk-menu">Volver al menú</button></div>`;
+        <div class="row"><button class="btn btn-yellow" id="bk-retry">${T('Volver a intentarlo')}</button><button class="btn btn-cream" id="bk-menu">${T('Volver al menú')}</button></div>`;
       SN.KW.apply(el);
       document.getElementById('layer-top').appendChild(el);
       this.ui = el;

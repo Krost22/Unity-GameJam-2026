@@ -5,7 +5,7 @@
 // Este archivo no toca la interfaz: devuelve lo que ha pasado y la narrativa lo cuenta (game.js).
 (function (SN) {
   'use strict';
-  const S = SN.State, D = SN.Data, U = SN.Util;
+  const S = SN.State, D = SN.Data, U = SN.Util, T = SN.T;
 
   SN.Unlocks = {
     isUnlocked(id) { return !!S.run.markets[id] && !!S.run.markets[id].unlocked; },
@@ -30,15 +30,15 @@
     // Lo que se muestra en el HUD: la deuda activa o, si no hay, lo que pide el paso actual
     currentGoal() {
       const run = S.run, d = run.debt;
-      if (d && !d.paid) return { type: 'debt', amount: d.amount, title: 'PAGAR DEUDA', label: d.label, debt: d };
+      if (d && !d.paid) return { type: 'debt', amount: d.amount, title: T('PAGAR DEUDA'), label: d.label, debt: d };
       const st = this.step();
       if (!st) return null;
       if (st.kind === 'item') {
         // La oferta de FUTURO.exe está esperando (no pide dinero): la barra enseña lo que vas a deber
         const it = D.keyItemById(st.item), o = this.offer(it);
-        return { type: 'item', amount: o.debt, title: `OFERTA: ${it.name}`, label: it.short, item: it, offer: o };
+        return { type: 'item', amount: o.debt, title: T('OFERTA: {x}', { x: it.name }), label: it.short, item: it, offer: o };
       }
-      if (st.kind === 'goal') return Object.assign({ type: 'goal', title: `OBJETIVO ${U.short(st.amount)}` }, st);
+      if (st.kind === 'goal') return Object.assign({ type: 'goal', title: T('OBJETIVO {v}', { v: U.short(st.amount) }) }, st);
       return null;
     },
 
@@ -72,7 +72,7 @@
       const run = S.run, up = SN.Upgrades.def(st.upgrade);
       run.gifts[st.upgrade] = true;
       for (const id of st.markets || []) this.unlock(id);
-      SN.Debt.open({ id: st.id, kind: 'gift', label: `el regalo (${up.name})`, amount: st.debt, days: st.days });
+      SN.Debt.open({ id: st.id, kind: 'gift', label: T('el regalo ({name})', { name: up.name }), amount: st.debt, days: st.days });
       run.stepOpen = true;
       SN.Events.emit('gift:given', { step: st, upgrade: st.upgrade });
       return { type: 'gift', step: st };
@@ -118,18 +118,18 @@
     canBuyItem(id) {
       const run = S.run, st = this.step(), it = D.keyItemById(id);
       if (!it) return { ok: false };
-      if (run.owned[id]) return { ok: false, reason: 'YA ES TUYO', owned: true };
+      if (run.owned[id]) return { ok: false, reason: T('YA ES TUYO'), owned: true };
       if (!st || st.kind !== 'item' || st.item !== id) {
         const i = D.keyItems.indexOf(it);
         const prev = i > 0 && !run.owned[D.keyItems[i - 1].id] ? D.keyItems[i - 1] : null;
-        let reason = 'TODAVÍA NO';
-        if (prev) reason = `PRIMERO: ${prev.short.toUpperCase()}`;
-        else if (run.debt && !run.debt.paid) reason = 'PRIMERO PAGA LO QUE DEBES';
-        else if (st && st.kind === 'goal') reason = `PRIMERO: LA META DE ${U.short(st.amount)}`;
+        let reason = T('TODAVÍA NO');
+        if (prev) reason = T('PRIMERO: {x}', { x: prev.short.toLocaleUpperCase(SN.I18n.lang) });
+        else if (run.debt && !run.debt.paid) reason = T('PRIMERO PAGA LO QUE DEBES');
+        else if (st && st.kind === 'goal') reason = T('PRIMERO: LA META DE {v}', { v: U.short(st.amount) });
         return { ok: false, reason, locked: true };
       }
-      if (run.position) return { ok: false, reason: 'HAY UNA OPERACIÓN EN CURSO' };
-      if (run.debt && !run.debt.paid) return { ok: false, reason: 'PRIMERO PAGA LO QUE DEBES' };
+      if (run.position) return { ok: false, reason: T('HAY UNA OPERACIÓN EN CURSO') };
+      if (run.debt && !run.debt.paid) return { ok: false, reason: T('PRIMERO PAGA LO QUE DEBES') };
       return { ok: true };
     },
 

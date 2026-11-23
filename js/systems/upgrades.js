@@ -3,7 +3,7 @@
 // (precio + intereses de D.credit, que se suman a la deuda activa).
 (function (SN) {
   'use strict';
-  const S = SN.State, D = SN.Data;
+  const S = SN.State, D = SN.Data, T = SN.T;
 
   SN.Upgrades = {
     def(id) { return D.upgrades.find((u) => u.id === id); },
@@ -35,14 +35,14 @@
       const n = this.next(id);
       if (!n || !this.isUnlocked(id) || S.run.position) return { ok: false };
       const debt = this.creditCost(id);
-      if (SN.Debt.active() && SN.Debt.hopeless(debt)) return { ok: false, reason: 'YA NO PODRÍAS PAGAR A TIEMPO', debt };
+      if (SN.Debt.active() && SN.Debt.hopeless(debt)) return { ok: false, reason: T('YA NO PODRÍAS PAGAR A TIEMPO'), debt };
       return { ok: true, cost: n.cost, debt };
     },
 
     buy(id) {
       const can = this.canBuy(id);
       if (!can.ok) return false;
-      SN.Debt.charge(can.debt, `la mejora (${this.def(id).name})`);
+      SN.Debt.charge(can.debt, T('la mejora ({name})', { name: this.def(id).name }));
       S.run.upgrades[id] = this.level(id) + 1;
       SN.Events.emit('upgrade:bought', { id, level: S.run.upgrades[id], debt: can.debt });
       return true;

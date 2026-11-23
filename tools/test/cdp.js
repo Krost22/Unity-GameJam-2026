@@ -15,7 +15,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function launch(url, { width = 1280, height = 720, port = 9341, scale = 1 } = {}) {
   const exe = BROWSERS.find((p) => fs.existsSync(p));
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'saldo-cdp-'));
-  const proc = spawn(exe, ['--headless=new', '--disable-gpu', '--allow-file-access-from-files', '--autoplay-policy=no-user-gesture-required',
+  const proc = spawn(exe, ['--headless=new', '--disable-gpu', '--allow-file-access-from-files', '--autoplay-policy=no-user-gesture-required', '--lang=es-ES',
     `--remote-debugging-port=${port}`, `--user-data-dir=${dir}`, `--window-size=${width},${height}`, 'about:blank']);
   let target = null;
   for (let i = 0; i < 80 && !target; i++) {

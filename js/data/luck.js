@@ -16,24 +16,12 @@
     specials: {
       lluvia: { name: 'Lluvia de Oro', text: 'Llueve oro sobre la ciudad. Los mercados se disparan.' },
       dorado: { name: 'Mercado Dorado', text: 'Don Siete abre su puesto: objetos que solo se venden hoy.' },
-      ruleta: { name: 'Ruleta de la Fortuna', text: 'Un giro gratis. En la TIENDA.' },
       estrella: { name: 'Estrella de la Suerte', text: 'Un mercado brilla: sus ganancias valen ×1.77 hoy.' },
       bendicion: { name: 'Bendición de la Fortuna', text: 'Todo lo raro es más probable hoy. Y tu suerte, mayor.' },
     },
-    light: ['estrella', 'ruleta', 'bendicion'],
+    light: ['estrella', 'bendicion'],
     big: ['lluvia', 'dorado'],
 
-    // La ruleta (un giro por día de la suerte). weight = peso; rare = sale el doble con la Bendición
-    wheel: [
-      { id: 'poco', label: '+$', weight: 26 },
-      { id: 'nada', label: 'Nada', weight: 18 },
-      { id: 'plazo', label: '+1 día', weight: 14 },
-      { id: 'seguro', label: 'Seguro', weight: 12 },
-      { id: 'maldita', label: 'Deuda +7%', weight: 10 },
-      { id: 'mucho', label: '+$$$', weight: 8, rare: true },
-      { id: 'simbolo', label: 'Símbolo', weight: 6, rare: true },
-      { id: 'siete', label: '777', weight: 6, rare: true },
-    ],
 
     // Objetos dorados de Don Siete: solo se venden los días de la suerte (y se ven en tu cuarto)
     golden: [

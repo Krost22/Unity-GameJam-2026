@@ -330,7 +330,7 @@
       paper(g, 10, 3, 44, 34);
       Px.ellipse(g, 32, 21, 19, 10, P.coal); Px.ellipse(g, 32, 21, 17, 8, '#FFFFFF');
       Px.ellipse(g, 32, 21, 15, 6, P.coal); Px.ellipse(g, 32, 21, 14, 5, '#FFFFFF');
-      Px.text(g, 'PAGADO', 32, 25, P.coal, { align: 'center' });
+      Px.text(g, SN.T('PAGADO'), 32, 25, P.coal, { align: 'center' });
     },
     dinero(g) {
       R(g, 0, 0, W, H, P.greenL);
@@ -510,7 +510,7 @@
       trompa(g, 4, 10);
       R(g, 18, 18, 4, 6, P.coal); R(g, 19, 19, 2, 4, P.cyanL);
       R(g, 20, 2, 44, 13, P.coal); R(g, 21, 3, 42, 11, P.creamL); Px.line(g, 24, 15, 21, 19, P.coal);
-      Px.text(g, '¡COMPREN!', 42, 12, P.coralD, { align: 'center' });
+      Px.text(g, SN.T('¡COMPREN!'), 42, 12, P.coralD, { align: 'center' });
     },
     // Estanterías vacías: solo queda una lata
     estanteria(g) {
@@ -576,7 +576,7 @@
       R(g, 0, 0, W, H, P.orangeDD); Px.ellipse(g, 32, 34, 22, 24, P.coalDD); R(g, 10, 34, 44, 6, P.coalDD);
       R(g, 8, 10, 4, 30, P.woodD); R(g, 52, 10, 4, 30, P.woodD); R(g, 8, 8, 48, 4, P.wood);
       Px.line(g, 24, 14, 28, 20, P.yellow); Px.line(g, 28, 20, 25, 24, P.yellow); Px.line(g, 38, 16, 35, 22, P.yellow); Px.line(g, 35, 22, 39, 27, P.yellow);
-      Px.text(g, 'CRAC', 32, 36, P.coralL, { align: 'center' });
+      Px.text(g, SN.T('CRAC'), 32, 36, P.coralL, { align: 'center' });
     },
     // Paraguas bajo una lluvia de gotas verdes que parecen monedas
     lluviamonedas(g) {
@@ -646,7 +646,7 @@
       R(g, 0, 0, W, H, P.creamM); R(g, 0, 32, W, 8, P.woodM);
       R(g, 12, 16, 40, 18, P.coal); R(g, 13, 17, 38, 16, P.orangeD); Px.line(g, 12, 16, 6, 10, P.orange, 2); Px.line(g, 52, 16, 58, 10, P.orange, 2);
       for (let i = 0; i < 5; i++) { R(g, 16 + i * 7, 6, 4, 11, P.coal); R(g, 17 + i * 7, 7, 2, 9, P.cyanL); }
-      R(g, 20, 22, 24, 8, P.creamL); Px.text(g, 'USADO', 32, 29, P.coal, { align: 'center' });
+      R(g, 20, 22, 24, 8, P.creamL); Px.text(g, SN.T('USADO'), 32, 29, P.coal, { align: 'center' });
     },
     // Un corazón con tiritas y una etiqueta de precio
     corazon(g) {
@@ -677,7 +677,7 @@
       R(g, 0, 0, W, H, P.creamM); R(g, 0, 34, W, 6, P.woodM);
       R(g, 8, 2, 48, 30, P.coal); R(g, 10, 4, 44, 24, P.coalD); R(g, 28, 32, 8, 3, P.coal);
       Px.ellipse(g, 32, 12, 6, 5, P.creamL); R(g, 29, 15, 7, 4, P.creamL); R(g, 29, 11, 2, 2, P.coal); R(g, 34, 11, 2, 2, P.coal); R(g, 30, 17, 1, 2, P.coal); R(g, 33, 17, 1, 2, P.coal);
-      Px.text(g, 'GRACIAS', 32, 27, P.green, { align: 'center' });
+      Px.text(g, SN.T('GRACIAS'), 32, 27, P.green, { align: 'center' });
     },
     // Un robot con capucha mirando una bola de cristal (dentro, un símbolo de dólar)
     bolacristal(g) {
@@ -698,7 +698,7 @@
     tiendanoche(g) {
       R(g, 0, 0, W, H, P.navyD); Px.ellipse(g, 54, 7, 4, 4, P.creamL); Px.ellipse(g, 56, 6, 3, 3, P.navyD);
       ground(g, 34, P.coalL);
-      R(g, 8, 10, 40, 24, P.coal); R(g, 10, 12, 36, 4, P.magenta || P.coral); Px.text(g, 'ABIERTO', 28, 16, P.creamL, { align: 'center' });
+      R(g, 8, 10, 40, 24, P.coal); R(g, 10, 12, 36, 4, P.magenta || P.coral); Px.text(g, SN.T('ABIERTO'), 28, 16, P.creamL, { align: 'center' });
       R(g, 12, 18, 32, 8, P.coalL); for (let y = 18; y < 26; y += 2) R(g, 12, y, 32, 1, P.coalM); R(g, 12, 26, 32, 8, P.yellow); R(g, 22, 27, 4, 7, P.coal);
     },
     // Un inspector con sombrero, lupa y carpeta; detrás, las persianas bajan

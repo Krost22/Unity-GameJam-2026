@@ -12,7 +12,7 @@
       tutorialDone: false,
       runs: 0,
       bestCapital: 0,
-      settings: { music: true, sfx: true },
+      settings: { music: true, sfx: true, volume: 1 },
       endings: {},   // finales vistos (A: el avatar perfecto, B: NULL.EXE)
       pala: false,   // LA PALA: se gana con el final B y se queda en el cuarto para siempre
     },
@@ -22,12 +22,13 @@
       this.rng = new SN.RNG(seed);
       const run = {
         v: 4,
+        lang: SN.I18n ? SN.I18n.lang : 'es', // idioma de sus textos guardados (noticias, chats...)
         seed,
         rngState: 0,
         capital: D.sim.startCapital,
         committed: 0,
         // Deuda activa (solo hay una a la vez). Las pagadas pasan a `debts`.
-        debt: { id: 'pleyzeta', kind: 'debt', label: 'la Pleyzeta', amount: D.sim.startDebt, start: 1, deadlineDay: D.sim.deadlineDays, paid: false, defaulted: false },
+        debt: { id: 'pleyzeta', kind: 'debt', label: SN.T('la Pleyzeta'), amount: D.sim.startDebt, start: 1, deadlineDay: D.sim.deadlineDays, paid: false, defaulted: false },
         debts: [],
         day: 1,
         turn: 0,

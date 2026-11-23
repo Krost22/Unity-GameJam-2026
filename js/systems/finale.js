@@ -208,7 +208,7 @@
     },
     // Panel en la pantalla del monitor o en todo el escenario, con un botón para seguir.
     // [data-ico]: un icono de pixel art; after(el): para meter lo que no es HTML (la foto del periódico)
-    panel(html, cls, where = 'layer-top', btn = 'Seguir', after = null) {
+    panel(html, cls, where = 'layer-top', btn = SN.T('Seguir'), after = null) {
       return new Promise((resolve) => {
         const el = U.el('div', 'fin-panel ' + cls, html);
         el.querySelectorAll('[data-ico]').forEach((i) => i.appendChild(SN.Sprites.node(i.dataset.ico, 2)));
@@ -442,7 +442,7 @@
       SN.Desktop.closeWin('chat');
       SN.Audio.sfx('notify');
       await this.panel(`<div class="lt-head">${esc(L.head)}</div>${L.body.map((l) => `<p>${esc(l)}</p>`).join('')}
-        <div class="lt-gift"><i data-ico="pala"></i><b>${esc(L.gift)}</b></div><p class="lt-foot">«${esc(L.foot)}»</p>`, 'fin-letter', 'layer-top', 'Seguir');
+        <div class="lt-gift"><i data-ico="pala"></i><b>${esc(L.gift)}</b></div><p class="lt-foot">«${esc(L.foot)}»</p>`, 'fin-letter', 'layer-top', SN.T('Seguir'));
       await this.raid();
       // El protagonista llora en la habitación vacía
       SN.Cine.setShot({ type: 'face', expr: 'cry', night: true, opts: { tears: true } });
@@ -455,10 +455,10 @@
       SN.Music.force('bravo');
       SN.Audio.sfx('whoosh');
       const N = F().paper;
-      const html = `<div class="np-mast">${esc(N.mast)}</div><div class="np-sub"><span>Día ${run.day + 1}</span><span>Edición de la ciudad</span><span>$1</span></div>
+      const html = `<div class="np-mast">${esc(N.mast)}</div><div class="np-sub"><span>${SN.T('Día {n}', { n: run.day + 1 })}</span><span>${SN.T('Edición de la ciudad')}</span><span>$1</span></div>
         <div class="np-front"><div class="np-ph"></div><div class="np-fcol"><span class="np-tag neg">${esc(N.kicker)}</span><div class="h">${esc(N.title)}</div>
         ${N.lines.map((l) => `<p class="t">${esc(l)}</p>`).join('')}<p class="cap">${esc(N.caption)}</p></div></div>`;
-      await this.panel(html, 'fin-paper', 'stage-top', 'Seguir',
+      await this.panel(html, 'fin-paper', 'stage-top', SN.T('Seguir'),
         (el) => el.querySelector('.np-ph').appendChild(SN.NewsArt.node('bravoDetenido', 'neg', 0, null, { color: true })));
       SN.Music.force(null);
       await this.catSting();

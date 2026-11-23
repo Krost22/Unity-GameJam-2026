@@ -24,7 +24,12 @@
     },
     loadRun() {
       const run = read(KEY_RUN);
-      return run && run.v === 4 && !run.over ? run : null; // las partidas de la 1.5 o antes no se cargan
+      if (!run || run.v !== 4 || run.over) return null; // las partidas de la 1.5 o antes no se cargan
+      // (la Ruleta de la Fortuna ya no existe: fuera de los días de la suerte guardados)
+      if (run.luck && Array.isArray(run.luck.events)) run.luck.events = run.luck.events.filter((e) => SN.Data.luck.specials[e]);
+      delete run.shield;
+      if (SN.I18n) SN.I18n.convertRun(run); // textos guardados en otro idioma: al de ahora
+      return run;
     },
     hasRun() { return !!this.loadRun(); },
     clearRun() { try { localStorage.removeItem(KEY_RUN); } catch (_) { /* sin almacenamiento */ } },
@@ -34,7 +39,7 @@
       const p = read(KEY_PROFILE);
       if (p) {
         Object.assign(S.profile, p);
-        S.profile.settings = Object.assign({ music: true, sfx: true }, p.settings || {});
+        S.profile.settings = Object.assign({ music: true, sfx: true, volume: 1 }, p.settings || {});
       }
     },
   };

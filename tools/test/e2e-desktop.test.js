@@ -75,6 +75,45 @@ const ok = (c, msg) => { if (c) pass++; else fail++; console.log(`  ${c ? 'ok   
     await clickSel('.dt-icon[data-app="trash"]');
     await clickSel('.tr-file');
     ok(/\S/.test(await ev('document.querySelector(".tr-note").textContent')) && await ev('document.querySelector(".tr-note").textContent') !== 'Haz clic en un archivo', 'la Papelera responde al clic');
+    // Las ventanas se arrastran por su barra de título, como en un PC (y no se salen del escritorio)
+    const head = (sel) => ev(`(() => { const r = document.querySelector(${JSON.stringify(sel + ' .dt-head span')}).getBoundingClientRect(); return { x: r.left + 4, y: r.top + r.height / 2 }; })()`);
+    // (los mensajes del chat hacen temblar la pantalla unos píxeles: si el clic no cae en la barra, se repite)
+    const dragTo = async (sel, x, y) => {
+      for (let tries = 0; tries < 4; tries++) {
+        const h = await head(sel);
+        await ev(`window.__hd = false; document.querySelector(${JSON.stringify(sel + ' .dt-head')}).addEventListener('pointerdown', () => { window.__hd = true; }, { once: true }); true`);
+        await b.mouse('mouseMoved', h.x, h.y); await b.mouse('mousePressed', h.x, h.y);
+        if (!(await ev('window.__hd'))) { await b.mouse('mouseReleased', h.x, h.y); await b.sleep(400); continue; }
+        for (let i = 1; i <= 6; i++) await b.mouse('mouseMoved', h.x + (x - h.x) * i / 6, h.y + (y - h.y) * i / 6);
+        await b.mouse('mouseReleased', x, y);
+        return;
+      }
+    };
+    const box = (sel) => ev(`(() => { const w = document.querySelector(${JSON.stringify(sel)}), d = document.getElementById("desktop"); return { x: w.offsetLeft, y: w.offsetTop, w: w.offsetWidth, h: w.offsetHeight, dw: d.offsetWidth, dh: d.offsetHeight - d.querySelector(".dt-bar").offsetHeight, top: w.classList.contains("top"), k: d.getBoundingClientRect().width / d.offsetWidth }; })()`);
+    const tr0 = await box('.dt-trash'), h0 = await head('.dt-trash');
+    await dragTo('.dt-trash', h0.x - 40 * tr0.k, h0.y + 20 * tr0.k);
+    const tr1 = await box('.dt-trash');
+    ok(Math.abs(tr1.x - (tr0.x - 40)) <= 1 && Math.abs(tr1.y - (tr0.y + 20)) <= 1, `la Papelera se arrastra por su barra de título (${tr0.x},${tr0.y} → ${tr1.x},${tr1.y})`);
+    await dragTo('.dt-trash', 2, 2);
+    const tr2 = await box('.dt-trash');
+    ok(tr2.x === 0 && tr2.y === 0, `no se sale por arriba ni por la izquierda (${tr2.x},${tr2.y})`);
+    await dragTo('.dt-trash', 1278, 718);
+    const tr3 = await box('.dt-trash');
+    ok(tr3.x + tr3.w === tr3.dw && tr3.y + tr3.h === tr3.dh, `ni por la derecha ni bajo la barra de tareas (${tr3.x},${tr3.y})`);
+    const h3 = await head('.dt-trash');
+    await b.click(h3.x, h3.y);
+    const tr4 = await box('.dt-trash');
+    ok(tr4.x === tr3.x && tr4.y === tr3.y && await ev('!!SN.Desktop.wins.trash'), 'un clic en la barra no la mueve ni la cierra');
+    const nt0 = await box('.dt-notes'), hn = await head('.dt-notes');
+    ok(!nt0.top, 'Notas está detrás de la Papelera');
+    await dragTo('.dt-notes', hn.x + 30 * nt0.k, hn.y + 10 * nt0.k);
+    const nt1 = await box('.dt-notes');
+    ok(nt1.top && Math.abs(nt1.x - (nt0.x + 30)) <= 1 && Math.abs(nt1.y - (nt0.y + 10)) <= 1, `arrastrar Notas la trae delante y la mueve (${nt0.x},${nt0.y} → ${nt1.x},${nt1.y})`);
+    const xb = await center('.dt-notes .dt-x');
+    await b.mouse('mouseMoved', xb.x, xb.y); await b.mouse('mousePressed', xb.x, xb.y);
+    await b.mouse('mouseMoved', xb.x - 30, xb.y + 20); await b.mouse('mouseReleased', xb.x - 30, xb.y + 20);
+    const nt2 = await box('.dt-notes');
+    ok(nt2.x === nt1.x && nt2.y === nt1.y, 'la X no arrastra la ventana');
     await b.screenshot(path.join(OUT, '5-escritorio.png'));
     // Esc cierra ventanas una a una y después vuelve a FUTURO.exe
     for (let i = 0; i < 4; i++) await b.key('Escape');

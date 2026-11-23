@@ -66,7 +66,7 @@
       return clue;
     },
 
-    // Comodín (la ruleta de la suerte): una letra que todavía no conoces
+    // Comodín (atajo de depuración F6): una letra que todavía no conoces
     wildcard(rng) {
       const missing = D.cipher.clues.filter((c) => !this.knows(c.letter) && !this.found(c.id));
       if (!missing.length) return null;

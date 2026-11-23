@@ -254,7 +254,8 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 .mcard.sel { --ol: var(--mk); background: var(--panel2); box-shadow: 0 -1px 0 0 var(--mk), 0 1px 0 0 var(--mk), -1px 0 0 0 var(--mk), 1px 0 0 0 var(--mk), inset 3px 0 0 0 var(--mk); }
 .mcard.locked { background: var(--navyD); color: var(--ink3); cursor: not-allowed; }
 .mcard.locked .ico { opacity: .4; }
-.mcard .lock { position: absolute; right: 3px; bottom: 3px; width: 8px; height: 10px; }
+/* El candado, sobre el icono apagado del mercado: así el texto de debajo ("2º regalo"...) tiene toda la línea */
+.mcard .lock { position: absolute; left: 7px; top: 11px; width: 8px; height: 10px; }
 .mcard .alert { position: absolute; right: -2px; top: -3px; background: var(--orange); color: var(--navyD); padding: 0 2px; line-height: 8px; height: 8px; box-shadow: 0 0 0 1px var(--navyDD); animation: pulse .9s steps(2) infinite; }
 .mcard .live { color: var(--orange); animation: pulse .6s steps(2) infinite; }
 .mcard.unlocking { animation: bump .6s ease-out 2; }
@@ -519,7 +520,9 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 .np-sub { display: flex; justify-content: space-between; line-height: 9px; color: var(--coalL); border-bottom: 1px solid var(--coal); margin-bottom: 5px; padding: 2px 0 1px; }
 .np-hero { position: relative; display: flex; gap: 6px; padding-bottom: 5px; margin-bottom: 5px; border-bottom: 1px solid var(--creamD); }
 .np-hero canvas { width: 128px; height: 80px; flex: none; }
-.np-hero .h { font-size: 16px; line-height: 16px; color: var(--coal); margin: 3px 0 4px; }
+/* Titulares de varias líneas: con menos de 1,25 de interlineado, la tilde de una mayúscula (Á, Ü, İ, Č...) cae sobre
+   la línea de arriba y se pierde */
+.np-hero .h { font-size: 16px; line-height: 20px; color: var(--coal); margin: 3px 0 4px; }
 .np-hero .t { color: var(--coalL); line-height: 10px; }
 .np-tag { display: inline-block; padding: 1px 3px 0; line-height: 9px; color: var(--creamL); background: var(--coalL); text-transform: uppercase; }
 .np-tag.pos { background: var(--greenD); }
@@ -527,7 +530,7 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 .np-tag.neu { background: var(--orangeD); }
 .np-tag.dark { background: var(--coal); color: var(--coralL); }
 .np-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; }
-.np-item { position: relative; display: flex; gap: 4px; line-height: 9px; min-height: 30px; color: var(--coal); }
+.np-item { position: relative; display: flex; gap: 4px; line-height: 10px; min-height: 30px; color: var(--coal); }
 .np-item canvas { width: 48px; height: 30px; flex: none; }
 /* 1.6: cada noticia se puede abrir en PRIMERA PLANA (clic) */
 .np-hero, .np-item { cursor: pointer; }
@@ -535,7 +538,7 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 .np-hero:hover .h { text-decoration: underline; }
 .np-front { display: grid; grid-template-columns: 172px 1fr; gap: 6px; align-items: start; }
 .np-front canvas.photo { width: 172px; height: 108px; image-rendering: pixelated; }
-.np-front .h { font-size: 16px; line-height: 16px; color: var(--coal); margin: 3px 0 3px; text-shadow: 1px 0 0 currentColor; }
+.np-front .h { font-size: 16px; line-height: 20px; color: var(--coal); margin: 3px 0 3px; text-shadow: 1px 0 0 currentColor; }
 .np-front .t { color: var(--coalL); line-height: 10px; }
 .np-front .more { color: var(--coal); line-height: 10px; margin-top: 3px; }
 .np-front.dark { background: var(--coal); padding: 4px; }
@@ -578,7 +581,7 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 .stamp.out { animation: stampout .3s ease-in forwards; }
 @keyframes stampout { to { transform: translate(-50%, -50%) scale(.6); opacity: 0; } }
 .overlay-panel { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; }
-.overlay-panel .t1 { font-size: 16px; line-height: 16px; color: var(--yellow); text-transform: uppercase; }
+.overlay-panel .t1 { font-size: 16px; line-height: 20px; color: var(--yellow); text-transform: uppercase; }
 .overlay-panel .t2 { color: var(--ink); max-width: 300px; line-height: 10px; }
 .overlay-panel .t3 { color: var(--ink2); max-width: 300px; line-height: 10px; }
 .overlay-panel .row { display: flex; gap: 8px; margin-top: 6px; }
@@ -664,7 +667,7 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 .dt-clock { color: var(--ink2); white-space: nowrap; }
 .dt-win { position: absolute; display: flex; flex-direction: column; background: var(--panel); box-shadow: 0 0 0 1px var(--violetL), 0 0 0 2px var(--navyDD), 3px 3px 0 2px rgba(7, 5, 18, .5); animation: winin .14s steps(3); }
 .dt-win.top { z-index: 3; }
-.dt-head { height: 11px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 1px 0 4px; background: var(--violet); color: var(--creamL); }
+.dt-head { height: 11px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 1px 0 4px; background: var(--violet); color: var(--creamL); touch-action: none; }
 .dt-win:not(.top) .dt-head { background: var(--panel3); color: var(--ink2); }
 .dt-x { width: 9px; height: 9px; line-height: 9px; text-align: center; background: var(--coral); color: var(--creamL); }
 .dt-x:hover { background: var(--coralL); }
@@ -914,6 +917,8 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
   background: var(--panel2); box-shadow: inset 0 0 0 1px var(--violetD); transition: transform .06s; position: relative; }
 /* El número rojo va dentro de SU botón (antes se colocaba respecto al menú y saltaba de uno a otro al pasar el ratón) */
 .ac-nb .badge, .sh-nb .badge { position: static; margin-left: auto; flex: none; }
+/* Una palabra larga de otro idioma ("Uppgraderingar") se parte antes que salirse del botón */
+.ac-nb > span, .sh-nb > span { min-width: 0; overflow-wrap: anywhere; }
 .ac-nb:hover, .sh-nb:hover { color: var(--creamL); transform: translateX(1px); box-shadow: inset 0 0 0 1px var(--violetL); }
 .ac-nb.on, .sh-nb.on { color: var(--navyD); background: var(--green); box-shadow: inset 0 0 0 1px var(--greenL), 0 0 0 1px var(--greenDD); }
 .ac-tree { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; justify-content: space-around; padding: 2px 4px; overflow: hidden; }
@@ -1015,6 +1020,7 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 .sh-card:hover, .sh-row:hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1px var(--violetL), 0 0 5px 0 rgba(168, 128, 255, .5); }
 .sh-card .nm { flex: 1; width: 100%; color: var(--ink); line-height: 9px; text-align: center; overflow: hidden; max-height: 27px; } /* hasta 3 líneas: el nombre entero */
 .sh-card .pr, .sh-row .pr { padding: 1px 3px 0; line-height: 9px; color: var(--navyD); background: var(--yellow); font-weight: normal; white-space: nowrap; }
+.sh-card .pr { max-width: 100%; overflow: hidden; }
 .sh-card.poor .pr, .sh-row.poor .pr { background: var(--coralD); color: var(--creamL); }
 .sh-card.own { background: var(--greenDD); box-shadow: inset 0 0 0 1px var(--green); }
 .sh-card.own .pr { background: var(--green); }
@@ -1109,18 +1115,6 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 .sec-title.gold { color: var(--yellowL); }
 .shop-row.gold { box-shadow: inset 2px 0 0 0 var(--yellow); background: #2A2210; }
 .btn s { opacity: .6; }
-/* La ruleta */
-.rl { display: flex; gap: 10px; align-items: flex-start; padding: 4px 6px; }
-.rl-wheel { position: relative; flex: none; width: 96px; height: 96px; margin-top: 8px; }
-.rl-wheel canvas { width: 96px; height: 96px; image-rendering: auto; }
-.rl-arrow { position: absolute; left: 44px; top: -9px; color: var(--yellow); font-weight: normal; z-index: 1; }
-.rl-side { flex: 1; display: flex; flex-direction: column; gap: 3px; }
-.rl-now { color: var(--yellow); }
-.rl-list { margin: 0; padding-left: 14px; color: var(--ink2); line-height: 10px; }
-.rl-list li.on { color: var(--ink); }
-.rl-go { align-self: flex-start; padding: 3px 10px 2px; }
-.rl-res { min-height: 20px; color: var(--ink); line-height: 10px; }
-.rl-res b { color: var(--yellow); font-weight: normal; }
 
 /* ---------- 2.0: los finales (js/systems/finale.js) ---------- */
 /* El mercado TÚ: tapa la barra lateral y la gráfica; en el panel de operar solo quedan la oferta, el escritorio y ESPERAR */
@@ -1225,3 +1219,19 @@ kbd { display: inline-block; font: inherit; height: 9px; line-height: 9px; paddi
 @keyframes dust { 0% { transform: scale(.2); opacity: 0; } 15% { opacity: 1; } 60% { transform: scale(1.6) translateX(20px); opacity: .9; } 100% { transform: scale(2.4) translateX(60px); opacity: 0; } }
 .fin-panel.fin-credits { animation: fadein .6s steps(6); }
 @keyframes fadein { from { opacity: 0; } }
+
+/* ---------- Ajustes: idioma y volumen ---------- */
+.win.set-win { height: 222px; margin-top: -111px; }
+.set-win .set-row { margin-bottom: 3px; }
+/* Idioma: el actual (bandera + nombre) abre la lista de todos, encima de las demás filas */
+.set-lang .btn { display: flex; align-items: center; gap: 4px; padding: 2px 4px 1px; white-space: nowrap; }
+.set-lang .flag { display: block; flex: none; margin: -1px 0; }
+.set-lang-arrow { font-style: normal; font-size: 8px; line-height: 8px; opacity: .7; }
+.set-lang-cur.on .set-lang-arrow { transform: scaleY(-1); }
+.set-langs { position: absolute; right: 0; top: calc(100% + 2px); z-index: 5; display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;
+  padding: 4px; background: var(--panel); box-shadow: 0 0 0 1px var(--line), 0 3px 0 1px var(--navyDD); }
+.vol { display: flex; align-items: center; gap: 4px; }
+.vol-b { width: 13px; padding: 2px 0 1px !important; text-align: center; }
+.vol-bar { position: relative; width: 80px; height: 7px; background: var(--navyDD); cursor: pointer; box-shadow: 0 0 0 1px var(--line); touch-action: none; }
+.vol-bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--green); box-shadow: inset 0 1px 0 0 var(--greenL), inset 0 -1px 0 0 var(--greenD); }
+.vol-pct { width: 24px; text-align: right; color: var(--ink); font-weight: normal; }
